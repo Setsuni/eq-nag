@@ -270,6 +270,10 @@ const combatRgx = {
     // ResoluteStand: null,
 }
 
+// Live log lines classify entities from their stats at most this often; the
+// classification checks every entity against the verified lists.
+const entityClassificationIntervalMs = 250;
+
 // https://regex101.com/r/cqfoUU/2
 // This won't capture anon people.
 // classTitleOrName will capture any one-word class name by default, however if the class title has spaces it must be added to the list.
@@ -348,6 +352,9 @@ class CombatParser {
 
     /** @type {RegExp} */
     _playerWhoRgx;
+
+    /** @type {number} When the entity stats were last used to classify players and npcs. */
+    _lastEntityClassification = 0;
 
     /** @type {number} */
     _encounterResetTimerId = undefined;
@@ -865,7 +872,7 @@ class CombatParser {
                 log: timeLog.log,
             };
             
-            this._updateEntityVerifications( [ entry.log ] );
+            this._updateEntityVerifications( [ entry.log ], undefined, true );
 
             const timestamp = new Date( entry.timestamp );
 
@@ -1309,8 +1316,9 @@ class CombatParser {
      * 
      * @param {string[]} lines The log lines for the combat.
      * @param {string} myCharacterName The character name of the log file owner.
+     * @param {boolean} throttleClassification If true, entity stats are only used to classify players and npcs if entityClassificationIntervalMs has passed since the last time.
      */
-    _updateEntityVerifications( lines, myCharacterName ) {
+    _updateEntityVerifications( lines, myCharacterName, throttleClassification ) {
 
         for ( let i = 0; i < lines.length; i++ ) {
             let regxResult = executCombatRgx( combatRgx.GroupRaid, lines[ i ] );
@@ -1480,13 +1488,40 @@ class CombatParser {
             
         }
 
+        if ( !throttleClassification || Date.now() - this._lastEntityClassification >= entityClassificationIntervalMs ) {
+            this._lastEntityClassification = Date.now();
+            this._classifyEntities();
+        }
+
+        if ( this._updateServerStatistics ) {
+            this._updateServerModel();
+            this._updateServerStatistics = false;
+        }
+        
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Uses the entity stats to verify players and npcs.
+     */
+    _classifyEntities() {
+
         for ( let i = 0; i < this._entityStats.length; i++ ) {
             const stats = this._entityStats[ i ];
             let ui = this._unknownEntities.indexOf( stats.name );
-            let playerNameMaybe = !this._verifiedPets.includes( stats.name ) && !this._verifiedPlayers.includes( stats.name ) && stats.name.indexOf( ' ' ) === -1;
 
-            if ( playerNameMaybe ) {
-                if ( stats.attackPlayer === 0 && ( stats.attackNpc > 10 || stats.healPlayer > 10 ) ) {
+            // Check the stats before searching the verified lists, which can hold thousands of names.
+            if ( stats.attackPlayer === 0 && ( stats.attackNpc > 10 || stats.healPlayer > 10 ) ) {
+                let playerNameMaybe = stats.name.indexOf( ' ' ) === -1 && !this._verifiedPlayers.includes( stats.name ) && !this._verifiedPets.includes( stats.name );
+                if ( playerNameMaybe ) {
                     this._verifiedPlayers.push( stats.name );
                     let eNpcIdx = this._encounterStats.npcs.indexOf( stats.name );
                     if ( eNpcIdx > -1 ) {
@@ -1534,11 +1569,6 @@ class CombatParser {
                 }
 
             }
-        }
-
-        if ( this._updateServerStatistics ) {
-            this._updateServerModel();
-            this._updateServerStatistics = false;
         }
         
     }
