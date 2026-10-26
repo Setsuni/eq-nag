@@ -215,7 +215,7 @@ export class NewTriggerDialogComponent implements OnInit {
             actions.forEach( action => action.endEarlyPhrases.push( <Phrase>{
                 phraseId: nanoid(),
                 // You have been slain by a lightning warrior staticfist!
-                phrase: '^You (?:have been slain by [^!]*!|died\\.)$',
+                phrase: '^You (?:(?:have been|was|were) slain by [^!]*!|died\\.)$',
                 useRegEx: true,
                 ignoreCase: true,
             } ) );
