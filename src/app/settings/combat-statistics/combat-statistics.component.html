@@ -62,7 +62,7 @@
                             <th></th>
                         </tr>
                         <tr *ngFor="let player of verifiedPlayersGridData[db.server]">
-                            <td>{{player.name}}</td>
+                            <td [title]="player.name">{{player.name}}</td>
                             <td *ngIf="player.className">
                                 <span class="hover-hide">{{player.className}}</span>
                                 <span class="hover-show"><a (click)="selectPlayerClass(db.server, player.name)" class="color-blue">{{player.className}}</a></span>
@@ -126,14 +126,14 @@
                             <th></th>
                         </tr>
                         <tr *ngFor="let pet of verifiedPetsGridData[db.server]">
-                            <td *ngIf="pet.ownerName">
+                            <td *ngIf="pet.ownerName" [title]="pet.ownerName">
                                 <span class="hover-hide">{{pet.ownerName}}</span>
                                 <span class="hover-show"><a (click)="assignPetOwner(db.server, pet.name)" class="color-blue">{{pet.ownerName}}</a></span>
                             </td>
                             <td *ngIf="!pet.ownerName">
                                 <a (click)="assignPetOwner(db.server, pet.name)" class="color-blue dim">Assign Owner</a>
                             </td>
-                            <td>{{pet.name}}</td>
+                            <td [title]="pet.name">{{pet.name}}</td>
                             <td>
                                 <!-- <button mat-icon-button class="color-red dim" title="Remove pet and move to unknown/NPCs."><mat-icon>clear</mat-icon></button> -->
                                 <button mat-icon-button [matMenuTriggerFor]="menu"><mat-icon>more_vert</mat-icon></button>
@@ -173,7 +173,7 @@
                             <th></th>
                         </tr>
                         <tr *ngFor="let npc of verifiedNpcsGridData[db.server]">
-                            <td>
+                            <td [title]="npc">
                                 {{npc}}
                             </td>
                             <td>
