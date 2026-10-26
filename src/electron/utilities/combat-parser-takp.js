@@ -157,7 +157,7 @@ class TakpCombatParser extends CombatParser {
                 log: timeLog.log,
             };
             
-            this._updateEntityVerifications( [ entry.log ] );
+            this._updateEntityVerifications( [ entry.log ], undefined, true );
 
             const timestamp = new Date( entry.timestamp );
             
