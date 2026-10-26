@@ -1671,8 +1671,11 @@ function parseLogEntries( raw, simulating, padTime ) {
         // https://regex101.com/r/n9aOlR/1
         // ^(?<author>Name|Name2) .*{NAG:(?<quickShareId>.+?)}
 
+        // Ignore the share links this character sent.
+        let isOwnLine = log.startsWith( 'You ' );
+
         // Capture quickshares, when enabled.
-        let quickShare = !enableQuickShareImports ? null : quickShareRegx.exec( log );
+        let quickShare = !enableQuickShareImports || isOwnLine ? null : quickShareRegx.exec( log );
         if ( quickShare && quickShare.groups?.quickShareId ) {
             if ( quickShareAuthorsListType === QuickShareAuthorListTypes.Whitelist && quickShare.groups?.author ) {
                 // Whitelist will only share if the author is known and in the
@@ -1697,7 +1700,7 @@ function parseLogEntries( raw, simulating, padTime ) {
 
         }
 
-        let p2p = p2pRegex.exec( log );
+        let p2p = isOwnLine ? null : p2pRegex.exec( log );
         if ( p2p && p2p.groups?.chatRoomId && p2p.groups?.player != 'You' && p2p.groups?.player != 'you' && p2p.groups?.player != characterName ) {
             let link = createChatRoomLink( p2p.groups.chatRoomId );
             ipcRenderer.send( 'chat-room:link-received', {
@@ -1707,7 +1710,7 @@ function parseLogEntries( raw, simulating, padTime ) {
             } );
         }
 
-        let quickSharePackage = packageShareRegx.exec( log );
+        let quickSharePackage = isOwnLine ? null : packageShareRegx.exec( log );
         if ( quickSharePackage && quickSharePackage.groups?.packageId ) {
             ipcRenderer.send( 'quicksharePackage_captured', quickSharePackage.groups.packageId );
         }
