@@ -283,7 +283,7 @@ export class NewTriggerBuffDialogComponent implements OnInit {
             buffTimers.forEach( timer => timer.endEarlyPhrases.push( <Phrase>{
                 phraseId: nanoid(),
                 // You have been slain by a lightning warrior staticfist!
-                phrase: '^You (?:have been slain by [^!]*!|died\\.)$',
+                phrase: '^You (?:(?:have been|was|were) slain by [^!]*!|died\\.)$',
                 useRegEx: true,
                 ignoreCase: false,
             } ) );
@@ -540,7 +540,7 @@ export class NewTriggerBuffDialogComponent implements OnInit {
             buffTimers.forEach( timer => timer.endEarlyPhrases.push( <Phrase>{
                 phraseId: nanoid(),
                 // You have been slain by a lightning warrior staticfist!
-                phrase: '^You (?:have been slain by [^!]*!|died\\.)$',
+                phrase: '^You (?:(?:have been|was|were) slain by [^!]*!|died\\.)$',
                 useRegEx: true,
                 ignoreCase: false,
             } ) );
