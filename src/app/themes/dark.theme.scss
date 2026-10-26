@@ -247,6 +247,14 @@ $bg-extreme-dark: #191919;
                 .color-green {
                     color: $color-titlebar-green !important;
                 }
+
+                button.mat-icon-button {
+                    color: $color-titlebar-txt-main-hover !important;
+
+                    &:hover {
+                        color: #ffffff !important;
+                    }
+                }
             }
         }
     }
