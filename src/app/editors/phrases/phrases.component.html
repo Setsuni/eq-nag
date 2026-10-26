@@ -56,7 +56,7 @@
     </ng-container>
 
     <ng-container matColumnDef="regExOptions">
-        <th mat-header-cell *matHeaderCellDef style="text-align: center; width: 20px;"> Ops </th>
+        <th mat-header-cell *matHeaderCellDef style="text-align: center; width: 20px;"> Ignore case </th>
         <td mat-cell *matCellDef="let element; let i = index">
             <div style="text-align: center; padding: 20px;" title="Ignore Case">
                 <span class="regex-option" (click)="toggleIgnoreCase(element)" [ngClass]="{ 'selected': element.ignoreCase }">i</span>

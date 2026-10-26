@@ -2,6 +2,7 @@
 .pets-table,
 .npcs-table {
     width: unset;
+    table-layout: fixed;
 
     tr {
         th {
@@ -9,6 +10,10 @@
             opacity: 0.6;
         }
         td {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+
             .dim {
                 opacity: 0.4;
 
@@ -48,6 +53,30 @@
             }
         }
     }
+}
+
+.players-table {
+    width: 470px;
+
+    th:nth-child(1) { width: 200px; }
+    th:nth-child(2) { width: 130px; }
+    th:nth-child(3) { width: 80px; }
+    th:nth-child(4) { width: 60px; }
+}
+
+.pets-table {
+    width: 420px;
+
+    th:nth-child(1) { width: 170px; }
+    th:nth-child(2) { width: 190px; }
+    th:nth-child(3) { width: 60px; }
+}
+
+.npcs-table {
+    width: 360px;
+
+    th:nth-child(1) { width: 300px; }
+    th:nth-child(2) { width: 60px; }
 }
 
 :host ::ng-deep {
