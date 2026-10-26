@@ -212,8 +212,8 @@ const combatRgx = {
     // Healing [https://regex101.com/r/8Xtkrq/2]
     Healing: /^(?<actor>.+?) (has been\s)?healed (?<target>.+?) (?<healDuration>over time for|for) (?<healActual>[0-9]*) (\((?<healLiteral>[0-9]*)\) )?hit points by (?<healType>.+?)\.[\s]?(\((?<modifiers>.*)?\))?/i,
     
-    // ^${target} has been slain by [^!]*!$
-    SlainBy: /^(?<target>.+?) (has|have) been slain by (?<actor>.+?)!/i,
+    // ^${target} (was|were|has been) slain by [^!]*!$
+    SlainBy: /^(?<target>.+?) (was|were|ha(?:s|ve) been) slain by (?<actor>.+?)!/i,
 
     // ^You have slain ${target}!$
     YouHaveSlain: /^(?<actor>You) have slain (?<target>.+?)!/i,
@@ -274,6 +274,9 @@ const combatRgx = {
 // This won't capture anon people.
 // classTitleOrName will capture any one-word class name by default, however if the class title has spaces it must be added to the list.
 const playerWhoRgx = /^(OFFLINEMODE)?\[(?<level>\d+)\s(?<classTitleOrName>Savage Lord|Arch Arcanist|Arch Animist|Arch Mage|High Priest|Grave Lord|Feral Lord|Storm Warden|Arch Convoker|Arch Lich|Lord Protector|Forest Stalker|Dread Lord|Arch Magus|Stone Fist|Scourge Knight|Grand Archanist|Storm Caller|Grand Summoner|Holy Defender|.+?)\]?\s(:?\((?<classRealName>.*?)\)\])?\s?(?<player>.*?)\s\((?<raceName>.+?)\)\s/i;
+
+// Raid filter output, which has no race and ends with the group.  Group is a number or None.
+const playerWhoRaidRgx = /^(OFFLINEMODE)?\[(?<level>\d+)\s(?<classTitleOrName>.+?)\s\((?<classRealName>[^()]+?)\)\]\s(?<player>\S+)\s\(Group:\s(?<group>\d+|None)\)/i;
 
 
 
@@ -1409,7 +1412,7 @@ class CombatParser {
                 }
             }
 
-            let playerWho = executCombatRgx( this._playerWhoRgx, lines[ i ] );
+            let playerWho = executCombatRgx( playerWhoRaidRgx, lines[ i ] ) ?? executCombatRgx( this._playerWhoRgx, lines[ i ] );
             if ( playerWho !== null && playerWho.groups != null && playerWho.groups.player != null ) {
                 const playerName = playerWho.groups.player;
                 const playerClassName = playerWho.groups.classAbbrv ?
@@ -1433,7 +1436,7 @@ class CombatParser {
                 } else {
                     this._playerInfos[ playerName ].level = +playerWho.groups.level;
                     this._playerInfos[ playerName ].className = playerClassName;
-                    this._playerInfos[ playerName ].raceName = playerWho.groups.raceName;
+                    this._playerInfos[ playerName ].raceName = playerWho.groups.raceName ?? this._playerInfos[ playerName ].raceName;
                 }
 
                 // If the player is in the character list, then we need to update their profile if their new class doesn't match their profile.
@@ -1853,7 +1856,7 @@ class CombatParser {
                         for ( let i = 0; i < lines?.length; i++ ) {
                             lineNo++;
                             // https://regex101.com/r/a4YxfW/1
-                            let e = /^\[(?<timestamp>.*?)\]\s*You have been slain by (?<slayer>[^!]*)!$/gi.exec( lines[ i ] );
+                            let e = /^\[(?<timestamp>.*?)\]\s*You (?:was|were|ha(?:s|ve) been) slain by (?<slayer>[^!]*)!$/gi.exec( lines[ i ] );
                             if ( e ) {
                                 let log = new LogFileLocation();
                                 

@@ -101,8 +101,8 @@ const combatRgx = {
     // https://regex101.com/r/UcJYxr/1
     CriticalHealing: /^(?<actor>.*?) performs an exceptional heal! \((?<healActual>[0-9]*)\)/gi,
     
-    // ^${target} has been slain by [^!]*!$
-    SlainBy: /^(?<target>.+?) (has|have) been slain by (?<actor>[^!]*)!$/gi,
+    // ^${target} (was|were|has been) slain by [^!]*!$
+    SlainBy: /^(?<target>.+?) (was|were|ha(?:s|ve) been) slain by (?<actor>[^!]*)!$/gi,
 
     // ^You have slain ${target}!$
     YouHaveSlain: /^You have slain (?<target>.*)!$/gi,
