@@ -11,19 +11,19 @@ div.tab-content {
     }
 }
 
-div.tab-content.show-scrollbar::-webkit-scrollbar {
+cdk-virtual-scroll-viewport.show-scrollbar::-webkit-scrollbar {
     width: 8px;
 }
 
-div.tab-content.show-scrollbar::-webkit-scrollbar-track {
+cdk-virtual-scroll-viewport.show-scrollbar::-webkit-scrollbar-track {
     background: #3a3a3a;
 }
 
-div.tab-content.show-scrollbar::-webkit-scrollbar-thumb {
+cdk-virtual-scroll-viewport.show-scrollbar::-webkit-scrollbar-thumb {
     background-color: #5a5a5a;
 }
 
-div.tab-content.show-scrollbar::-webkit-scrollbar-thumb:hover {
+cdk-virtual-scroll-viewport.show-scrollbar::-webkit-scrollbar-thumb:hover {
     background-color: #7a7a7a;
 }
 

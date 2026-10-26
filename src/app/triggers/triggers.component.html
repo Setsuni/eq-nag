@@ -74,7 +74,7 @@
         </button> -->
     </mat-menu>
 </mat-toolbar>
-<div class="tab-content show-scrollbar">
+<div class="tab-content">
 
     <mat-progress-bar mode="indeterminate" *ngIf="processing"></mat-progress-bar>
 
@@ -96,7 +96,7 @@
                 <div class="instructions" *ngIf="dataSource.data?.length === 0">
                     <span>You have no trigger folders. Click on the <mat-icon [inline]="true">create_new_folder</mat-icon> to start adding folders.</span>
                 </div>
-                <cdk-virtual-scroll-viewport tvsItemSize itemSize="27" class="wrapper mat-elevation-z2" style="height: 100%">
+                <cdk-virtual-scroll-viewport tvsItemSize itemSize="27" class="wrapper mat-elevation-z2 show-scrollbar" style="height: 100%">
                     <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
 
                         <!-- This is the tree node template for leaf nodes -->
@@ -129,7 +129,7 @@
 
         <div class="ft-item" style="margin: 3px; width: 66%;">
             <div class="ft-content">
-                <cdk-virtual-scroll-viewport tvsItemSize itemSize="27" class="wrapper mat-elevation-z2" style="height: 100%" #triggerScroller>
+                <cdk-virtual-scroll-viewport tvsItemSize itemSize="27" class="wrapper mat-elevation-z2 show-scrollbar" style="height: 100%" #triggerScroller>
                     <table mat-table #triggersTable="matTable" style="width: 100%; min-width: 600px;" 
                         [dataSource]="dataSourceTest"
                         class="capture-phrases">
