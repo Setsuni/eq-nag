@@ -30,23 +30,49 @@ class Store {
     }
     
 
+    /**
+     * Reads the data file, returning the defaults when it is missing and moving it aside when it is corrupt.
+     *
+     * @returns {any} Returns the parsed data, or the defaults if the file could not be read.
+     */
     parseDataFile() {
         // We'll try/catch it in case the file doesn't exist yet, which will be the case on the first application run.
         // `fs.readFileSync` will return a JSON string which we then parse into a Javascript object
         try {
             return JSON.parse( fs.readFileSync( this.#path ) );
         } catch ( error ) {
-            // if there was some kind of error, return the passed in defaults instead.
+            // A missing file is a normal first run.
+            if ( error?.code === 'ENOENT' ) {
+                return this.#defaults;
+            }
+
+            // The file exists but could not be read or parsed, so move it aside before the next save overwrites it.
+            let corruptPath = `${this.#path}.corrupt-${FsUtilities.getFileTimestamp()}`;
+
+            try {
+                fs.renameSync( this.#path, corruptPath );
+                console.error( 'Error parsing ' + this.configName + ', the file was moved to ' + corruptPath, error );
+            } catch ( renameError ) {
+                console.error( 'Error parsing ' + this.configName + ', the file could not be moved aside', error, renameError );
+            }
+
             return this.#defaults;
         }
     }
 
-    storeDataFile( data ) {
+    /**
+     * Clones the given data and strips the virtual properties so it is ready to be written.
+     *
+     * @param {any} data The data to store.
+     * @returns {any} Returns the data to write to the file.
+     */
+    #prepareStoreData( data ) {
 
         let storeData = JSON.parse( JSON.stringify( data ) );
 
-        if ( !storeData )
+        if ( !storeData ) {
             throw 'Attmept to store null data file!';
+        }
 
         if ( this.#virtual.length > 0 ) {
             for ( let i = 0; i < this.#virtual.length; i++ ) {
@@ -56,36 +82,66 @@ class Store {
                 }
             }
         }
-        
+
+        return storeData;
+    }
+
+    /**
+     * Returns a unique temporary file path next to the data file.
+     *
+     * @returns {string} Returns the temporary file path.
+     */
+    #getTempPath() {
+        return `${this.#path}.${process.pid}-${Date.now()}-${Math.random().toString( 36 ).slice( 2 )}.tmp`;
+    }
+
+    /**
+     * Writes the data file by writing a temporary file and renaming it over the data file.
+     *
+     * @param {any} data The data to store.
+     */
+    storeDataFile( data ) {
+
+        let storeData = this.#prepareStoreData( data );
+        let tempPath = this.#getTempPath();
+
         try {
-            fs.writeFileSync( this.#path, JSON.stringify( storeData ) );
+            fs.writeFileSync( tempPath, JSON.stringify( storeData, null, 2 ) );
+            fs.renameSync( tempPath, this.#path );
         } catch ( error ) {
             console.error( 'Error storing ' + this.configName, error );
+
+            try {
+                fs.rmSync( tempPath, { force: true } );
+            } catch ( removeError ) {
+                // Nothing more can be done about the temporary file.
+            }
         }
     }
 
-    storeDataFileAsync( data ) {
+    /**
+     * Writes the data file asynchronously by writing a temporary file and renaming it over the data file.
+     *
+     * @param {any} data The data to store.
+     * @returns {Promise<void>} Returns a promise that resolves when the write is finished, even if it failed.
+     */
+    async storeDataFileAsync( data ) {
 
-        let storeData = JSON.parse( JSON.stringify( data ) );
+        let storeData = this.#prepareStoreData( data );
+        let tempPath = this.#getTempPath();
 
-        if ( !storeData )
-            throw 'Attmept to store null data file!';
-        
-        if ( this.#virtual.length > 0 ) {
-            for ( let i = 0; i < this.#virtual.length; i++ ) {
-                let virtual = this.#virtual[i];
-                if ( storeData[virtual] ) {
-                    delete storeData[virtual];
-                }
-            }
-        }
-        
         try {
-            return fsp.writeFile( this.#path, JSON.stringify( storeData ) );
+            await fsp.writeFile( tempPath, JSON.stringify( storeData, null, 2 ) );
+            await fsp.rename( tempPath, this.#path );
         } catch ( error ) {
             console.error( 'Error storing ' + this.configName, error );
+
+            try {
+                await fsp.rm( tempPath, { force: true } );
+            } catch ( removeError ) {
+                // Nothing more can be done about the temporary file.
+            }
         }
-        
     }
 
     /**
