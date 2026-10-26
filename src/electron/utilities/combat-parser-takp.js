@@ -76,8 +76,8 @@ const combatRgx = {
     // TAKP: Only the person being healed has a logged message. Useless for metrics, removed for TAKP.
     // Healing: /^.*/gi,
     
-    // ^${target} has been slain by [^!]*!$
-    SlainBy: /^(?<target>.+?) (has|have) been slain by (?<actor>[^!]*)!$/gi,
+    // ^${target} (was|were|has been) slain by [^!]*!$
+    SlainBy: /^(?<target>.+?) (was|were|ha(?:s|ve) been) slain by (?<actor>[^!]*)!$/gi,
 
     // ^You have slain ${target}!$
     YouHaveSlain: /^You have slain (?<target>.*)!$/gi,
