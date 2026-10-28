@@ -8,6 +8,7 @@ import * as _ from 'lodash-es';
 import { IpcService } from 'src/app/ipc.service';
 import { combineLatest, forkJoin, Observable, timer } from 'rxjs';
 import { nagId } from 'src/app/core/nag-id.util';
+import { ArrayUtility } from 'src/app/utilities';
 import { NotificationDialogModel, NotificationTypes } from '../notification-dialog/notification-dialog.model';
 import { NotificationDialogComponent } from '../notification-dialog/notification-dialog.component';
 import { ColoredString } from '../dialog.model';
@@ -145,20 +146,12 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
             } );
             
             this.processExistingTriggers( result.triggers, result.folders ); // This one here
-            this.mapFolderIds( result.folders, this.allFolders );
-            this.removeEmptyFolders( this.allFolders );
+            this.mapFolderIds( result.folders, this.allFolders, ArrayUtility.groupBy( this.allTriggers, t => t.folderId ) );
+            this.removeEmptyFolders( this.allFolders, new Set<string>( this.allTriggers.map( t => t.folderId ) ) );
             this.processTriggerActions( this.allTriggers, result.triggers, result.folders );
 
             // Package trigger folder ids are final from here on.
-            let packageTriggersByFolder = new Map<string, PackageTrigger[]>();
-            this.allTriggers.forEach( t => {
-                let bucket = packageTriggersByFolder.get( t.folderId );
-                if ( bucket ) {
-                    bucket.push( t );
-                } else {
-                    packageTriggersByFolder.set( t.folderId, [ t ] );
-                }
-            } );
+            let packageTriggersByFolder = ArrayUtility.groupBy( this.allTriggers, t => t.folderId );
             
             let realNamesByFolder = new Map<string, Set<string>>();
             result.triggers.forEach( rt => {
@@ -193,14 +186,9 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
      * Removes all empty folders from the given folder hierarchy.
      * 
      * @param folders The list of folders to parse.
-     * @param foldersWithTriggers The ids of all folders that contain a package trigger, built on the first call.
+     * @param foldersWithTriggers The ids of all folders that contain a package trigger, built by the caller.
      */
-    private removeEmptyFolders( folders: PackageFolder[], foldersWithTriggers: Set<string> = null ) {
-        
-        if ( foldersWithTriggers == null ) {
-            foldersWithTriggers = new Set<string>();
-            this.allTriggers.forEach( t => foldersWithTriggers.add( t.folderId ) );
-        }
+    private removeEmptyFolders( folders: PackageFolder[], foldersWithTriggers: Set<string> ) {
 
         let ri: number[] = [];
 
@@ -310,21 +298,9 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
      * 
      * @param realFolders The full hierarchy of real folders.
      * @param packageFolders The full hierarchy of package folders.
-     * @param triggersByFolder The package triggers by folder id, built on the first call.
+     * @param triggersByFolder The package triggers by folder id, built by the caller and updated as folders move.
      */
-    private mapFolderIds( realFolders: TriggerFolder[], packageFolders: PackageFolder[], triggersByFolder: Map<string, PackageTrigger[]> = null ) {
-
-        if ( triggersByFolder == null ) {
-            triggersByFolder = new Map<string, PackageTrigger[]>();
-            this.allTriggers.forEach( t => {
-                let bucket = triggersByFolder.get( t.folderId );
-                if ( bucket ) {
-                    bucket.push( t );
-                } else {
-                    triggersByFolder.set( t.folderId, [ t ] );
-                }
-            } );
-        }
+    private mapFolderIds( realFolders: TriggerFolder[], packageFolders: PackageFolder[], triggersByFolder: Map<string, PackageTrigger[]> ) {
 
         packageFolders.forEach( pf => {
 
@@ -390,7 +366,7 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
             let realTrigger = realById.get( qst.triggerId );
 
             // If this trigger exists and the folder id is not null.
-            if ( realTrigger && realTrigger.folderId != null ) {
+            if ( realTrigger && realTrigger.folderId !== null && realTrigger.folderId !== undefined ) {
 
                 // Get the direct parent of the folder that contains the real trigger, in this case it's the same folder thats in the quick share.
                 let ancestryFolders = ancestryCache.get( realTrigger.folderId );

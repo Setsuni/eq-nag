@@ -11,6 +11,7 @@ import { MatChipInputEvent } from '@angular/material/chips';
 import { getPackageImportProperties } from 'src/app/core.decorators';
 import { ColoredString } from 'src/app/dialogs/dialog.model';
 import { nagId } from 'src/app/core/nag-id.util';
+import { ArrayUtility } from 'src/app/utilities';
 
 @Component( {
     selector: 'app-new-trigger-package',
@@ -22,9 +23,18 @@ export class NewTriggerPackageComponent implements OnInit {
     public package: TriggerPackageMetaModel = new TriggerPackageMetaModel();
     public notes: string;
     private triggers: TriggerModel[];
-    private triggerFolders: TriggerFolder[];
+    private _triggerFolders: TriggerFolder[];
+    /** The trigger folder tree of the package. */
+    private get triggerFolders(): TriggerFolder[] {
+        return this._triggerFolders;
+    }
+    /** Sets the trigger folder tree and clears the cached folder breadcrumbs. */
+    private set triggerFolders( value: TriggerFolder[] ) {
+        this._triggerFolders = value;
+        this._folderFamilies = null;
+    }
     private ancestryMap: Record<string, string> = {};
-    /** The breadcrumbs of each folder in triggerFolders by folder id, built on first use. */
+    /** The breadcrumbs of each folder in triggerFolders by folder id, built on first use. Cleared whenever triggerFolders is set; the tree is never edited in place. */
     private _folderFamilies: Map<string, string> = null;
     private _pkgId: string;
     public triggerUpdates: Record<string, string[]> = {};
@@ -57,7 +67,6 @@ export class NewTriggerPackageComponent implements OnInit {
             this.package.tags = this.package.tags?.length > 0 ? this.package.tags : [];
             this.triggers = triggers;
             this.triggerFolders = folders;
-            this._folderFamilies = null;
             this.pullTriggerUpdates();
         } );
     }
@@ -84,7 +93,6 @@ export class NewTriggerPackageComponent implements OnInit {
             this.package.tags = this.package.tags?.length > 0 ? this.package.tags : [];
             this.triggers = triggers;
             this.triggerFolders = folders;
-            this._folderFamilies = null;
             this.pullTriggerUpdates();
         } );
 
@@ -161,15 +169,7 @@ export class NewTriggerPackageComponent implements OnInit {
         } );
         
         let deletedIds = new Set<string>( this.deletedTriggerIds );
-        let pkgTriggersById = new Map<string, PackageTrigger[]>();
-        this.package.model.triggers.forEach( pkgTrigger => {
-            let bucket = pkgTriggersById.get( pkgTrigger.triggerId );
-            if ( bucket ) {
-                bucket.push( pkgTrigger );
-            } else {
-                pkgTriggersById.set( pkgTrigger.triggerId, [ pkgTrigger ] );
-            }
-        } );
+        let pkgTriggersById = ArrayUtility.groupBy( this.package.model.triggers, pkgTrigger => pkgTrigger.triggerId );
 
         this.triggers.forEach( trigger => {
             
@@ -536,7 +536,7 @@ export class NewTriggerPackageComponent implements OnInit {
     addTrigger( trigger: TriggerModel, pkgTriggersById: Map<string, PackageTrigger> = null ) {
         let pTrg: PackageTrigger = pkgTriggersById ? pkgTriggersById.get( trigger.triggerId ) : this.package.model.triggers.find( f => f.triggerId === trigger.triggerId );
 
-        if ( pTrg == null ) {
+        if ( pTrg === null || pTrg === undefined ) {
             pTrg = new PackageTrigger();
             pTrg.triggerId = trigger.triggerId;
             this.package.model.triggers.push( pTrg );
@@ -673,7 +673,7 @@ export class NewTriggerPackageComponent implements OnInit {
      * @param trigger The trigger model.
      */
     public getTriggerFamily( trigger: TriggerModel | PackageTrigger ): string {
-        if ( this._folderFamilies == null ) {
+        if ( this._folderFamilies === null || this._folderFamilies === undefined ) {
             this._folderFamilies = new Map<string, string>();
             this.indexFolderFamilies( this.triggerFolders, '', this._folderFamilies );
         }
