@@ -14,6 +14,7 @@ import { SettingsComponent } from './settings/settings-component/settings.compon
 import { QuickShareService } from './core/quick-share.service';
 import { TriggersComponent } from './triggers/triggers.component';
 import { JoinChatRoomDialogResult } from './dialogs/join-chat-room-dialog/join-chat-room-dialog.component';
+import { buildFileIdMap, remapAudioFileIds } from './utilities/package-file-ids';
 
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
@@ -410,39 +411,47 @@ export class MainComponent implements OnInit {
                             .getPackage( packagesWithUpdates )
                             .subscribe( packages => {
                                 let installedCount = 0;
+                                let failedCount = 0;
+
+                                const installNext = () => {
+                                    installedCount += 1;
+                                    if ( installedCount < packages?.length ) {
+                                        installPackage( packages[ installedCount ] );
+                                    } else {
+                                        sb?.dismiss();
+                                        if ( failedCount === 0 ) {
+                                            this.snackBar.open( 'All updates installed successfully!', 'dismiss', { duration: 5000 } );
+                                        }
+                                        this.ipcService.requestTick();
+                                        window.setTimeout( () => this.checkForTriggerUpdates(), updateIntervalDuration );
+                                    }
+                                };
 
                                 const installPackage = ( pkg: TriggerPackageMetaModel ) => {
                                     this.libraryService
                                         .getPackageFiles( pkg.triggerPackageId )
                                         .subscribe( packageFiles => {
                                             
-                                            this.ipcService.getAudioFiles().subscribe( existingAudioFiles => {
-                                                // Adding a timer makes the following easier and I'm being lazy today.
-                                                let importTasks: Observable<any>[] = [ timer( 1 ) ];
-                                    
-                                                // We need to install all new files.
-                                                packageFiles?.forEach( file => {
-                                                    if ( existingAudioFiles.findIndex( f => f.fileId === file.fileId ) === -1 ) {
-                                                        // If the package file doesn't exist, install it.
-                                                        importTasks.push( this.ipcService.importPackageFile( file ) );
-                                                    }
-                                                } );
-        
-                                                forkJoin( importTasks ).subscribe( results => {
-                                                    // Missing package overlays are caught in the main component's ngInit event.
-                                                    this.ipcService.installTriggerPackage( pkg ).subscribe( installComplete => {
-                                                        installedCount += 1;
-                                                        if ( installedCount < packages?.length ) {
-                                                            installPackage( packages[ installedCount ] );
-                                                        } else {
-                                                            sb?.dismiss();
-                                                            this.snackBar.open( 'All updates installed successfully!', 'dismiss', { duration: 5000 } );
-                                                            this.ipcService.requestTick();
-                                                            window.setTimeout( () => this.checkForTriggerUpdates(), updateIntervalDuration );
-                                                        }
-                                                    } );
-                                                } );
-                                            
+                                            // Adding a timer makes the following easier and I'm being lazy today.
+                                            let importTasks: Observable<any>[] = [ timer( 1 ) ];
+
+                                            // Files already stored locally with identical contents are reused; a different local file is never replaced.
+                                            packageFiles?.forEach( file => {
+                                                importTasks.push( this.ipcService.importPackageFile( file ) );
+                                            } );
+
+                                            forkJoin( importTasks ).subscribe( results => {
+                                                // Files that collided with a different local file were stored under new ids.
+                                                remapAudioFileIds( pkg.model?.triggers, buildFileIdMap( packageFiles, results.slice( 1 ) ) );
+
+                                                // Missing package overlays are caught in the main component's ngInit event.
+                                                this.ipcService.installTriggerPackage( pkg ).subscribe( installComplete => installNext() );
+                                            }, error => {
+                                                // Move on to the next package, so the checks keep going.
+                                                console.error( 'Could not save a sound from a package update.', error );
+                                                failedCount += 1;
+                                                this.snackBar.open( 'A sound from this package update could not be saved, so it was not installed.', 'dismiss', { duration: 10000 } );
+                                                installNext();
                                             } );
                                             
                                         } );

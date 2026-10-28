@@ -1687,8 +1687,15 @@ class TriggerDatabaseStore extends Store {
             //     }
             // } );
 
+            // Sounds the updated triggers used before the update are checked afterwards.
+            let incomingTriggerIds = new Set( ( pkg.model?.triggers ?? [] ).map( f => f.triggerId ) );
+            let previousFileIds = this.#getAudioFileIds( this.#data.triggers.filter( f => incomingTriggerIds.has( f.triggerId ) ) );
+
             // Finally, install the triggers.
             pkg.model?.triggers?.forEach( pkgTrigger => this.installPackageTrigger( pkg.triggerPackageId, pkgTrigger, folderMap ) );
+
+            // A sound that an update replaced, and nothing uses anymore, is only removed if a package import created it.
+            previousFileIds.filter( fileId => !this.#isAudioFileUsed( fileId ) ).forEach( fileId => _fileStore.deletePackageFile( fileId, true ) );
 
             // Save changes to the data.
             this.processPredefinedTriggers();
@@ -1792,6 +1799,60 @@ class TriggerDatabaseStore extends Store {
 
 
     /**
+     * Returns the ids of all audio files the given triggers use.
+     *
+     * @param {Trigger[]} triggers The triggers to read.
+     * @returns {string[]}
+     */
+    #getAudioFileIds( triggers ) {
+        let fileIds = [];
+
+        triggers?.forEach( trigger => {
+            trigger.actions?.forEach( action => {
+                [ action.audioFileId, action.endedPlayAudioFileId, action.endingPlayAudioFileId ].forEach( fileId => {
+                    if ( fileId && fileIds.indexOf( fileId ) === -1 ) {
+                        fileIds.push( fileId );
+                    }
+                } );
+            } );
+        } );
+
+        return fileIds;
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns true if any trigger uses the given audio file.
+     *
+     * @param {string} fileId The id of the audio file.
+     * @returns {boolean}
+     */
+    #isAudioFileUsed( fileId ) {
+        return _.some( this.#data.triggers, trigger => {
+            return _.some( trigger.actions, action => {
+                return action.audioFileId === fileId || action.endedPlayAudioFileId === fileId || action.endingPlayAudioFileId === fileId;
+            } );
+        } );
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
      * Removes the specified trigger package and uninstalls all related 
      * triggers.
      * 
@@ -1805,47 +1866,14 @@ class TriggerDatabaseStore extends Store {
 
         let packageTriggers = _.remove( this.#data.triggers, f => f.packageId === packageId );
         let packageFolders = packageTriggers.map( f => f.folderId );
-        let packageFiles = [];
-
-        packageTriggers.forEach( trigger => {
-            trigger.actions.forEach( action => {
-                if ( action.audioFileId && packageFiles.indexOf( action.audioFileId ) === -1 ) {
-                    packageFiles.push( action.audioFileId );
-                }
-                if ( action.endedPlayAudioFileId && packageFiles.indexOf( action.endedPlayAudioFileId ) === -1 ) {
-                    packageFiles.push( action.endedPlayAudioFileId );
-                }
-                if ( action.endingPlayAudioFileId && packageFiles.indexOf( action.endingPlayAudioFileId ) === -1 ) {
-                    packageFiles.push( action.endingPlayAudioFileId );
-                }
-            } );
-        } );
+        let packageFiles = this.#getAudioFileIds( packageTriggers );
 
         // If the audio files from this package are not referenced by any other 
         // triggers, then we need to remove these files from the system.  This 
         // algorithm must be executed after the removal of the package triggers.
-        let filesForRemoval = _.remove( packageFiles, fileId => {
-
-            let usedAudio = _.some( this.#data.triggers, trigger => {
-                return _.some( trigger.actions, action => {
-                    return action.audioFileId === fileId;
-                } );
-            } );
-            let usedEndedAudio = _.some( this.#data.triggers, trigger => {
-                return _.some( trigger.actions, action => {
-                    return action.endedPlayAudioFileId === fileId;
-                } );
-            } );
-            let usedEndingAudio = _.some( this.#data.triggers, trigger => {
-                return _.some( trigger.actions, action => {
-                    return action.endingPlayAudioFileId === fileId;
-                } );
-            } );
-
-            return !usedAudio && !usedEndedAudio && !usedEndingAudio;
-        } );
+        let filesForRemoval = _.remove( packageFiles, fileId => !this.#isAudioFileUsed( fileId ) );
         
-        filesForRemoval?.forEach( fileId => _fileStore.deleteFile( fileId ) );
+        filesForRemoval?.forEach( fileId => _fileStore.deletePackageFile( fileId ) );
 
         // Remove any empty folders that were imported with the package.
         let foldersForRemoval = _.remove( packageFolders, folderId => {
