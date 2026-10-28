@@ -67,12 +67,11 @@ export class TriggerDialogComponent implements OnInit {
         if ( this.model.importType == ImportTypes.None || this.model.allakhazamUrl == null ) {
             return false;
         }
-        if ( this.model.externalSource === ExternalDataSources.Allakhazam ) {
-            // Allakhazam triggers move to EQ Spell Resources, which has no raid
-            // ability generator.
-            return this.model.importType !== ImportTypes.Ability;
+        if ( this.model.importType === ImportTypes.Ability ) {
+            // EQ Spell Resources has no raid ability generator.
+            return false;
         }
-        return this.model.externalSource === ExternalDataSources.EqSpellResources;
+        return this.model.externalSource === ExternalDataSources.Allakhazam || this.model.externalSource === ExternalDataSources.EqSpellResources;
     }
 
     /** Re-imports always come from EQ Spell Resources; Allakhazam is no longer used. */
@@ -230,8 +229,6 @@ export class TriggerDialogComponent implements OnInit {
 
         if ( this.model.importType === ImportTypes.DotTimer ) {
             this.reimportDotTimerFromAllakhazam();
-        } else if ( this.model.importType === ImportTypes.Ability ) {
-            this.reimportAbilityFromAllakhazam();
         } else if ( this.model.importType === ImportTypes.Buff || this.model.importType === ImportTypes.OthersBuff ) {
             this.reimportBuffFromAllakhazam();
         }
@@ -239,10 +236,6 @@ export class TriggerDialogComponent implements OnInit {
 
     private reimportDotTimerFromAllakhazam(): void {
         this.dialogService.showReimportDotTimerDialog( this.model, this.model.externalSource );
-    }
-
-    private reimportAbilityFromAllakhazam(): void {
-        this.dialogService.showReimportRaidAbilityDialog( this.model, this.model.externalSource );
     }
 
     private reimportBuffFromAllakhazam(): void {

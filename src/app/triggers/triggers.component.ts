@@ -241,24 +241,6 @@ export class TriggersComponent implements OnInit {
 
     
     /**
-     * Displays the new dot timer wizard dialog.
-     */
-    public showNewDotTimerDialog(): void {
-        this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
-            this.dialogService.showNewDotTimerDialog( this.selectedFolderId, ExternalDataSources.Allakhazam );
-        } );
-    }
-
-
-
-
-
-
-
-
-
-
-    /**
      * Displays the eq dot timer import for eq spell resources.
      */
     public showNewDotTimerEqsrDialog(): void {
@@ -283,42 +265,6 @@ export class TriggersComponent implements OnInit {
     public showNewBuffTimerEqsrDialog(): void {
         this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
             this.dialogService.showNewBuffTimerDialog( this.selectedFolderId, ExternalDataSources.EqSpellResources );
-        } );
-    }
-
-
-
-
-
-
-
-
-
-    
-    /**
-     * Displays the new dot timer wizard dialog.
-     */
-    public showNewRaidAbilityDialog(): void {
-        this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
-            this.dialogService.showNewRaidAbilityDialog( this.selectedFolderId );
-        } );
-    }
-
-
-
-
-
-
-
-
-
-    
-    /**
-     * Displays the new dot timer wizard dialog.
-     */
-    public showNewBuffTimerDialog(): void {
-        this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
-            this.dialogService.showNewBuffTimerDialog( this.selectedFolderId, ExternalDataSources.Allakhazam );
         } );
     }
 

@@ -21,7 +21,6 @@ import { EqsrUrlDialogComponent } from './eqsr-url-dialog/eqsr-url-dialog.compon
 import { NotificationDialogComponent } from './notification-dialog/notification-dialog.component';
 import { EditorsModule } from '../editors/editors.module';
 import { AutoCompleteDialogComponent } from './autocomplete-dialog/autocomplete-dialog.component';
-import { NewTriggerRaidAbilityComponent } from './new-trigger-raid-ability/new-trigger-raid-ability.component';
 import { NewTriggerBuffDialogComponent } from './new-trigger-buff-dialog/new-trigger-buff-dialog.component';
 import { NamedGroupConditionsDialogComponent } from './named-group-conditions-dialog/named-group-conditions-dialog.component';
 import { MoveOverlaysDialogComponent } from './move-overlays-dialog/move-overlays-dialog.component';
@@ -66,7 +65,6 @@ import { TriggerHotkeyDialogComponent } from './trigger-hotkey-dialog/trigger-ho
         EqsrUrlDialogComponent,
         NotificationDialogComponent,
         AutoCompleteDialogComponent,
-        NewTriggerRaidAbilityComponent,
         NewTriggerBuffDialogComponent,
         NamedGroupConditionsDialogComponent,
         MoveOverlaysDialogComponent,
@@ -94,7 +92,6 @@ import { TriggerHotkeyDialogComponent } from './trigger-hotkey-dialog/trigger-ho
         EqsrUrlDialogComponent,
         NotificationDialogComponent,
         AutoCompleteDialogComponent,
-        NewTriggerRaidAbilityComponent,
         NewTriggerBuffDialogComponent,
         NamedGroupConditionsDialogComponent,
         MoveOverlaysDialogComponent,

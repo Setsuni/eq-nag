@@ -970,10 +970,6 @@ export class DuplicateTriggerAction {
 
 export class OutsideResource {
 
-    public get allakhazam(): boolean {
-        return this.url.match( /^(http|https):\/\/.*\.allakhazam\.com.*/gi )?.length > 0;
-    }
-
     public get eqSpellResources(): boolean {
         return this.url.match( /^(http|https):\/\/.*\.eqresource\.com.*/gi )?.length > 0;
     }
@@ -1008,37 +1004,6 @@ export class ScrapedSpell {
     public itemsWithEffect: OutsideResource[] = [];
     public itemClickOnly: boolean = false;
     
-}
-
-export class ScrapedAbility {
-    
-    public name: string;
-    public duration: number;
-    public castOnOther: string;
-    public castOnYou: string;
-    public gemIndex: number;
-    public gemSrc: string;
-    public cureType: string;
-    public counters: number;
-    public resistType: string;
-    public resistMod: number;
-    public stun: boolean;
-    public manaDrain: boolean;
-    public silence: boolean;
-    public deathTouch: boolean;
-    public deathTouchDuration: number;
-    public npcsWithAbility: ScrapedNpc[] = [];
-    public castTime: number;
-
-}
-
-export class ScrapedNpc {
-    
-    public name: string;
-    public url: string;
-    public zones: string[];
-    public recast: number;
-
 }
 
 export class FocusEffectSettings {
