@@ -37,6 +37,7 @@ description, which Nag shows in the Update Notes window.
 - **The installer is no longer code-signed.** Windows SmartScreen may show an "unknown publisher" warning the first time you install. Click "More info", then "Run anyway". Updates install as usual.
 - Removed the Patreon banner from the Update Notes window.
 - **Allakhazam trigger generators removed.** Allakhazam doesn't allow automated access to its pages, so the Allakhazam DoT, Buff and Raid Ability generators are gone. The EQ Spell Resources generators are unchanged, and triggers made earlier keep working. DoT and Buff timers made from Allakhazam can be re-imported from EQ Spell Resources: open the trigger, click "Re-import from EQ Spell Resources" and paste the spell's EQ Spell Resources address.
+- **Quick shares don't replace your triggers by surprise.** When you receive a quick share from an author who isn't verified, a trigger that would replace one of yours (same trigger id) now starts unticked, and the row says which of your triggers it would replace. Tick it if you do want the replacement. Turning “Overwrite existing triggers” off or on keeps the boxes you ticked or unticked yourself, and rows that only share a name with one of yours now say a copy will be added.
 
 <!-- Maintainer notes, not part of the release description:
 - Store migrations now use app.whenReady() instead of app.on('ready'); the ESM main
