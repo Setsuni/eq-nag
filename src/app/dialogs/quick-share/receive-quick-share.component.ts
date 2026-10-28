@@ -13,7 +13,7 @@ import { NotificationDialogModel, NotificationTypes } from '../notification-dial
 import { NotificationDialogComponent } from '../notification-dialog/notification-dialog.component';
 import { ColoredString } from '../dialog.model';
 import { MatSnackBar } from '@angular/material/snack-bar';
-import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getSkippedSounds, remapAudioFileIds, toSkippedSound } from '../../utilities/package-file-ids';
+import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getErrorReason, getSkippedSounds, remapAudioFileIds, toSkippedSound } from '../../utilities/package-file-ids';
 
 interface QuickShareTreeNode {
     expandable: boolean;
@@ -648,14 +648,32 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
                 }
 
                 // Install the model.
-                installTasks.push( this.ipcService.installQuickShare( quickShare ) );
+                // One share that can't be installed doesn't hide what happened to the others.
+                installTasks.push( this.ipcService.installQuickShare( quickShare ).pipe( catchError( error => of( { failedShare: quickShare, error: error } ) ) ) );
             } );
 
             forkJoin( installTasks ).subscribe( results => {
+                let failures: { failedShare: QuickShareMetaModel, error: any }[] = results.slice( 1 ).filter( f => f?.failedShare );
+                if ( failures.length > 0 ) {
+                    console.error( 'Could not install quick shares.', failures );
+                    let installed = results.length - 1 - failures.length;
+                    let reasons = failures.slice( 0, 3 ).map( f => `"${f.failedShare.quickShareId}": ${getErrorReason( f.error )}` ).join( '  ' );
+                    let more = failures.length > 3 ? `  and ${failures.length - 3} more.` : '';
+                    this.snackBar.open( installed > 0 ? `${installed} of ${results.length - 1} quick shares were installed.  Not installed: ${reasons}${more}` : `The quick share could not be installed: ${reasons}${more}`, 'dismiss', { duration: 15000 } );
+                    this.ipcService.requestTick();
+
+                    // With nothing installed the dialog stays open, so the user can try again.
+                    installed > 0 && this.dialogRef.close( true );
+                    return;
+                }
+
                 this.snackBar.open( skippedSounds.length > 0 ? `Quick Share(s) installed.  ${describeSkippedSounds( skippedSounds )}` : 'Quick Share(s) installed!', 'dismiss', { duration: skippedSounds.length > 0 ? 15000 : 2500 } );
                 this.ipcService.requestTick();
                 
                 this.dialogRef.close( true );
+            }, error => {
+                console.error( 'Could not install a quick share.', error );
+                this.snackBar.open( `The quick shares could not be installed, and some may already have been: ${getErrorReason( error )}`, 'dismiss', { duration: 10000 } );
             } );
 
         }, error => {

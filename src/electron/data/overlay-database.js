@@ -1002,7 +1002,13 @@ class OverlayDatabaseStore extends Store {
 
                 if ( i < missingOverlays.length ) {
                     // If we still have more overlays to process, then send that to the sender.
-                    ipcMain.once( `trigger:missing-overlay:${missingOverlays[ i ].overlayId}`, ( event, userOverlayId ) => {
+                    ipcMain.once( `trigger:missing-overlay:${missingOverlays[ i ].overlayId}`, ( answerEvent, userOverlayId ) => {
+                        // The user cancelled the mapping, so nothing is mapped and the install stops here.  The answer
+                        // that is null tells the renderer, which is waiting for the reply, that the install is over.
+                        if ( userOverlayId === null || userOverlayId === undefined ) {
+                            event.sender.send( 'overlay:install-overlays', null );
+                            return;
+                        }
                         overlayMap[ missingOverlays[ i ].overlayId ] = userOverlayId;
                         installOverlay( i + 1 );
                     } );

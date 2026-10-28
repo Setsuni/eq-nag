@@ -288,6 +288,9 @@ export class FloatingCombatTextComponent implements OnInit, DoCheck {
                         this.combatGroups.forEach( ( group, i ) => this.changeTracking[ group.combatGroupId ] = FctCombatGroup.getHashValue( group ) );
                     } );
 
+                }, error => {
+                    // The dialog about the cancelled mapping was already shown.
+                    console.error( 'Could not install the overlays.', error );
                 } );
             }
         } );
