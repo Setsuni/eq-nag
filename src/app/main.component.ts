@@ -15,7 +15,7 @@ import { SettingsComponent } from './settings/settings-component/settings.compon
 import { QuickShareService } from './core/quick-share.service';
 import { TriggersComponent } from './triggers/triggers.component';
 import { JoinChatRoomDialogResult } from './dialogs/join-chat-room-dialog/join-chat-room-dialog.component';
-import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getSkippedSounds, remapAudioFileIds, SkippedSound, toSkippedSound } from './utilities/package-file-ids';
+import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getErrorReason, getSkippedSounds, remapAudioFileIds, SkippedSound, toSkippedSound } from './utilities/package-file-ids';
 
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
@@ -63,6 +63,8 @@ export class MainComponent implements OnInit {
     public archiveLabel: string = null;
     public closeAfterArchive: boolean = false;
     public showingUpdateConfirmation: boolean = false;
+    /** Keeps track of the package updates that failed this session, so they are not downloaded again until the version changes. */
+    private failedUpdateKeys = new Set<string>();
 
     @ViewChild( 'fileSelector' ) private fileSelector: ElementRef<HTMLInputElement>;
     @ViewChild( 'characterList', { static: true } ) private characterList: CharactersListComponent;
@@ -210,8 +212,10 @@ export class MainComponent implements OnInit {
         this.ipcService.missingPackageOverlayFound().subscribe( packageOverlay => {
             this.dialogService.showMapPackageOverlayDialog( packageOverlay ).subscribe( overlay => {
                 if ( overlay ) {
-                    this.ipcService.packageOverlayMapped( packageOverlay.overlayId, overlay.overlayId );
+                    this.ipcService.packageOverlayMapped( packageOverlay.overlayId, overlay.overlayId, packageOverlay.mappingRequestId );
                 } else {
+                    // Tells the install it was cancelled, so it stops waiting.
+                    this.ipcService.packageOverlayMapped( packageOverlay.overlayId, null, packageOverlay.mappingRequestId );
                     this.dialogService.showWarningDialog( 'Package Install Cancelled', [ 'No overlay selected.', 'The package has not been installed!' ] );
                 }
             } );
@@ -389,99 +393,158 @@ export class MainComponent implements OnInit {
      * Checks for trigger updates.
      */
     checkForTriggerUpdates() {
+        // Every path ends by scheduling the next check, once.
+        let nextScheduled = false;
+        const scheduleNext = () => {
+            if ( !nextScheduled ) {
+                nextScheduled = true;
+                window.setTimeout( () => this.checkForTriggerUpdates(), updateIntervalDuration );
+            }
+        };
+
         this.ipcService.getInstalledPackages().subscribe( installedPackages => {
-            if ( installedPackages?.length > 0 ) {
-                let ids = installedPackages.map( f => f.packageId );
+            if ( !( installedPackages?.length > 0 ) ) {
+                scheduleNext();
+                return;
+            }
 
-                this.libraryService.getLatestVersionInfo( ids ).subscribe( infos => {
-                    let packagesWithUpdates: string[] = [];
+            let ids = installedPackages.map( f => f.packageId );
 
-                    // Check each package for udpates.
-                    infos?.forEach( latestInfo => {
-                        let currentInfo = installedPackages.find( f => f.packageId === latestInfo.TriggerPackageId );
-                        if ( currentInfo.versionId !== latestInfo.CurrentVersionId ) {
-                            packagesWithUpdates.push( currentInfo.packageId );
+            this.libraryService.getLatestVersionInfo( ids ).subscribe( infos => {
+                let packagesWithUpdates: string[] = [];
+                let latestVersions: Record<string, string> = {};
+
+                // Check each package for udpates.
+                infos?.forEach( latestInfo => {
+                    let currentInfo = installedPackages.find( f => f.packageId === latestInfo?.TriggerPackageId );
+                    // A version that failed to install is not downloaded again until the version changes.
+                    if ( currentInfo && currentInfo.versionId !== latestInfo.CurrentVersionId && !this.failedUpdateKeys.has( `${currentInfo.packageId}:${latestInfo.CurrentVersionId}` ) ) {
+                        packagesWithUpdates.push( currentInfo.packageId );
+                        latestVersions[ currentInfo.packageId ] = latestInfo.CurrentVersionId;
+                    }
+                } );
+
+                if ( !( packagesWithUpdates.length > 0 ) ) {
+                    scheduleNext();
+                    return;
+                }
+
+                let sb = this.snackBar.open( `There are updates to ${packagesWithUpdates.length} trigger package(s).  Installing updates in the background.`, 'dismiss', { duration: 5000 } );
+
+                this.libraryService
+                    .getPackage( packagesWithUpdates )
+                    .subscribe( downloaded => {
+                        let packages = downloaded?.filter( f => f != null ) ?? [];
+
+                        // A package the server sent back empty is not requested again until its version changes.
+                        packagesWithUpdates.filter( id => !packages.some( f => f.triggerPackageId === id ) ).forEach( id => this.failedUpdateKeys.add( `${id}:${latestVersions[ id ]}` ) );
+                        let installedCount = 0;
+                        let failedCount = 0;
+                        let succeededCount = 0;
+                        let skippedSounds: SkippedSound[] = [];
+                        let failures: string[] = [];
+
+                        const installNext = () => {
+                            installedCount += 1;
+                            if ( installedCount < packages.length ) {
+                                installPackage( packages[ installedCount ] );
+                            } else {
+                                sb?.dismiss();
+                                // One message says what was installed and what was not, so a failure reason is never replaced.
+                                let messages: string[] = [];
+                                if ( failedCount === 0 && skippedSounds.length === 0 ) {
+                                    messages.push( 'All updates installed successfully!' );
+                                } else {
+                                    if ( succeededCount > 0 ) {
+                                        messages.push( failedCount === 0 ? 'All updates installed.' : `${succeededCount} update(s) installed.` );
+                                    }
+                                    if ( skippedSounds.length > 0 ) {
+                                        messages.push( describeSkippedSounds( skippedSounds ) );
+                                    }
+                                    // The message lists a few failures; the console has all of them.
+                                    messages.push( ...failures.slice( 0, 3 ) );
+                                    if ( failures.length > 3 ) {
+                                        messages.push( `and ${failures.length - 3} more failed.` );
+                                    }
+                                    failures.length > 0 && console.error( 'Package updates that failed:', failures );
+                                }
+                                this.snackBar.open( messages.join( '  ' ), 'dismiss', { duration: failedCount > 0 || skippedSounds.length > 0 ? 15000 : 5000 } );
+                                this.ipcService.requestTick();
+                                scheduleNext();
+                            }
+                        };
+
+                        const installFailed = ( pkg: TriggerPackageMetaModel, error: any ) => {
+                            console.error( 'Could not install a package update.', error );
+                            failedCount += 1;
+                            this.failedUpdateKeys.add( `${pkg?.triggerPackageId}:${latestVersions[ pkg?.triggerPackageId ]}` );
+                            failures.push( `Could not install the update to "${pkg?.name ?? 'a package'}": ${getErrorReason( error )}` );
+                            installNext();
+                        };
+
+                        const installPackage = ( pkg: TriggerPackageMetaModel ) => {
+                            this.libraryService
+                                .getPackageFiles( pkg.triggerPackageId )
+                                .subscribe( packageFiles => {
+
+                                    let sizeProblem = findSoundTotalProblem( packageFiles );
+                                    if ( sizeProblem ) {
+                                        installFailed( pkg, new Error( sizeProblem ) );
+                                        return;
+                                    }
+
+                                    // Adding a timer makes the following easier and I'm being lazy today.
+                                    let importTasks: Observable<any>[] = [ timer( 1 ) ];
+
+                                    // Files already stored locally with identical contents are reused; a different local file is never replaced.
+                                    packageFiles?.forEach( file => {
+                                        importTasks.push( this.ipcService.importPackageFile( file ).pipe( catchError( error => of( toSkippedSound( file, error ) ) ) ) );
+                                    } );
+
+                                    forkJoin( importTasks ).subscribe( results => {
+                                        try {
+                                            // Files that collided with a different local file were stored under new ids.  Skipped files are removed from the actions that use them.
+                                            remapAudioFileIds( pkg.model?.triggers, buildFileIdMap( packageFiles, results.slice( 1 ) ) );
+                                            skippedSounds.push( ...getSkippedSounds( results.slice( 1 ) ) );
+                                        } catch ( error ) {
+                                            installFailed( pkg, error );
+                                            return;
+                                        }
+
+                                        // Missing package overlays are caught in the main component's ngInit event.
+                                        this.ipcService.installTriggerPackage( pkg ).subscribe( {
+                                            next: installComplete => {
+                                                succeededCount += 1;
+                                                installNext();
+                                            },
+                                            error: error => installFailed( pkg, error ),
+                                        } );
+                                    }, error => installFailed( pkg, error ) );
+
+                                }, error => installFailed( pkg, error ) );
+                        };
+
+                        if ( packages.length > 0 ) {
+                            // Let's kick-off the first update.
+                            installPackage( packages[ installedCount ] );
+                        } else {
+                            sb?.dismiss();
+                            scheduleNext();
                         }
+
+                    }, error => {
+                        console.error( 'Could not download the package updates.', error );
+                        sb?.dismiss();
+                        scheduleNext();
                     } );
 
-                    if ( packagesWithUpdates?.length > 0 ) {
-                        
-                        let sb = this.snackBar.open( `There are updates to ${packagesWithUpdates.length + 1} trigger package(s).  Installing updates in the background.`, 'dismiss', { duration: 5000 } );
-
-                        this.libraryService
-                            .getPackage( packagesWithUpdates )
-                            .subscribe( packages => {
-                                let installedCount = 0;
-                                let failedCount = 0;
-                                let skippedSounds: SkippedSound[] = [];
-
-                                const installNext = () => {
-                                    installedCount += 1;
-                                    if ( installedCount < packages?.length ) {
-                                        installPackage( packages[ installedCount ] );
-                                    } else {
-                                        sb?.dismiss();
-                                        // A failure toast stays up; it isn't replaced by a success message.
-                                        if ( failedCount === 0 ) {
-                                            this.snackBar.open( skippedSounds.length > 0 ? `All updates installed.  ${describeSkippedSounds( skippedSounds )}` : 'All updates installed successfully!', 'dismiss', { duration: skippedSounds.length > 0 ? 15000 : 5000 } );
-                                        }
-                                        this.ipcService.requestTick();
-                                        window.setTimeout( () => this.checkForTriggerUpdates(), updateIntervalDuration );
-                                    }
-                                };
-
-                                const installPackage = ( pkg: TriggerPackageMetaModel ) => {
-                                    this.libraryService
-                                        .getPackageFiles( pkg.triggerPackageId )
-                                        .subscribe( packageFiles => {
-                                            
-                                            let sizeProblem = findSoundTotalProblem( packageFiles );
-                                            if ( sizeProblem ) {
-                                                console.error( 'Could not install a package update.', sizeProblem );
-                                                failedCount += 1;
-                                                this.snackBar.open( `${sizeProblem} The update to "${pkg.name}" was not installed.`, 'dismiss', { duration: 10000 } );
-                                                installNext();
-                                                return;
-                                            }
-
-                                            // Adding a timer makes the following easier and I'm being lazy today.
-                                            let importTasks: Observable<any>[] = [ timer( 1 ) ];
-
-                                            // Files already stored locally with identical contents are reused; a different local file is never replaced.
-                                            packageFiles?.forEach( file => {
-                                                importTasks.push( this.ipcService.importPackageFile( file ).pipe( catchError( error => of( toSkippedSound( file, error ) ) ) ) );
-                                            } );
-
-                                            forkJoin( importTasks ).subscribe( results => {
-                                                // Files that collided with a different local file were stored under new ids.  Skipped files are removed from the actions that use them.
-                                                remapAudioFileIds( pkg.model?.triggers, buildFileIdMap( packageFiles, results.slice( 1 ) ) );
-                                                skippedSounds.push( ...getSkippedSounds( results.slice( 1 ) ) );
-
-                                                // Missing package overlays are caught in the main component's ngInit event.
-                                                this.ipcService.installTriggerPackage( pkg ).subscribe( installComplete => installNext() );
-                                            }, error => {
-                                                // Move on to the next package, so the checks keep going.
-                                                console.error( 'Could not save a sound from a package update.', error );
-                                                failedCount += 1;
-                                                this.snackBar.open( 'A sound from this package update could not be saved, so it was not installed.', 'dismiss', { duration: 10000 } );
-                                                installNext();
-                                            } );
-                                            
-                                        } );
-                                }
-
-                                // Let's kick-off the first update.
-                                installPackage( packages[ installedCount ] );
-
-                            } );
-                        
-                    } else {
-                        window.setTimeout( () => this.checkForTriggerUpdates(), updateIntervalDuration );
-
-                    }
-
-                } );
-            }
+            }, error => {
+                console.error( 'Could not check for package updates.', error );
+                scheduleNext();
+            } );
+        }, error => {
+            console.error( 'Could not read the installed packages.', error );
+            scheduleNext();
         } );
     }
 

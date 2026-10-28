@@ -49,6 +49,9 @@ var _fileStore;
 /** @type {UserPreferencesStore} */
 var _userPreferences;
 
+/** How long a package install waits for the user to map a missing overlay. */
+const overlayMappingTimeout = 10 * 60 * 1000;
+
 /** @type {Fuse.fuseOptions_tags} */
 const fuseOptions_tags = {
     // isCaseSensitive: false,
@@ -562,10 +565,14 @@ class TriggerDatabaseStore extends Store {
             sendTick();
         } );
 
-        ipcMain.on( 'pkg:install', ( event, pkg ) => {
-            this.installTriggerPkg( pkg, event );
-            this.emitInstalledIds();
-        } );
+        ipcMain.handle( 'pkg:install', ( event, pkg ) => new Promise( ( resolve, reject ) => {
+            try {
+                this.installTriggerPkg( pkg, event, resolve, reject );
+                this.emitInstalledIds();
+            } catch ( error ) {
+                reject( error );
+            }
+        } ) );
 
         ipcMain.on( 'pkg:uninstall', ( event, packageId ) => {
             event.sender.send( 'pkg:uninstall', this.uninstallTriggerPkg( packageId ) );
@@ -592,9 +599,10 @@ class TriggerDatabaseStore extends Store {
                 this.emitInstalledIds();
             } );
 
-        ipcMain.on( 'quickShare:install', async ( event, quickShare ) => {
-            event.sender.send( 'quickShare:install', await this.installQuickshare( quickShare, event ) );
+        ipcMain.handle( 'quickShare:install', async ( event, quickShare ) => {
+            let installed = await this.installQuickshare( quickShare, event );
             this.emitInstalledIds();
+            return installed;
         } );
 
         if ( this.#orphanedFound ) {
@@ -785,14 +793,17 @@ class TriggerDatabaseStore extends Store {
      * Updates the store of trigger folders.
      * 
      * @param {TriggerFolder[]} folders The updated folders hierarchy.
+     * @param {boolean} [save] False to leave saving the data file to the caller.
      */
-    updateFolders( folders ) {
+    updateFolders( folders, save = true ) {
         this.applyFolderIds( folders );
         this.#data.folders = folders;
 
         // Save changes to the data.
         this.processPredefinedTriggers();
-        this.storeDataFile( this.#data );
+        if ( save ) {
+            this.storeDataFile( this.#data );
+        }
         
         return this.#data.folders;
     }
@@ -1526,22 +1537,66 @@ class TriggerDatabaseStore extends Store {
      * @param {{detrimentalOverlayId: string, beneficialOverlayId: string, textOverlayId: string}} defaultOverlayIds The package source default overlay ids.
      * @param {Electron.Size} packagePrimaryDisplaySize The original event args.
      * @param {Electron.IpcMainEvent} event The original event args.
-     * @param {(overlayMap: Record<string, string>) => void} callback The callback function executed after all overlay maps have been completed.
+     * @param {(overlayMap: Record<string, string>, undoMappings: () => void) => void} callback The callback function executed after all overlay maps have been completed.  It also gets a function that undoes the mappings this install made.
+     * @param {(error: Error) => void} [onFail] Called when the install is cancelled, times out or fails while the overlays are mapped.
      */
-    installPackagedOverlays( packageId, packageOverlays, defaultOverlayIds, packagePrimaryDisplaySize, event, callback ) {
-        let overlayMap = this.#data.packageOverlayMap ?? {};
-        
+    installPackagedOverlays( packageId, packageOverlays, defaultOverlayIds, packagePrimaryDisplaySize, event, callback, onFail ) {
+        // The map is shared by installs that run at the same time, so it has to exist before the first one uses it.
+        this.#data.packageOverlayMap = this.#data.packageOverlayMap ?? {};
+        let overlayMap = this.#data.packageOverlayMap;
+        // The mappings this install makes, so a cancelled or failed install undoes only those and
+        // never the mappings of an install that runs at the same time.
+        let changes = new Map();
+        let setMapping = ( key, value ) => {
+            if ( !changes.has( key ) ) {
+                changes.set( key, { had: Object.prototype.hasOwnProperty.call( overlayMap, key ), previous: overlayMap[ key ] } );
+            }
+            changes.get( key ).value = value;
+            overlayMap[ key ] = value;
+        };
+        let finalized = false;
+        let hadOverlayList = false;
+        let previousOverlayList;
+        let undoMappings = () => {
+            changes.forEach( ( change, key ) => {
+                if ( overlayMap[ key ] === change.value ) {
+                    if ( change.had ) {
+                        overlayMap[ key ] = change.previous;
+                    } else {
+                        delete overlayMap[ key ];
+                    }
+                }
+            } );
+            if ( finalized ) {
+                if ( hadOverlayList ) {
+                    this.#data.packageOverlays[ packageId ] = previousOverlayList;
+                } else {
+                    delete this.#data.packageOverlays[ packageId ];
+                }
+                finalized = false;
+            }
+        };
+
+        // A cancelled or failed install keeps none of its mappings.
+        let fail = error => {
+            undoMappings();
+            onFail ? onFail( error ) : console.error( 'Could not install the package overlays.', error );
+        };
+
+        // The install that follows saves the data file once everything is in place.
         let finalize = () => {
             this.#data.packageOverlayMap = overlayMap;
             this.#data.packageOverlays = this.#data.packageOverlays ? this.#data.packageOverlays : {};
+            hadOverlayList = Object.prototype.hasOwnProperty.call( this.#data.packageOverlays, packageId );
+            previousOverlayList = this.#data.packageOverlays[ packageId ];
             this.#data.packageOverlays[ packageId ] = packageOverlays?.map( f => f.overlayId ) ?? [];
-            this.storeDataFile( this.#data );
-        }
+            finalized = true;
+        };
 
-        overlayMap[ defaultOverlayIds.detrimentalOverlayId ] = _userPreferences.detrimentalOverlayId;
-        overlayMap[ defaultOverlayIds.beneficialOverlayId ] = _userPreferences.beneficialOverlayId;
+        setMapping( defaultOverlayIds.detrimentalOverlayId, _userPreferences.detrimentalOverlayId );
+        setMapping( defaultOverlayIds.beneficialOverlayId, _userPreferences.beneficialOverlayId );
         // This was added after the original feature and may be null for older trigger packages.
-        overlayMap[ defaultOverlayIds.textOverlayId ? defaultOverlayIds.textOverlayId : _userPreferences.alertOverlayId ] = _userPreferences.alertOverlayId;
+        setMapping( defaultOverlayIds.textOverlayId ? defaultOverlayIds.textOverlayId : _userPreferences.alertOverlayId, _userPreferences.alertOverlayId );
         
         let missingOverlays = packageOverlays?.filter( f => overlayMap[ f.overlayId ] == null ) ?? [];
         let myDisplaySize = screen.getPrimaryDisplay().size;
@@ -1557,10 +1612,28 @@ class TriggerDatabaseStore extends Store {
 
                 if ( i < missingOverlays.length ) {
                     // If we still have more overlays to process, then send that to the sender.
-                    ipcMain.once( `trigger:missing-overlay:${missingOverlays[ i ].overlayId}`, ( event, userOverlayId ) => {
-                        overlayMap[ missingOverlays[ i ].overlayId ] = userOverlayId;
-                        installOverlay( i + 1 );
-                    } );
+                    // Each request has its own channel, so an answer that comes late can never be taken for the
+                    // answer to a later install of the same package.
+                    let requestId = nanoid();
+                    let channel = `trigger:missing-overlay:${requestId}`;
+                    let timer = null;
+                    let listener = ( event, userOverlayId ) => {
+                        clearTimeout( timer );
+                        try {
+                            if ( userOverlayId === null || userOverlayId === undefined ) {
+                                throw new Error( 'Package install cancelled: no overlay was selected.' );
+                            }
+                            setMapping( missingOverlays[ i ].overlayId, userOverlayId );
+                            installOverlay( i + 1 );
+                        } catch ( error ) {
+                            fail( error );
+                        }
+                    };
+                    ipcMain.once( channel, listener );
+                    timer = setTimeout( () => {
+                        ipcMain.removeListener( channel, listener );
+                        fail( new Error( 'Package install cancelled: no overlay was selected in time.' ) );
+                    }, overlayMappingTimeout );
 
                     if ( packagePrimaryDisplaySize ) {
                         // Because the origin of the renderer is at the top left 
@@ -1590,12 +1663,12 @@ class TriggerDatabaseStore extends Store {
                         }
                     }
                     
-                    event.sender.send( 'pkg:missing-overlay', missingOverlays[ i ] );
+                    event.sender.send( 'pkg:missing-overlay', { ...missingOverlays[ i ], mappingRequestId: requestId } );
 
                 } else {
                     // We're done, let's continue the normal process.
                     finalize();
-                    callback( overlayMap );
+                    callback( overlayMap, undoMappings );
 
                 }
             
@@ -1614,18 +1687,155 @@ class TriggerDatabaseStore extends Store {
 
     
     /**
+     * Throws an error that says what is wrong when the given package can't be installed.
+     *
+     * @param {TriggerPackageMetaModel | QuickShareMetaModel} source The package or quick share to check.
+     * @param {string} idProperty The name of the id property: triggerPackageId or quickShareId.
+     * @param {string} overlaysProperty The name of the overlays property of the model: packageOverlays or overlays.
+     */
+    #validatePackage( source, idProperty, overlaysProperty ) {
+        let kind = idProperty === 'triggerPackageId' ? 'package' : 'quick share';
+        const isObject = value => value !== null && typeof value === 'object' && !Array.isArray( value );
+        const check = ( ok, message ) => {
+            if ( !ok ) {
+                throw new Error( `The ${kind} is not valid: ${message}` );
+            }
+        };
+
+        check( isObject( source ), 'it is empty.' );
+        check( typeof source[ idProperty ] === 'string' && source[ idProperty ] !== '', 'it has no id.' );
+        check( isObject( source.model ), 'it has no triggers.' );
+
+        let triggers = source.model.triggers ?? [];
+        check( Array.isArray( triggers ), 'its triggers are not a list.' );
+        triggers.forEach( ( trigger, i ) => {
+            check( isObject( trigger ), `trigger ${i + 1} is empty.` );
+            check( typeof trigger.triggerId === 'string' && trigger.triggerId !== '', `trigger ${i + 1} has no id.` );
+            check( Array.isArray( trigger.actions ), `trigger ${i + 1} has no list of actions.` );
+            check( trigger.actions.every( isObject ), `trigger ${i + 1} has an empty action.` );
+            [ 'capturePhrases', 'conditions', 'hotkeys' ].forEach( name => check( trigger[ name ] === undefined || trigger[ name ] === null || Array.isArray( trigger[ name ] ), `trigger ${i + 1} has a ${name} that is not a list.` ) );
+        } );
+
+        let folders = source.model.folders ?? [];
+        check( Array.isArray( folders ) && folders.every( isObject ), 'its folders are not a list.' );
+        let overlays = source.model[ overlaysProperty ] ?? [];
+        check( Array.isArray( overlays ) && overlays.every( isObject ), 'its overlays are not a list.' );
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Takes what an install is about to change, without copying what it leaves alone: the lists
+     * and the folder children are copied by reference, and only the existing triggers that the
+     * install replaces are copied in full.
+     *
+     * @param {string[]} incomingTriggerIds The ids of the triggers being installed.
+     */
+    #beginInstall( incomingTriggerIds ) {
+        let ids = new Set( incomingTriggerIds );
+        let folderChildren = new Map();
+        let walk = folders => folders?.forEach( folder => {
+            folderChildren.set( folder, folder.children ? folder.children.slice() : undefined );
+            walk( folder.children );
+        } );
+        walk( this.#data.folders );
+
+        return {
+            triggers: this.#data.triggers.slice(),
+            replacedTriggers: new Map( this.#data.triggers.filter( f => ids.has( f.triggerId ) ).map( f => [ f, _.cloneDeep( f ) ] ) ),
+            foldersRef: this.#data.folders,
+            folders: this.#data.folders?.slice(),
+            folderChildren: folderChildren,
+            installedPackages: this.#data.installedPackages?.slice(),
+            installedEntries: new Map( ( this.#data.installedPackages ?? [] ).map( f => [ f, { ...f } ] ) ),
+            installedQuickShares: this.#data.installedQuickShares?.slice(),
+            quickShareEntries: new Map( ( this.#data.installedQuickShares ?? [] ).map( f => [ f, { ...f } ] ) ),
+        };
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Puts back what an install changed, keeping the identity of every object it left alone, and
+     * undoes what the creation of the new triggers set up elsewhere.
+     *
+     * @param {ReturnType<TriggerDatabaseStore['#beginInstall']>} snapshot What #beginInstall took.
+     */
+    #rollbackInstall( snapshot ) {
+        let before = new Set( snapshot.triggers );
+        let created = this.#data.triggers.filter( f => !before.has( f ) );
+        let restoreEntry = ( entry, copy ) => {
+            Object.keys( entry ).forEach( key => delete entry[ key ] );
+            Object.assign( entry, copy );
+        };
+
+        this.#data.triggers.splice( 0, this.#data.triggers.length, ...snapshot.triggers );
+        snapshot.replacedTriggers.forEach( ( copy, trigger ) => restoreEntry( trigger, copy ) );
+        // The install may have replaced the list of folders, or there may have been none before it.
+        this.#data.folders = snapshot.foldersRef;
+        if ( snapshot.folders ) {
+            snapshot.foldersRef.splice( 0, snapshot.foldersRef.length, ...snapshot.folders );
+        }
+        snapshot.folderChildren.forEach( ( children, folder ) => {
+            if ( children === undefined ) {
+                delete folder.children;
+            } else {
+                folder.children = children;
+            }
+        } );
+        if ( snapshot.installedPackages ) {
+            this.#data.installedPackages.splice( 0, this.#data.installedPackages.length, ...snapshot.installedPackages );
+        }
+        snapshot.installedEntries.forEach( ( copy, entry ) => restoreEntry( entry, copy ) );
+        if ( snapshot.installedQuickShares ) {
+            this.#data.installedQuickShares.splice( 0, this.#data.installedQuickShares.length, ...snapshot.installedQuickShares );
+        }
+        snapshot.quickShareEntries.forEach( ( copy, entry ) => restoreEntry( entry, copy ) );
+
+        created.forEach( trigger => onRemovedHandlers.forEach( fn => fn( trigger ) ) );
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
      * Installs the given trigger package.
      * 
      * @note Files are installed in the Angular, prior to calling this function.
      * 
      * @param {TriggerPackageMetaModel} pkg The package to install.
-     * @param {Electron.IpcMainEvent} event The event args.
+     * @param {Electron.IpcMainInvokeEvent} event The event args.
+     * @param {(installed: boolean) => void} done Called when the package is installed.
+     * @param {(error: any) => void} fail Called when the package could not be installed.
      */
-    installTriggerPkg( pkg, event ) {
+    installTriggerPkg( pkg, event, done, fail ) {
         
         if ( this.#data.triggers === null || this.#data.triggers === undefined ) {
             throw 'Trigger database not loaded!';
         }
+
+        // Nothing is changed until the whole package is known to be usable.
+        this.#validatePackage( pkg, 'triggerPackageId', 'packageOverlays' );
 
         let defaultOverlayIds = {
             detrimentalOverlayId: pkg.model.detrimentalOverlayId,
@@ -1633,24 +1843,7 @@ class TriggerDatabaseStore extends Store {
             textOverlayId: pkg.model.textOverlayId,
         };
 
-        this.installPackagedOverlays( pkg.triggerPackageId, pkg.model.packageOverlays, defaultOverlayIds, pkg.model.primaryDisplaySize, event, overlayMap => {
-
-            let triggerVersion = this.#data.installedPackages.find( f => f.packageId === pkg.triggerPackageId );
-
-            if ( triggerVersion == null ) {
-                triggerVersion = new TriggerPackageVersion();
-                triggerVersion.packageId = pkg.triggerPackageId;
-
-                // Add it to the store
-                this.#data.installedPackages.push( triggerVersion );
-            }
-
-            triggerVersion.versionId = pkg.versionId;
-            triggerVersion.timestamp = pkg.timestampDate;
-            triggerVersion.name = pkg.name;
-            triggerVersion.description = pkg.description;
-            triggerVersion.author = pkg.author;
-            triggerVersion.authorDiscord = pkg.authorDiscord;
+        let install = overlayMap => {
 
             // First, update the overlay Ids to match their cooresponding values on
             // the client.
@@ -1671,7 +1864,8 @@ class TriggerDatabaseStore extends Store {
             // Next, create the required folders, creating a folder map that maps 
             // folder ids to existing folders. If a folder does not exist,  it is 
             // created  using  the  folder  id  in  the trigger   package  folder.
-            let folderMap = this.installPackageFolders( pkg.model?.folders );
+            // Nothing is saved until the whole package is in place.
+            let folderMap = this.installPackageFolders( pkg.model?.folders, false );
 
             // TODO: We need to keep a trigger package id as an array of packages.  One reason is, if a trigger was only part of an installed package, and that package is uninstalled or the trigger is no longer part of that package, we are safe to remove it.
             // But we need to find a way to pull an updated list of trigger packages, and update the trigger package id array.
@@ -1694,15 +1888,51 @@ class TriggerDatabaseStore extends Store {
             // Finally, install the triggers.
             pkg.model?.triggers?.forEach( pkgTrigger => this.installPackageTrigger( pkg.triggerPackageId, pkgTrigger, folderMap ) );
 
-            // A sound that an update replaced, and nothing uses anymore, is only removed if a package import created it.
-            previousFileIds.filter( fileId => !this.#isAudioFileUsed( fileId ) ).forEach( fileId => _fileStore.deletePackageFile( fileId, true ) );
+            // The package counts as installed only once its triggers are.
+            let triggerVersion = this.#data.installedPackages.find( f => f.packageId === pkg.triggerPackageId );
+
+            if ( triggerVersion == null ) {
+                triggerVersion = new TriggerPackageVersion();
+                triggerVersion.packageId = pkg.triggerPackageId;
+
+                // Add it to the store
+                this.#data.installedPackages.push( triggerVersion );
+            }
+
+            triggerVersion.versionId = pkg.versionId;
+            triggerVersion.timestamp = pkg.timestampDate;
+            triggerVersion.name = pkg.name;
+            triggerVersion.description = pkg.description;
+            triggerVersion.author = pkg.author;
+            triggerVersion.authorDiscord = pkg.authorDiscord;
 
             // Save changes to the data.
             this.processPredefinedTriggers();
             this.storeDataFile( this.#data );
+
+            // The data is saved, so a problem while cleaning up is only logged; the install still counts.
+            try {
+                // A sound that an update replaced, and nothing uses anymore, is only removed if a package import created it.
+                previousFileIds.filter( fileId => !this.#isAudioFileUsed( fileId ) ).forEach( fileId => _fileStore.deletePackageFile( fileId, true ) );
+            } catch ( error ) {
+                console.error( 'Could not remove the sounds that an update replaced.', error );
+            }
             
-            event.sender.send( 'pkg:install', true );
-        } );
+            done( true );
+        };
+
+        // An error while installing reaches the caller instead of leaving it waiting.
+        this.installPackagedOverlays( pkg.triggerPackageId, pkg.model.packageOverlays, defaultOverlayIds, pkg.model.primaryDisplaySize, event, ( overlayMap, undoMappings ) => {
+            // What the install changes in memory is put back if it fails, so a later save never writes half a package.
+            let snapshot = this.#beginInstall( ( pkg.model.triggers ?? [] ).map( f => f.triggerId ) );
+            try {
+                install( overlayMap );
+            } catch ( error ) {
+                this.#rollbackInstall( snapshot );
+                undoMappings();
+                fail( error );
+            }
+        }, fail );
 
     }
 
@@ -1729,64 +1959,75 @@ class TriggerDatabaseStore extends Store {
             throw 'Trigger database not loaded!';
         }
 
+        // Nothing is changed until the whole quick share is known to be usable.
+        this.#validatePackage( quickShare, 'quickShareId', 'overlays' );
+
         let defaultOverlayIds = {
             detrimentalOverlayId: quickShare.model.detrimentalOverlayId,
             beneficialOverlayId: quickShare.model.beneficialOverlayId,
             textOverlayId: quickShare.model.textOverlayId,
         };
 
-        let p = new Promise( async ( resolve, reject ) => {
-            
-            this.installPackagedOverlays( quickShare.quickShareId, quickShare.model?.overlays ?? [], defaultOverlayIds, quickShare.model.primaryDisplaySize, event, overlayMap => {
+        // A cancelled mapping, a timeout or an error rejects the promise, so the caller never waits for ever.
+        return new Promise( ( resolve, reject ) => {
+            this.installPackagedOverlays( quickShare.quickShareId, quickShare.model.overlays ?? [], defaultOverlayIds, quickShare.model.primaryDisplaySize, event, ( overlayMap, undoMappings ) => {
 
-                let quickShareVersion = this.#data.installedQuickShares.find( f => f.quickShareId === quickShare.quickShareId );
-    
-                if ( quickShareVersion == null ) {
-                    quickShareVersion = new QuickShareVersion();
-                    quickShareVersion.quickShareId = quickShare.quickShareId;
-    
-                    // Add it to the store
-                    this.#data.installedQuickShares.push( quickShareVersion );
-                }
-    
-                quickShareVersion.versionId = quickShare.versionId;
-                quickShareVersion.timestamp = quickShare.timestamp;
-                quickShareVersion.author = quickShare.author;
-                quickShareVersion.authorDiscord = quickShare.authorDiscord;
-    
-                // First, update the overlay Ids to match their cooresponding values on
-                // the client.
-                quickShare.model?.triggers?.forEach( trigger => {
-                    trigger.actions?.forEach( action => {
-    
-                        if ( action.actionType === ActionTypes.DisplayText ) {
-                            action.overlayId = overlayMap[ action.overlayId ] ?? _userPreferences.alertOverlayId;
-                        } else {
-                            action.overlayId = overlayMap[ action.overlayId ];
-                        }
+                // What the install changes in memory is put back if it fails, so a later save never writes half a share.
+                let snapshot = this.#beginInstall( ( quickShare.model.triggers ?? [] ).map( f => f.triggerId ) );
 
-                        action.endedTextOverlayId = overlayMap[ action.overlayId ] ?? _userPreferences.alertOverlayId;
-                        action.endingSoonTextOverlayId = overlayMap[ action.overlayId ] ?? _userPreferences.alertOverlayId;
-    
+                try {
+                    // First, update the overlay Ids to match their cooresponding values on
+                    // the client.
+                    quickShare.model.triggers?.forEach( trigger => {
+                        trigger.actions?.forEach( action => {
+
+                            if ( action.actionType === ActionTypes.DisplayText ) {
+                                action.overlayId = overlayMap[ action.overlayId ] ?? _userPreferences.alertOverlayId;
+                            } else {
+                                action.overlayId = overlayMap[ action.overlayId ];
+                            }
+
+                            action.endedTextOverlayId = overlayMap[ action.overlayId ] ?? _userPreferences.alertOverlayId;
+                            action.endingSoonTextOverlayId = overlayMap[ action.overlayId ] ?? _userPreferences.alertOverlayId;
+
+                        } );
                     } );
-                } );
-    
-                // Next, create the required folders, creating a folder map that maps 
-                // folder ids to existing folders. If a folder does not exist,  it is 
-                // created  using  the  folder  id  in  the trigger   package  folder.
-                let folderMap = this.installPackageFolders( quickShare.model?.folders );
-                quickShare.model?.triggers?.forEach( trigger => this.installPackageTrigger( quickShare.quickShareId, trigger, folderMap ) );
-    
-                // Save changes to the data.
-                this.processPredefinedTriggers();
-                this.storeDataFile( this.#data );
-    
+
+                    // Next, create the required folders, creating a folder map that maps
+                    // folder ids to existing folders. If a folder does not exist,  it is
+                    // created  using  the  folder  id  in  the trigger   package  folder.
+                    let folderMap = this.installPackageFolders( quickShare.model.folders, false );
+                    quickShare.model.triggers?.forEach( trigger => this.installPackageTrigger( quickShare.quickShareId, trigger, folderMap ) );
+
+                    // The quick share counts as installed only once its triggers are.
+                    let quickShareVersion = this.#data.installedQuickShares.find( f => f.quickShareId === quickShare.quickShareId );
+
+                    if ( quickShareVersion == null ) {
+                        quickShareVersion = new QuickShareVersion();
+                        quickShareVersion.quickShareId = quickShare.quickShareId;
+
+                        // Add it to the store
+                        this.#data.installedQuickShares.push( quickShareVersion );
+                    }
+
+                    quickShareVersion.versionId = quickShare.versionId;
+                    quickShareVersion.timestamp = quickShare.timestamp;
+                    quickShareVersion.author = quickShare.author;
+                    quickShareVersion.authorDiscord = quickShare.authorDiscord;
+
+                    // Save changes to the data.
+                    this.processPredefinedTriggers();
+                    this.storeDataFile( this.#data );
+                } catch ( error ) {
+                    this.#rollbackInstall( snapshot );
+                    undoMappings();
+                    reject( error );
+                    return;
+                }
+
                 resolve( true );
-            } );
-
+            }, reject );
         } );
-
-        return p;
     }
 
 
@@ -2033,8 +2274,9 @@ class TriggerDatabaseStore extends Store {
      * the map will map the package folder id to the existing folder id.
      * 
      * @param {PackageFolder[]} packageFolders The folders to install.
+     * @param {boolean} [save] False to leave saving the data file to the caller.
      */
-    installPackageFolders( packageFolders ) {
+    installPackageFolders( packageFolders, save = true ) {
         let folders = this.getFolders();
         /** @type {Record<string, string>} */
         let folderMap = {};
@@ -2073,7 +2315,7 @@ class TriggerDatabaseStore extends Store {
 
         } );
 
-        this.updateFolders( folders );
+        this.updateFolders( folders, save );
 
         return folderMap;
     }

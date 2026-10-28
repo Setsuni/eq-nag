@@ -10,7 +10,7 @@ import { forkJoin, Observable, of, timer } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ColoredString } from 'src/app/dialogs/dialog.model';
-import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getSkippedSounds, remapAudioFileIds, toSkippedSound } from 'src/app/utilities/package-file-ids';
+import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getErrorReason, getSkippedSounds, remapAudioFileIds, toSkippedSound } from 'src/app/utilities/package-file-ids';
 
 @Component( {
     selector: 'app-trigger-package-details',
@@ -70,8 +70,9 @@ export class TriggerPackageDetailsComponent implements OnInit {
         this.ipcService.missingPackageOverlayFound().subscribe( packageOverlay => {
             this.dialogService.showMapPackageOverlayDialog( packageOverlay ).subscribe( overlay => {
                 if ( overlay ) {
-                    this.ipcService.packageOverlayMapped( packageOverlay.overlayId, overlay.overlayId );
+                    this.ipcService.packageOverlayMapped( packageOverlay.overlayId, overlay.overlayId, packageOverlay.mappingRequestId );
                 } else {
+                    this.ipcService.packageOverlayMapped( packageOverlay.overlayId, null, packageOverlay.mappingRequestId );
                     this.dialogService.showWarningDialog( 'Package Install Cancelled', [ 'No overlay selected.', 'The package has not been installed!' ] );
                 }
             } );
@@ -269,10 +270,13 @@ export class TriggerPackageDetailsComponent implements OnInit {
                 this.snackBar.open( skippedSounds.length > 0 ? `Package install complete.  ${describeSkippedSounds( skippedSounds )}` : 'Package install complete!', 'dismiss', { duration: skippedSounds.length > 0 ? 15000 : 2500 } );
                 this.ipcService.requestTick();
                 this.isInstalled = true;
+            }, error => {
+                console.error( 'Could not install the package.', error );
+                this.snackBar.open( `The package could not be installed: ${getErrorReason( error )}`, 'dismiss', { duration: 10000 } );
             } );
         }, error => {
             console.error( 'Could not save a sound from a package.', error );
-            this.snackBar.open( 'A sound from this package could not be saved, so it was not installed.', 'dismiss', { duration: 5000 } );
+            this.snackBar.open( `The package was not installed: ${getErrorReason( error )}`, 'dismiss', { duration: 10000 } );
         } );
     }
 
