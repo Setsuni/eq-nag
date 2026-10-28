@@ -27,6 +27,8 @@ interface QuickShareTreeNode {
     overwrite: boolean;
     update: boolean;
     duplicate: boolean;
+    replaces?: string;
+    untrusted?: boolean;
 }
 
 class QuickShareTreeObject {
@@ -39,6 +41,8 @@ class QuickShareTreeObject {
     overwrite: boolean;
     update: boolean;
     duplicate: boolean;
+    replaces?: string;
+    untrusted?: boolean;
 }
 
 @Component( {
@@ -69,6 +73,8 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
             overwrite: node.overwrite,
             update: node.update,
             duplicate: node.duplicate,
+            replaces: node.replaces,
+            untrusted: node.untrusted,
         };
     }
     public treeControl = new FlatTreeControl<QuickShareTreeNode>( node => node ? node.level : 1, node => node.expandable );
@@ -83,6 +89,14 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
     }
     public set overwriteExistingTriggers( value: boolean ) {
         this._overwriteExistingTriggers = value;
+
+        // Triggers that start unselected because they would replace one of the user's triggers follow the toggle.
+        this.treeControl.dataNodes?.forEach( f => {
+            if ( !f.isFolder && f.update && f.untrusted && !this.manuallySelectedIds.has( f.id ) ) {
+                f.selected = !value;
+            }
+        } );
+        this.updateFolderStates();
 
         if ( !value && !this._shownOverwriteWarning ) {
             this.dialog.open( NotificationDialogComponent, {
@@ -105,6 +119,12 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
     private overwriteTriggerIds: string[] = [];
     /** Keeps track of the ids of all new triggers. */
     private newTriggerIds: string[] = [];
+    /** Keeps track of the ids of all triggers that come from authors who are not trusted. */
+    private untrustedTriggerIds = new Set<string>();
+    /** Keeps track of the ids of triggers the user ticked or unticked by hand, so toggling the overwrite option does not undo that choice. */
+    private manuallySelectedIds = new Set<string>();
+    /** Keeps track of the name of the existing trigger that each untrusted trigger would replace, by package trigger id. */
+    private replacedTriggerNames: Record<string, string> = {};
     /** Keeps track of possible duplicate triggers. */
     private possibleDuplicateTriggers: Record<string, string[]> = {};
     /** Keeps track of the folders, whose descendants contain an updated trigger. */
@@ -138,6 +158,10 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
             this.data.quickShares.forEach( quickShare => {
                 this.allFolders = _.concat( this.allFolders, quickShare.model.folders );
                 this.allTriggers = _.concat( this.allTriggers, quickShare.model.triggers );
+
+                if ( !quickShare.trustedAuthor ) {
+                    quickShare.model.triggers.forEach( f => this.untrustedTriggerIds.add( f.triggerId ) );
+                }
             } );
             
             this.processExistingTriggers( result.triggers, result.folders ); // This one here
@@ -218,6 +242,7 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
             let matchedById = realTriggers.find( f => f.triggerId === pt.triggerId );
             if ( matchedById ) {
                 this.updateTriggerIds.push( pt.triggerId );
+                this.replacedTriggerNames[ pt.triggerId ] = matchedById.name;
 
                 let t: string = matchedById.folderId;
                 while ( t != null ) {
@@ -233,6 +258,7 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
             let matchedByName = realTriggers.find( f => f.folderId === pt.folderId && f.name === pt.name );
             if ( matchedByName ) {
                 this.overwriteTriggerIds.push( pt.triggerId );
+                this.replacedTriggerNames[ pt.triggerId ] = matchedByName.name;
 
                 let t: string = matchedByName.folderId;
                 while ( t != null ) {
@@ -401,11 +427,15 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
             triggerNode.name = trigger.name;
             triggerNode.children = [];
             triggerNode.trigger = trigger;
-            triggerNode.selected = true;
             triggerNode.exists = myRealTriggers.indexOf( trigger.name ) > -1;
             triggerNode.overwrite = this.overwriteTriggerIds.indexOf( trigger.triggerId ) > -1;
             triggerNode.duplicate = this.possibleDuplicateTriggers[ trigger.triggerId ]?.length > 0;
             triggerNode.update = this.updateTriggerIds.indexOf( trigger.triggerId ) > -1;
+
+            // A trigger from an author who is not trusted does not replace one of the user's triggers unless the user selects it.
+            triggerNode.untrusted = this.untrustedTriggerIds.has( trigger.triggerId );
+            triggerNode.replaces = triggerNode.update || triggerNode.overwrite ? this.replacedTriggerNames[ trigger.triggerId ] : undefined;
+            triggerNode.selected = !( triggerNode.update && triggerNode.untrusted && this.overwriteExistingTriggers );
             node.children.push( triggerNode );
         } );
     }
@@ -424,6 +454,10 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
      * selection state based on the direct and descendant selected triggers.
      */
      private updateFolderStates(): void {
+
+        if ( !this.treeControl.dataNodes ) {
+            return;
+        }
 
         this.treeControl.dataNodes.forEach( f => {
             if ( f.isFolder ) {
@@ -466,7 +500,10 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
         let familyIds = PackageFolder.getDescendantFolderIds( folder );
         for ( let i = 0; i < familyIds?.length; i++ ) {
             let triggers = this.treeControl.dataNodes.filter( t => !t.isFolder && t.item.folderId === familyIds[ i ] );
-            triggers.forEach( f => f.selected = value );
+            triggers.forEach( f => {
+                f.selected = value;
+                this.manuallySelectedIds.add( f.id );
+            } );
         }
         
         this.updateFolderStates();
@@ -482,9 +519,12 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
 
     
     /**
-     * Triggers the update folder states method.
+     * Remembers that the user chose the selection of the given trigger and triggers the update folder states method.
+     *
+     * @param node The tree node for the trigger.
      */
-    onTriggerSelectChange(): void {
+    onTriggerSelectChange( node: QuickShareTreeNode ): void {
+        this.manuallySelectedIds.add( node.id );
         this.updateFolderStates();
     }
 
@@ -506,6 +546,7 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
         let trigger = <TriggerModel>node.item;
         if ( trigger.triggerId ) {
             node.selected = !node.selected;
+            this.manuallySelectedIds.add( node.id );
         }
     }
 
