@@ -47,8 +47,6 @@ export class HorizontalScrollDirective {
         e.preventDefault();
     }
 
-    constructor( private el: ElementRef ) {
-        console.log( 'init', el );
-    }
+    constructor( private el: ElementRef ) { }
 
 }

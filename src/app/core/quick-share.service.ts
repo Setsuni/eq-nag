@@ -302,17 +302,22 @@ export class QuickShareService {
      private handleError( error: HttpErrorResponse ) {
 
         // Log the error to the user log file.
-        this.ipcService.logException( error.error );
+        // A ProgressEvent from a failed request does not serialize usefully, so describe it instead.
+        const logDetail = error?.error != null && !( error.error instanceof Event ) ? error.error :
+            error?.message ?? `HTTP ${error?.status ?? 'Unknown'} ${error?.statusText ?? ''} ${error?.url ?? ''}`.trim();
+        this.ipcService.logException( logDetail );
 
-        if ( error.status === 0 ) {
+        let detail = error?.error?.Message ?? error?.message ?? error?.statusText ?? 'An unknown error occurred.';
+
+        if ( error?.status === 0 ) {
             // A client-side or network error occurred. Handle it accordingly.
-            console.error( 'An error occurred:', error.error );
+            console.error( 'An error occurred:', error?.error );
             
             this.dialog.open( NotificationDialogComponent, {
                 width: '450px',
                 data: {
                     title: 'Unknown Error',
-                    message: [ 'An error occurred:', error.error.Message ],
+                    message: [ 'An error occurred:', detail ],
                     notificationType: NotificationTypes.Error,
                 },
                 panelClass: 'app-dialog',
@@ -322,14 +327,14 @@ export class QuickShareService {
             // The backend returned an unsuccessful response code.
             // The response body may contain clues as to what went wrong.
             console.error(
-                `Backend returned code ${error.status}, ` +
-                `body was:`, error.error );
+                `Backend returned code ${error?.status}, ` +
+                `body was:`, error?.error );
             
                 this.dialog.open( NotificationDialogComponent, {
                     width: '450px',
                     data: {
-                        title: `[${error.status}] Error`,
-                        message: [ 'An error was thrown while attempting the request.', error.error.Message ],
+                        title: `[${error?.status ?? 'Unknown'}] Error`,
+                        message: [ 'An error was thrown while attempting the request.', detail ],
                         notificationType: NotificationTypes.Error,
                     },
                     panelClass: 'app-dialog',
