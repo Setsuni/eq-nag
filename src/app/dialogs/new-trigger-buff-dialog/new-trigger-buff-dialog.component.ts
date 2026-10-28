@@ -1,6 +1,7 @@
 import { Component, Inject, OnInit, ViewChild } from '@angular/core';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatStepper } from '@angular/material/stepper';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActionTypes, CapturePhrase, ExternalDataSources, ImportTypes, OperatorTypes, OverlayWindowModel, Phrase, ScrapedClickEffect, ScrapedSpell, TimerRestartBehaviors, TriggerAction, TriggerCondition, TriggerConditionTypes, TriggerModel } from 'src/app/core.model';
 import { IpcService } from 'src/app/ipc.service';
 import { ScraperService } from 'src/app/scraper.service';
@@ -61,7 +62,8 @@ export class NewTriggerBuffDialogComponent implements OnInit {
         @Inject( MAT_DIALOG_DATA ) public readonly data: NewTriggerDialogModel,
         public readonly scraper: ScraperService,
         public readonly ipcService: IpcService,
-        public readonly dialog: MatDialog ) { }
+        public readonly dialog: MatDialog,
+        private readonly snackBar: MatSnackBar ) { }
 
     ngOnInit() {
 
@@ -113,7 +115,10 @@ export class NewTriggerBuffDialogComponent implements OnInit {
 
         } else if ( this.data.dataSource === ExternalDataSources.EqSpellResources ) {
 
-            this.ipcService.scrapeEqSpellResourceSpell( this.url ).subscribe( spell => complete( spell ) );
+            this.ipcService.scrapeEqSpellResourceSpell( this.url ).subscribe( {
+                next: spell => complete( spell ),
+                error: () => this.snackBar.open( 'Could not load spell details from EQ Spell Resources.', 'Dismiss', { duration: 5000 } ),
+            } );
 
         }
         
@@ -150,10 +155,16 @@ export class NewTriggerBuffDialogComponent implements OnInit {
         } );
 
         if ( observables.length > 0 ) {
-            forkJoin( observables ).subscribe( items => {
-                this.selectedItems = items;
-                this.loadingItemDetails = false;
-                this.stepper.next();
+            forkJoin( observables ).subscribe( {
+                next: items => {
+                    this.selectedItems = items;
+                    this.loadingItemDetails = false;
+                    this.stepper.next();
+                },
+                error: () => {
+                    this.loadingItemDetails = false;
+                    this.snackBar.open( 'Could not load item details.', 'Dismiss', { duration: 5000 } );
+                },
             } );
         } else {
             this.stepper.next();
