@@ -1,5 +1,5 @@
 import { FlatTreeControl } from '@angular/cdk/tree';
-import { Component, ElementRef, HostListener, NgZone, OnInit, ViewChild } from '@angular/core';
+import { Component, HostListener, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';
 import { DeathRecapPreferences, ExternalDataSources, QuickShareFileModel, QuickShareMetaModel, Tag, TriggerAction, TriggerFolder, TriggerModel } from '../core.model';
@@ -7,11 +7,10 @@ import { DialogService } from '../dialogs/dialog.service';
 import { IpcService } from '../ipc.service';
 import * as _ from 'lodash-es';
 import { ContextMenuModel } from '../context-menu/context-menu.model';
-import { MatTable } from '@angular/material/table';
 import { customAlphabet } from 'nanoid';
 import { TableVirtualScrollDataSource } from 'ng-table-virtual-scroll';
 import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
-import { BehaviorSubject, forkJoin, Observable, timer } from 'rxjs';
+import { forkJoin, Observable, timer } from 'rxjs';
 import { TriggerLibraryService } from '../windows/trigger-library.service';
 import { QuickShareService } from '../core/quick-share.service';
 import { FolderConditionsDialogComponent } from './folder-conditions-dialog/folder-conditions-dialog.component';
@@ -31,7 +30,7 @@ interface FolderTreeNode {
     templateUrl: 'triggers.component.html',
     styleUrls: [ 'triggers.component.scss', '../core.scss' ],
 } )
-export class TriggersComponent implements OnInit {
+export class TriggersComponent implements OnInit, OnDestroy {
 
     private _transformer = ( folder: TriggerFolder, level: number ) => {
         return {
@@ -54,26 +53,17 @@ export class TriggersComponent implements OnInit {
     public restoreFolderHierarchy: () => void | null = null;
     private folderMap: Record<string, string> = {};
 
-    private _indexRecords: number = 0;
-    private _maxRecords: number = 0;
     private _filteredRecords: TriggerModel[] = [];
-    public dataSourceTest: BehaviorSubject<TriggerModel[]> = new BehaviorSubject<TriggerModel[]>( [] );
+    private _familyCache: Map<string, string> = new Map<string, string>();
+    private _familyCacheFolderId: string = null;
+    private _familyCacheFolders: TriggerFolder[] = null;
     
     public get filteredTriggers(): TriggerModel[] {
         return this._filteredRecords;
     }
     public set filteredTriggers( value: TriggerModel[] ) {
-        
-        this._indexRecords = 0;
-        this._maxRecords = value?.length ?? 0;
-        let take = this._maxRecords < 30 ? this._maxRecords : 30;
-        this._indexRecords = take;
-
-        this.triggersTable.renderRows();
         this._filteredRecords = value;
-        this._tableDataSource = new TableVirtualScrollDataSource( this._filteredRecords.slice( 0, this._indexRecords ) );
-
-        this.dataSourceTest.next( this._filteredRecords.slice( 0, this._indexRecords ) );
+        this._tableDataSource.data = value ?? [];
     }
 
     private _tableDataSource: TableVirtualScrollDataSource<TriggerModel> = new TableVirtualScrollDataSource<TriggerModel>([]);
@@ -84,8 +74,11 @@ export class TriggersComponent implements OnInit {
     public isDev: boolean = false;
     public triggerSearchResults: TriggerModel[] = [];
     public searchTerm: string = null;
-    @ViewChild( 'triggersTable' ) triggersTable: MatTable<TriggerModel>;
+
+    /** The viewport that virtualizes the trigger list. */
     @ViewChild( 'triggerScroller', { static: true } ) triggerScroller: CdkVirtualScrollViewport;
+    /** Watches the size of the trigger list viewport. */
+    private _scrollerResizeObserver: ResizeObserver = null;
 
     public get allExpanded(): boolean {
         return this._treeExpanded;
@@ -112,35 +105,16 @@ export class TriggersComponent implements OnInit {
 
     ngOnInit() {
 
-        this.triggerScroller.elementScrolled().subscribe( e => {
-            this.ngZone.run( () => {
-                
-                let elRef = ( this.triggersTable as any )._elementRef as ElementRef<HTMLTableElement>;
-                let remainingScroll = elRef.nativeElement.clientHeight - this.triggerScroller.elementRef.nativeElement.scrollTop - this.triggerScroller.elementRef.nativeElement.clientHeight;
-                if ( remainingScroll <= 0 ) {
-                
-                    this._indexRecords += 10;
-                    this._indexRecords = this._indexRecords > this._maxRecords ? this._maxRecords : this._indexRecords;
-                
-                    this._tableDataSource = new TableVirtualScrollDataSource( this._filteredRecords.slice( 0, this._indexRecords ) );
-                    this.dataSourceTest.next( this._filteredRecords.slice( 0, this._indexRecords ) );
-                
-                    this.triggersTable.renderRows();
-
-                }
-            } );
+        // The viewport only measures itself on window resize and scroll, so re-measure it when its own size changes.
+        this.ngZone.runOutsideAngular( () => {
+            this._scrollerResizeObserver = new ResizeObserver( () => this.triggerScroller.checkViewportSize() );
+            this._scrollerResizeObserver.observe( this.triggerScroller.elementRef.nativeElement );
         } );
 
         this.ipcService.tickReceived().subscribe( tick => {
-            let searchTerm = this.searchTerm;
             this.triggers = tick.triggers.filter( f => this.isDev || !f.predefined );
             this.updateViewTriggerData( tick.folders );
-            this.toggleSelectedFolder( null );
-            if ( searchTerm ) {
-                this.searchTerm = searchTerm;
-                this.searchTriggers();
-            } 
-            
+            this.searchTriggers();
         } );
 
         this.ipcService.getDeathRecapPreferences().subscribe( recapPrefs => this.deathRecapPreferences = recapPrefs ?? null );
@@ -149,6 +123,22 @@ export class TriggersComponent implements OnInit {
             this.updateViewTriggerData( folders );
         } );
 
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Stops observing the trigger list viewport.
+     */
+    ngOnDestroy() {
+        this._scrollerResizeObserver?.disconnect();
     }
 
 
@@ -426,8 +416,26 @@ export class TriggersComponent implements OnInit {
      */
     public toggleSelectedFolder( folderId: string ): void {
         this.selectedFolderId = this.selectedFolderId === folderId ? null : folderId === null ? this.selectedFolderId : folderId;
+        this.triggerScroller?.scrollToOffset( 0 );
         this.filterTriggers();
         this.searchTerm = null;
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Scrolls the trigger list back to the top and searches for the current search term.
+     */
+    public onSearchTermChanged(): void {
+        this.triggerScroller?.scrollToOffset( 0 );
+        this.searchTriggers();
     }
 
 
@@ -862,6 +870,7 @@ export class TriggersComponent implements OnInit {
      */
     private updateViewTriggerData( folders: TriggerFolder[] ): void {
         this.selectedFolderId = this.folderExistsRecursive( folders, this.selectedFolderId ) ? this.selectedFolderId : null;
+        this._familyCache.clear();
         this.folderMap = TriggerFolder.getFolderAncestryMap( folders );
         this.triggerFolders = folders;
         this.dataSource.data = folders;
@@ -1160,6 +1169,7 @@ export class TriggersComponent implements OnInit {
 
     /**
      * Returns the family name of the given trigger.  If the trigger's folder is the currently selected folder, returns null.
+     * Results are cached per folder until the selected folder or the folder hierarchy changes.
      * 
      * @example May return "\Raids\OoW\Anguish\OMM"
      * 
@@ -1169,17 +1179,43 @@ export class TriggersComponent implements OnInit {
         if ( this.selectedFolderId == null || trigger.folderId === this.selectedFolderId ) {
             return '';
         } else {
-            let folders = this.findFolderById( this.selectedFolderId ).children;
-            let folderFamilyNames = this.getFolderFamilyNames( trigger.folderId, folders, [] );
-            if ( folderFamilyNames?.length > 0 ) {
-                let name = `\\${folderFamilyNames[ 0 ]}`;
-                for ( let i = 1; i < folderFamilyNames.length; i++ ) {
-                    name += `\\${folderFamilyNames[i]}`;
-                }
-                return name;
-            } else {
-                return null;
+            if ( this._familyCacheFolderId !== this.selectedFolderId || this._familyCacheFolders !== this.triggerFolders ) {
+                this._familyCache.clear();
+                this._familyCacheFolderId = this.selectedFolderId;
+                this._familyCacheFolders = this.triggerFolders;
             }
+            if ( !this._familyCache.has( trigger.folderId ) ) {
+                this._familyCache.set( trigger.folderId, this.computeTriggerFamily( trigger.folderId ) );
+            }
+            return this._familyCache.get( trigger.folderId );
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Computes the family name of the given folder, relative to the currently selected folder.
+     * 
+     * @param folderId The id of the folder.
+     */
+    private computeTriggerFamily( folderId: string ): string {
+        let folders = this.findFolderById( this.selectedFolderId ).children;
+        let folderFamilyNames = this.getFolderFamilyNames( folderId, folders, [] );
+        if ( folderFamilyNames?.length > 0 ) {
+            let name = `\\${folderFamilyNames[ 0 ]}`;
+            for ( let i = 1; i < folderFamilyNames.length; i++ ) {
+                name += `\\${folderFamilyNames[i]}`;
+            }
+            return name;
+        } else {
+            return null;
         }
     }
 
