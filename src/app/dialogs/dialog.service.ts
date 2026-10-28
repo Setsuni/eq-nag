@@ -17,7 +17,6 @@ import { NotificationDialogModel, NotificationTypes } from './notification-dialo
 import { NotificationDialogComponent } from './notification-dialog/notification-dialog.component';
 import { AutocompleteDialogModel } from './autocomplete-dialog/autocomplete-dialog.model';
 import { AutoCompleteDialogComponent } from './autocomplete-dialog/autocomplete-dialog.component';
-import { NewTriggerRaidAbilityComponent } from './new-trigger-raid-ability/new-trigger-raid-ability.component';
 import { ColoredString, NewTriggerDialogModel, PrepareQuickShareModel } from './dialog.model';
 import { NewTriggerBuffDialogComponent } from './new-trigger-buff-dialog/new-trigger-buff-dialog.component';
 import { NamedGroupConditionsModel } from './named-group-conditions-dialog/named-group-conditions.model';
@@ -384,7 +383,7 @@ export class DialogService {
      */
     public showNewDotTimerDialog( folderId?: string, externalSource?: ExternalDataSources | undefined ): void {
         
-        externalSource = externalSource ? externalSource : ExternalDataSources.Allakhazam;
+        externalSource = externalSource ? externalSource : ExternalDataSources.EqSpellResources;
 
         this.dialog.open( NewTriggerDialogComponent, {
             width: '750px',
@@ -405,29 +404,9 @@ export class DialogService {
     /**
      * Opens the new dot timer trigger dialog.
      */
-    public showNewRaidAbilityDialog( folderId?: string ): void {
-        this.dialog.open( NewTriggerRaidAbilityComponent, {
-            width: '750px',
-            data: <NewTriggerDialogModel>{ selectedFolderId: folderId, trigger: null },
-            panelClass: 'app-dialog',
-        } ).afterClosed();
-    }
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Opens the new dot timer trigger dialog.
-     */
     public showNewBuffTimerDialog( folderId?: string, externalSource?: ExternalDataSources | undefined ): void {
 
-        externalSource = externalSource ? externalSource : ExternalDataSources.Allakhazam;
+        externalSource = externalSource ? externalSource : ExternalDataSources.EqSpellResources;
 
         this.dialog.open( NewTriggerBuffDialogComponent, {
             width: '750px',
@@ -450,26 +429,6 @@ export class DialogService {
      */
     public showReimportDotTimerDialog( model: TriggerModel, externalSource: ExternalDataSources ): void {
         this.dialog.open( NewTriggerDialogComponent, {
-            width: '750px',
-            data: <NewTriggerDialogModel>{ selectedFolderId: null, trigger: model, dataSource: externalSource },
-            panelClass: 'app-dialog',
-        } ).afterClosed();
-    }
-
-
-
-
-
-
-
-
-
-
-    /**
-     * Opens the new dot timer trigger dialog.
-     */
-    public showReimportRaidAbilityDialog( model: TriggerModel, externalSource: ExternalDataSources ): void {
-        this.dialog.open( NewTriggerRaidAbilityComponent, {
             width: '750px',
             data: <NewTriggerDialogModel>{ selectedFolderId: null, trigger: model, dataSource: externalSource },
             panelClass: 'app-dialog',

@@ -592,57 +592,6 @@ export class MainComponent implements OnInit {
         //     } );
         
         // this.ipcService.simulateLogParse( 'E:\\everquest\\Logs\\Backup\\eqlog_Ryvn_mangler_20201024_204401.txt' );
-        // let url: string = 'https://everquest.allakhazam.com/db/spell.html?spell=5423';
-        // let charClass: string = 'NEC';
-
-        // this.scraper.ScrapeAllakhazamSpell( 'https://everquest.allakhazam.com/db/spell.html?spell=5423', charClass ).subscribe( spell => console.log( 'spell', spell ) );
-        // this.scraper.ScrapeAllakhazamSpell( 'https://everquest.allakhazam.com/db/spell.html?spell=2885', charClass ).subscribe( spell => console.log( 'spell', spell ) );
-
-        // function reqListener() {
-        //     let div = document.createElement( 'div' );
-        //     div.style.display = 'none';
-        //     div.id = 'testingDiv';
-        //     document.body.appendChild( div );
-        //     div.innerHTML = this.responseText;
-
-        //     let model = {
-        //         name: div.querySelector( 'meta[property="og:title"]' ).getAttribute( 'content' ),
-        //         duration: 0,
-        //         _duration: document.evaluate( "//strong[contains(., 'Duration:')]", document, null, XPathResult.ANY_TYPE, null ).iterateNext().nextSibling.nextSibling.textContent.trim(),
-        //         class: document.evaluate( "//div[contains(@class, 'db-infobox')]/table/tbody/tr/td/strong[contains(., '" + charClass + "')]", document, null, XPathResult.ANY_TYPE, null ).iterateNext().textContent,
-        //         level: +document.evaluate( "//div[contains(@class, 'db-infobox')]/table/tbody/tr/td/strong[contains(., '" + charClass + "')]", document, null, XPathResult.ANY_TYPE, null ).iterateNext().parentNode.nextSibling.textContent,
-        //         castOnOther: document.evaluate("//blockquote[contains(., 'Cast on other')]", document, null, XPathResult.ANY_TYPE, null ).iterateNext().textContent.split('Cast on other: ')[1].split('Effect Fades: ')[0],
-        //     };
-
-        //     if ( model._duration.indexOf( 'ticks' ) > -1 ) {
-        //         model.duration = parseFloat( model._duration ) * 6;
-        //     } else {
-        //         model.duration = parseFloat( model._duration ) * 10 * 6;
-        //     }
-
-        //     console.log( 'found', model );
-
-        //     document.body.removeChild( div );
-        //     div = null;
-            
-        //     // console.log( 'spell name', div.querySelector( 'meta[property="og:title"]' ).getAttribute( 'content' ) );
-        //     // console.log( 'spell duration', document.evaluate( "//strong[contains(., 'Duration:')]", document, null, XPathResult.ANY_TYPE, null ).iterateNext().nextSibling.nextSibling );
-        //     // let shadow = div.attachShadow( { mode: 'open' } );
-        //     // shadow.innerHTML = this.responseText;
-
-        //     // console.log( 'spell name', shadow.querySelector( 'meta[property="og:title"]' ).getAttribute( 'content' ) );
-        //     // console.log( 'spell duration', shadow.ownerDocument.evaluate( "//strong[contains(., 'Duration:')]", document, null, XPathResult.ANY_TYPE, null ).iterateNext().nextSibling.nextSibling );
-            
-        //     // console.log( this.responseText );
-        // }
-          
-        // var oReq = new XMLHttpRequest();
-        // oReq.addEventListener( "load", reqListener );
-        // oReq.open( "GET", url );
-        // oReq.send();
-        // this.httpClient.get( url ).subscribe( f => { 
-        //     console.log( 'testingasdf' );
-        //  } );
         // // this.ipcService.sendTestModel( `Target Name --== Dot Name ==--` );
         // this.ipcService.sendTestFn( '[Fri Oct 02 09:34:19 2020] You begin casting Funeral Pyre of Kelador.' );
         // window.setTimeout( () => { this.ipcService.sendTestFn( '[Fri Oct 02 09:34:25 2020] A carrion beetle hatchling has taken 350 damage from your Funeral Pyre of Kelador.' ); }, 1000 );

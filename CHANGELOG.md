@@ -42,4 +42,6 @@ description, which Nag shows in the Update Notes window.
 - The leading "~ " on /emote lines is NOT stripped (the strip was reverted at Maxx's request).
   Only the predefined Clear All trigger needed changing (Albin's commits). It is replaced from
   clear-all.json on every load, so existing users get it without a migration.
+- Allakhazam scraper code (scraper service, raid ability dialog) removed; the ZAM data source value and
+  allakhazamUrl stay so older triggers keep loading and can be re-imported from EQ Spell Resources.
 -->

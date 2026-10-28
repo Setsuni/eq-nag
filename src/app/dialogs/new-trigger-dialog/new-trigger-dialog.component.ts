@@ -2,7 +2,6 @@ import { Component, OnInit, Inject, ViewChild } from '@angular/core';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ActionTypes, CapturePhrase, Phrase, OperatorTypes, OverlayWindowModel, TriggerAction, TriggerCondition, TriggerConditionTypes, TriggerModel, ImportTypes, TimerRestartBehaviors, ScrapedSpell, ScrapedClickEffect, ExternalDataSources } from 'src/app/core.model';
 import { IpcService } from 'src/app/ipc.service';
-import { ScraperService } from 'src/app/scraper.service';
 import { customAlphabet } from 'nanoid';
 import { SelectIconDialogComponent } from '../select-icon-dialog/select-icon-dialog.component';
 import * as _ from 'lodash-es';
@@ -34,7 +33,7 @@ export class NewTriggerDialogComponent implements OnInit {
     }
 
     public get serviceName(): string {
-        return this.data.dataSource === ExternalDataSources.Allakhazam ? 'Allakhazam' : 'EQ Spell Resources';
+        return 'EQ Spell Resources';
     }
     
     @ViewChild( 'stepper', { static: false, read: MatStepper } ) public stepper: MatStepper;
@@ -42,7 +41,6 @@ export class NewTriggerDialogComponent implements OnInit {
     constructor(
         public dialogRef: MatDialogRef<NewTriggerDialogComponent>,
         @Inject( MAT_DIALOG_DATA ) public data: NewTriggerDialogModel,
-        public scraper: ScraperService,
         public ipcService: IpcService,
         public dialog: MatDialog ) { }
 
@@ -78,11 +76,7 @@ export class NewTriggerDialogComponent implements OnInit {
             this.stepper.next();
         }
 
-        if ( this.data.dataSource === ExternalDataSources.Allakhazam ) {
-
-            this.scraper.ScrapeAllakhazamSpell( this.url ).subscribe( spell => complete( spell ) );
-
-        } else if ( this.data.dataSource === ExternalDataSources.EqSpellResources ) {
+        if ( this.data.dataSource === ExternalDataSources.EqSpellResources ) {
 
             this.ipcService.scrapeEqSpellResourceSpell( this.url ).subscribe( spell => complete( spell ) );
 
@@ -126,7 +120,7 @@ export class NewTriggerDialogComponent implements OnInit {
         trigger.importType = ImportTypes.DotTimer;
 
         trigger.capturePhrases = [];
-        const captureReplaceRegex = this.data.dataSource === ExternalDataSources.Allakhazam ? /soandso's|soandso\s's|soandso/gmi : /target's|target\s's|target/gmi;
+        const captureReplaceRegex = /target's|target\s's|target/gmi;
         trigger.capturePhrases.push( <CapturePhrase>{
             phraseId: nanoid(),
             useRegEx: true,
