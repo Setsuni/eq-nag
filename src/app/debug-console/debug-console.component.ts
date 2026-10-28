@@ -93,7 +93,7 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
 
     /**
      * Applies the search text to the list after the user stops typing.
-     * 
+     *
      * @param value The current search text.
      */
     public onSearchTextChanged( value: string ): void {
@@ -110,7 +110,7 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
 
 
 
-    
+
     /**
      * Sends the entered console command to the server.
      */
