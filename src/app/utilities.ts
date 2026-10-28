@@ -113,6 +113,29 @@ export class ArrayUtility {
 
         return false;
     }
+
+    /**
+     * Groups the given items by key, keeping the original order within each group.
+     *
+     * @param items The list of items to group.
+     * @param getKey Returns the group key of an item.
+     * @returns {Map<string, T[]>} Returns the items grouped by key, in their original order.
+     */
+    public static groupBy<T>( items: T[], getKey: ( item: T ) => string ): Map<string, T[]> {
+        let groups = new Map<string, T[]>();
+
+        items.forEach( item => {
+            let key = getKey( item );
+            let group = groups.get( key );
+            if ( group ) {
+                group.push( item );
+            } else {
+                groups.set( key, [ item ] );
+            }
+        } );
+
+        return groups;
+    }
 }
 
 export class ImageUtility {

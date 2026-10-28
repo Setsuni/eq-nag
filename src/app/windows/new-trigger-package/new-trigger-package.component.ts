@@ -13,6 +13,7 @@ import { ColoredString } from 'src/app/dialogs/dialog.model';
 import { nagId } from 'src/app/core/nag-id.util';
 import { findUnshareableIconTriggers } from 'src/app/utilities/timer-icons';
 import { findSoundSizeProblem } from 'src/app/utilities/package-file-ids';
+import { ArrayUtility } from 'src/app/utilities';
 
 @Component( {
     selector: 'app-new-trigger-package',
@@ -24,8 +25,19 @@ export class NewTriggerPackageComponent implements OnInit {
     public package: TriggerPackageMetaModel = new TriggerPackageMetaModel();
     public notes: string;
     private triggers: TriggerModel[];
-    private triggerFolders: TriggerFolder[];
+    private _triggerFolders: TriggerFolder[];
+    /** The trigger folder tree of the package. */
+    private get triggerFolders(): TriggerFolder[] {
+        return this._triggerFolders;
+    }
+    /** Sets the trigger folder tree and clears the cached folder breadcrumbs. */
+    private set triggerFolders( value: TriggerFolder[] ) {
+        this._triggerFolders = value;
+        this._folderFamilies = null;
+    }
     private ancestryMap: Record<string, string> = {};
+    /** The breadcrumbs of each folder in triggerFolders by folder id, built on first use. Cleared whenever triggerFolders is set; the tree is never edited in place. */
+    private _folderFamilies: Map<string, string> = null;
     private _pkgId: string;
     /** Names the triggers whose timer icon the receiver of the package would drop. */
     private iconWarning: string = '';
@@ -152,17 +164,21 @@ export class NewTriggerPackageComponent implements OnInit {
 
         this.deletedTriggerIds = [];
 
+        let triggerIds = new Set<string>( this.triggers.map( t => t.triggerId ) );
+
         this.package.model.triggers.forEach( pkgTrigger => {
-            let trigger = this.triggers.find( t => t.triggerId === pkgTrigger.triggerId );
-            if ( trigger == null ) {
+            if ( !triggerIds.has( pkgTrigger.triggerId ) ) {
                 this.deletedTriggerIds.push( pkgTrigger.triggerId );
             }
         } );
         
+        let deletedIds = new Set<string>( this.deletedTriggerIds );
+        let pkgTriggersById = ArrayUtility.groupBy( this.package.model.triggers, pkgTrigger => pkgTrigger.triggerId );
+
         this.triggers.forEach( trigger => {
             
-            this.package.model.triggers.forEach( pkgTrigger => {
-                if ( !this.deletedTriggerIds.includes( pkgTrigger.triggerId ) && pkgTrigger.triggerId === trigger.triggerId ) {
+            ( pkgTriggersById.get( trigger.triggerId ) ?? [] ).forEach( pkgTrigger => {
+                if ( !deletedIds.has( pkgTrigger.triggerId ) ) {
 
                     this.triggerUpdates[ trigger.triggerId ] = PackageTrigger.matchesTrigger( pkgTrigger, trigger );
 
@@ -273,11 +289,17 @@ export class NewTriggerPackageComponent implements OnInit {
      * @param folder The selected folder.
      */
     addFolderTriggers( folder: TriggerFolder ): void {
-        let folderIds = this.getFlattenedFolderIds( folder, [] );
+        let folderIds = new Set<string>( this.getFlattenedFolderIds( folder, [] ) );
+        let pkgTriggersById = new Map<string, PackageTrigger>();
+        this.package.model.triggers.forEach( pkgTrigger => {
+            if ( !pkgTriggersById.has( pkgTrigger.triggerId ) ) {
+                pkgTriggersById.set( pkgTrigger.triggerId, pkgTrigger );
+            }
+        } );
         
         this.triggers.forEach( trigger => {
-            if ( folderIds.indexOf( trigger.folderId ) > -1 ) {
-                this.addTrigger( trigger );
+            if ( folderIds.has( trigger.folderId ) ) {
+                this.addTrigger( trigger, pkgTriggersById );
             }
         } );
 
@@ -513,18 +535,16 @@ export class NewTriggerPackageComponent implements OnInit {
      * Adds the given trigger to the package if it doesn't exist already.
      * 
      * @param trigger The trigger model.
+     * @param pkgTriggersById An optional lookup of the first package trigger with each id, kept up to date when given.
      */
-    addTrigger( trigger: TriggerModel ) {
-        let exists = _.some( this.package.model.triggers, f => f.triggerId === trigger.triggerId );
-        let pTrg = new PackageTrigger();
+    addTrigger( trigger: TriggerModel, pkgTriggersById: Map<string, PackageTrigger> = null ) {
+        let pTrg: PackageTrigger = pkgTriggersById ? pkgTriggersById.get( trigger.triggerId ) : this.package.model.triggers.find( f => f.triggerId === trigger.triggerId );
 
-        if ( !exists ) {
+        if ( pTrg === null || pTrg === undefined ) {
+            pTrg = new PackageTrigger();
             pTrg.triggerId = trigger.triggerId;
             this.package.model.triggers.push( pTrg );
-
-        } else {
-            pTrg = this.package.model.triggers.find( f => f.triggerId === trigger.triggerId );
-
+            pkgTriggersById?.set( trigger.triggerId, pTrg );
         }
 
         pTrg.folderId = trigger.folderId;
@@ -618,31 +638,25 @@ export class NewTriggerPackageComponent implements OnInit {
 
     
     /**
-     * Generates an array that contains all of the specified folder's ancestors
+     * Builds the breadcrumbs for every folder in the given hierarchy.  When
+     * folder ids repeat, the first folder found in pre-order wins.
      * 
-     * @returns Returns an array that contains all of the names of the ancestor of the specified folder.
-     * 
-     * @param folderId The folder id.
-     * @param folders The list of folders to queryr
-     * @param names The current list of hierarchical names.
+     * @param folders The list of folders to index.
+     * @param parentFamily The breadcrumbs of the parent folder.
+     * @param families The breadcrumbs by folder id, modified by reference.
      */
-    private getFolderFamilyNames( folderId: string, folders: TriggerFolder[], names: string[] ): string[] {
+    private indexFolderFamilies( folders: TriggerFolder[], parentFamily: string, families: Map<string, string> ): void {
         
         for ( let i = 0; i < folders?.length; i++ ) {
+            let family = `${parentFamily}\\${folders[ i ].name}`;
 
-            if ( folders[ i ].folderId === folderId ) {
-                return names.concat( [ folders[ i ].name ] );
-
-            } else if ( folders[ i ]?.children?.length > 0 ) {
-                
-                let d = this.getFolderFamilyNames( folderId, folders[ i ].children, names.concat( [ folders[ i ].name ] ) );
-
-                if ( d?.length > 0 ) {
-                    return d;
-                }
-
+            if ( !families.has( folders[ i ].folderId ) ) {
+                families.set( folders[ i ].folderId, family );
             }
 
+            if ( folders[ i ]?.children?.length > 0 ) {
+                this.indexFolderFamilies( folders[ i ].children, family, families );
+            }
         }
     }
 
@@ -663,18 +677,12 @@ export class NewTriggerPackageComponent implements OnInit {
      * @param trigger The trigger model.
      */
     public getTriggerFamily( trigger: TriggerModel | PackageTrigger ): string {
-
-        let folderFamilyNames = this.getFolderFamilyNames( trigger.folderId, this.triggerFolders, [] );
-        if ( folderFamilyNames?.length > 0 ) {
-            let name = `\\${folderFamilyNames[ 0 ]}`;
-            for ( let i = 1; i < folderFamilyNames.length; i++ ) {
-                name += `\\${folderFamilyNames[ i ]}`;
-            }
-            return name;
-        } else {
-            return null;
+        if ( this._folderFamilies === null || this._folderFamilies === undefined ) {
+            this._folderFamilies = new Map<string, string>();
+            this.indexFolderFamilies( this.triggerFolders, '', this._folderFamilies );
         }
 
+        return this._folderFamilies.get( trigger.folderId ) ?? null;
     }
 
 

@@ -266,10 +266,11 @@ export class TriggerFolder {
      * 
      * @param folderId The desired folder id.
      * @param rootFolders The root list of folders.
+     * @param ancestryMap An optional prebuilt ancestry map for the root folders, built when not given.
      */
-    public static getFolderAncestry( folderId: string, rootFolders: TriggerFolder[] ): TriggerFolder[] {
+    public static getFolderAncestry( folderId: string, rootFolders: TriggerFolder[], ancestryMap: Record<string, string> = null ): TriggerFolder[] {
         let flat: string[] = [ folderId ];
-        let ancestryMap: Record<string, string> = this.getFolderAncestryMap( rootFolders );
+        ancestryMap = ancestryMap ?? this.getFolderAncestryMap( rootFolders );
 
         // Traverse up the ancestry, stopping at the parent root folder id.
         let t: string = ancestryMap[ folderId ];
