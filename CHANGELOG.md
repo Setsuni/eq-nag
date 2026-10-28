@@ -16,6 +16,7 @@ description, which Nag shows in the Update Notes window.
 - **"Your resolution has changed!"** no longer appears on a new profile, and if your monitors turn off and come back (for example overnight), the warning now closes by itself once the screens are back to normal.
 - **Timers end when an NPC or pet dies on live servers.** Live now reports these deaths as "… was slain by …" instead of "… has been slain by …", so auto-generated DoT, buff and raid timers kept running after the target died. New triggers handle both, and existing ones are updated automatically (End Early phrases that check for "has been slain by"). Emulator servers are unaffected.
 - **SVG timer icons now show** in the Timer, DoT Timer and Stopwatch editors. (Thanks, Maxx!)
+- **Shared sounds never replace or delete a different sound you already have.** Installing a package or quick share overwrote one of your sounds that happened to have the same internal id, and uninstalling a package could delete a sound you also used. The incoming sound now gets its own id when it differs, your sounds are left alone, and an update that changes a sound removes the old copy only when nothing uses it any more.
 
 ### Security
 - **Safer shared triggers.** HTML in trigger text, overlay names and log text is now cleaned before it is shown, so formatting and styles still work but nothing in it can run. Overlays no longer load images, sounds or fonts from other websites, and sound files from shared packages and quick-shares are checked before they are saved.
