@@ -1202,7 +1202,7 @@ export class TriggersComponent implements OnInit, OnDestroy {
 
     /**
      * Computes the family name of the given folder, relative to the currently selected folder.
-     * 
+     *
      * @param folderId The id of the folder.
      */
     private computeTriggerFamily( folderId: string ): string {
