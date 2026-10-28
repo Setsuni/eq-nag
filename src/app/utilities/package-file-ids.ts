@@ -54,10 +54,20 @@ export function findSoundSizeProblem( files: { fileName?: string, contents?: str
  * @param error The error of the import.
  */
 export function toSkippedSound( file: { fileId: string, fileName?: string }, error: any ): SkippedSound {
-    let reason = String( error?.message ?? error ?? 'It could not be saved.' )
+    return new SkippedSound( file.fileId, file.fileName ?? file.fileId, getErrorReason( error, 'It could not be saved.' ) );
+}
+
+/**
+ * Returns the reason in an error from the main process, without the text
+ * that Electron puts in front of it.
+ *
+ * @param error The error.
+ * @param fallback The reason to use when the error has none.
+ */
+export function getErrorReason( error: any, fallback: string = 'Unknown error' ): string {
+    return String( error?.message ?? error ?? fallback )
         .replace( /^Error invoking remote method '[^']*': /, '' )
         .replace( /^Error: /, '' );
-    return new SkippedSound( file.fileId, file.fileName ?? file.fileId, reason );
 }
 
 /**
