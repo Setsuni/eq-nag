@@ -3,7 +3,7 @@
     <span class="spacer"></span>
     <mat-form-field style="width: 275px; color: #7b1fa2;">
         <mat-label></mat-label>
-        <input matInput [(ngModel)]="searchTerm" (ngModelChange)="searchTriggers()" />
+        <input matInput [(ngModel)]="searchTerm" (ngModelChange)="onSearchTermChanged()" />
         <mat-hint>Search for triggers by name, description, phrase, etc...</mat-hint>
     </mat-form-field>
     <!-- <button mat-button (click)="getAllTriggerfiles()">Download All Files</button> TODO: Remove button -->
@@ -96,7 +96,7 @@
                 <div class="instructions" *ngIf="dataSource.data?.length === 0">
                     <span>You have no trigger folders. Click on the <mat-icon [inline]="true">create_new_folder</mat-icon> to start adding folders.</span>
                 </div>
-                <cdk-virtual-scroll-viewport tvsItemSize itemSize="27" class="wrapper mat-elevation-z2" style="height: 100%">
+                <cdk-virtual-scroll-viewport itemSize="27" class="wrapper mat-elevation-z2" style="height: 100%">
                     <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
 
                         <!-- This is the tree node template for leaf nodes -->
@@ -129,9 +129,9 @@
 
         <div class="ft-item" style="margin: 3px; width: 66%;">
             <div class="ft-content">
-                <cdk-virtual-scroll-viewport tvsItemSize itemSize="27" class="wrapper mat-elevation-z2" style="height: 100%" #triggerScroller>
-                    <table mat-table #triggersTable="matTable" style="width: 100%; min-width: 600px;" 
-                        [dataSource]="dataSourceTest"
+                <cdk-virtual-scroll-viewport tvsItemSize="41" class="wrapper mat-elevation-z2" style="height: 100%" #triggerScroller>
+                    <table mat-table style="width: 100%; min-width: 600px;" 
+                        [dataSource]="tableDataSource"
                         class="capture-phrases">
     
                         <ng-container matColumnDef="enabled">
@@ -159,7 +159,12 @@
     
                         <ng-container matColumnDef="name">
                             <th mat-header-cell *matHeaderCellDef style="padding-left: 15px;"> Name <span style="float:right;" *ngIf="filteredTriggers?.length > 0"><span style="font-weight: 400;">Count:</span> {{filteredTriggers?.length}}</span></th>
-                            <td mat-cell *matCellDef="let element; let i = index" style="padding-left: 15px;">{{element.name}} <span class="text-depress" style="float: right;">{{getTriggerFamily(element)}}</span></td>
+                            <td mat-cell *matCellDef="let element; let i = index" style="padding-left: 15px; max-width: 0;">
+                                <div style="display: flex; white-space: nowrap;">
+                                    <span title="{{element.name}}" style="flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis;">{{element.name}}</span>
+                                    <span class="text-depress" title="{{getTriggerFamily(element)}}" style="flex: 0 1 auto; min-width: 0; max-width: 50%; margin-left: 8px; overflow: hidden; text-overflow: ellipsis;">{{getTriggerFamily(element)}}</span>
+                                </div>
+                            </td>
                         </ng-container>
     
                         <ng-container matColumnDef="delete">

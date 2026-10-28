@@ -36,12 +36,14 @@ import { SettingsModule } from './settings/settings.module';
 import { ConsoleProgressComponent } from './debug-console/console-lines/console-progress.component';
 import { CombatStatisticsComponent } from './combat-statistics/combat-statistics.component';
 import { QuickActionsComponent } from './quick-actions/quick-actions.component';
+import { TableVirtualScrollModule } from 'ng-table-virtual-scroll';
 
 @NgModule( {
     imports: [
         BrowserModule,
         FormsModule,
         MaterialModule,
+        TableVirtualScrollModule,
         DialogModule,
         BrowserAnimationsModule,
         RouterModule.forRoot( appRoutes, { enableTracing: false, useHash: true, relativeLinkResolution: 'legacy' } ),
