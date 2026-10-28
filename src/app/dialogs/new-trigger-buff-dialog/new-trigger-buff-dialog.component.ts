@@ -3,7 +3,6 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dial
 import { MatStepper } from '@angular/material/stepper';
 import { ActionTypes, CapturePhrase, ExternalDataSources, ImportTypes, OperatorTypes, OverlayWindowModel, Phrase, ScrapedClickEffect, ScrapedSpell, TimerRestartBehaviors, TriggerAction, TriggerCondition, TriggerConditionTypes, TriggerModel } from 'src/app/core.model';
 import { IpcService } from 'src/app/ipc.service';
-import { ScraperService } from 'src/app/scraper.service';
 import { NewTriggerDialogModel } from '../dialog.model';
 import { customAlphabet } from 'nanoid';
 import { SelectIconDialogComponent } from '../select-icon-dialog/select-icon-dialog.component';
@@ -41,7 +40,7 @@ export class NewTriggerBuffDialogComponent implements OnInit {
     public hideTimer: boolean = true;
 
     public get serviceName(): string {
-        return this.data.dataSource === ExternalDataSources.Allakhazam ? 'Allakhazam' : 'EQ Spell Resources';
+        return 'EQ Spell Resources';
     }
 
     public get cannotTrack(): boolean {
@@ -59,7 +58,6 @@ export class NewTriggerBuffDialogComponent implements OnInit {
     constructor(
         public readonly dialogRef: MatDialogRef<NewTriggerBuffDialogComponent>,
         @Inject( MAT_DIALOG_DATA ) public readonly data: NewTriggerDialogModel,
-        public readonly scraper: ScraperService,
         public readonly ipcService: IpcService,
         public readonly dialog: MatDialog ) { }
 
@@ -107,11 +105,7 @@ export class NewTriggerBuffDialogComponent implements OnInit {
             this.stepper.next();
         }
 
-        if ( this.data.dataSource === ExternalDataSources.Allakhazam ) {
-
-            this.scraper.ScrapeAllakhazamSpell( this.url ).subscribe( spell => complete( spell ) );
-
-        } else if ( this.data.dataSource === ExternalDataSources.EqSpellResources ) {
+        if ( this.data.dataSource === ExternalDataSources.EqSpellResources ) {
 
             this.ipcService.scrapeEqSpellResourceSpell( this.url ).subscribe( spell => complete( spell ) );
 
@@ -140,9 +134,7 @@ export class NewTriggerBuffDialogComponent implements OnInit {
         this.spell.itemsWithEffect.forEach( item => {
             if ( item.selected ) {
 
-                if ( this.data.dataSource === ExternalDataSources.Allakhazam ) {
-                    observables.push( this.scraper.ScrapeAllakhazamItemClickInfo( item.url ) );
-                } else if ( this.data.dataSource === ExternalDataSources.EqSpellResources ) {
+                if ( this.data.dataSource === ExternalDataSources.EqSpellResources ) {
                     observables.push( this.ipcService.scrapeEqSpellResourceItemClickInfo( item.url ) );
                 }
                 
@@ -438,7 +430,7 @@ export class NewTriggerBuffDialogComponent implements OnInit {
         }
         
         if ( this.useTargetTimer ) {
-            const captureReplaceRegex = this.data.dataSource === ExternalDataSources.Allakhazam ? /soandso's|soandso\s's|soandso/gmi : /target's|target\s's|target/gmi;
+            const captureReplaceRegex = /target's|target\s's|target/gmi;
             castOnOtherPhraseId = nanoid();
             trigger.capturePhrases.push( <CapturePhrase>{
                 phraseId: castOnOtherPhraseId,
