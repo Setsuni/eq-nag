@@ -1,5 +1,5 @@
 import { FlatTreeControl } from '@angular/cdk/tree';
-import { Component, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, NgZone, OnInit, ViewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';
 import { DeathRecapPreferences, ExternalDataSources, QuickShareFileModel, QuickShareMetaModel, Tag, TriggerAction, TriggerFolder, TriggerModel } from '../core.model';
@@ -31,7 +31,7 @@ interface FolderTreeNode {
     templateUrl: 'triggers.component.html',
     styleUrls: [ 'triggers.component.scss', '../core.scss' ],
 } )
-export class TriggersComponent implements OnInit, OnDestroy {
+export class TriggersComponent implements OnInit {
 
     private _transformer = ( folder: TriggerFolder, level: number ) => {
         return {
@@ -85,8 +85,6 @@ export class TriggersComponent implements OnInit, OnDestroy {
     public triggerSearchResults: TriggerModel[] = [];
     public searchTerm: string = null;
     @ViewChild( 'triggersTable' ) triggersTable: MatTable<TriggerModel>;
-    @ViewChild( 'folderPane', { static: true } ) folderPane: ElementRef<HTMLElement>;
-    @ViewChild( 'folderDivider', { static: true } ) folderDivider: ElementRef<HTMLElement>;
     @ViewChild( 'triggerScroller', { static: true } ) triggerScroller: CdkVirtualScrollViewport;
 
     public get allExpanded(): boolean {
@@ -98,21 +96,6 @@ export class TriggersComponent implements OnInit, OnDestroy {
 
     public deathRecapPreferences: DeathRecapPreferences = null;
     
-    private static readonly folderPaneStorageKey = 'nagTriggerFolderPaneWidth';
-    private static readonly folderPaneDefaultPercent = 32;
-    private static readonly folderPaneMinPx = 160;
-    private static readonly triggerPaneMinPx = 300;
-    private static readonly folderPaneStepPx = 16;
-
-    /** The folder pane width as a percentage of the row. */
-    private _folderPanePercent: number = TriggersComponent.folderPaneDefaultPercent;
-    private _dragStartX: number = 0;
-    private _dragStartWidth: number = 0;
-
-    private readonly _onWindowResize = () => this.applyFolderPaneWidth();
-    private readonly _onDragMove = ( event: MouseEvent ) => this.onDividerDrag( event );
-    private readonly _onDragEnd = () => this.endDividerDrag();
-
     constructor(
         private readonly snackBar: MatSnackBar,
         private readonly ipcService: IpcService,
@@ -127,171 +110,7 @@ export class TriggersComponent implements OnInit, OnDestroy {
 
     }
 
-    /**
-     * Returns the stored folder pane width percentage, or the default when it is missing or invalid.
-     */
-    private loadFolderPanePercent(): number {
-        try {
-            const value = parseFloat( localStorage.getItem( TriggersComponent.folderPaneStorageKey ) );
-
-            if ( isFinite( value ) && value > 0 && value < 100 ) {
-                return value;
-            }
-        } catch ( error ) {
-            // Storage is unavailable, use the default.
-        }
-
-        return TriggersComponent.folderPaneDefaultPercent;
-    }
-
-    /**
-     * Stores the folder pane width percentage in local storage.
-     */
-    private saveFolderPanePercent() {
-        try {
-            localStorage.setItem( TriggersComponent.folderPaneStorageKey, this._folderPanePercent.toString() );
-        } catch ( error ) {
-            // Storage is unavailable, the width just will not persist.
-        }
-    }
-
-    /**
-     * Returns the width of the row that holds the panes in pixels.
-     */
-    private get folderRowWidth(): number {
-        return this.folderPane.nativeElement.parentElement?.clientWidth ?? 0;
-    }
-
-    /**
-     * Clamps the folder pane width in pixels so both panes keep their minimum widths.
-     *
-     * @param width The desired folder pane width in pixels.
-     * @param rowWidth The width of the row in pixels.
-     */
-    private clampFolderPaneWidth( width: number, rowWidth: number ): number {
-        // The items have 3px margins on both sides.
-        const maxWidth = rowWidth - this.folderDivider.nativeElement.offsetWidth - 12 - TriggersComponent.triggerPaneMinPx;
-
-        return Math.max( TriggersComponent.folderPaneMinPx, Math.min( width, maxWidth ) );
-    }
-
-    /**
-     * Applies the stored folder pane percentage to the pane, clamped to the minimum widths.
-     */
-    private applyFolderPaneWidth() {
-        const rowWidth = this.folderRowWidth;
-        const pane = this.folderPane.nativeElement;
-
-        if ( rowWidth <= 0 ) {
-            pane.style.width = `${this._folderPanePercent}%`;
-            return;
-        }
-
-        const width = this.clampFolderPaneWidth( rowWidth * this._folderPanePercent / 100, rowWidth );
-        pane.style.width = `${width}px`;
-    }
-
-    /**
-     * Sets the folder pane width from a pixel value and keeps it as a percentage of the row.
-     *
-     * @param width The desired folder pane width in pixels.
-     */
-    private setFolderPaneWidth( width: number ) {
-        const rowWidth = this.folderRowWidth;
-
-        if ( rowWidth <= 0 ) {
-            return;
-        }
-
-        this._folderPanePercent = this.clampFolderPaneWidth( width, rowWidth ) / rowWidth * 100;
-        this.applyFolderPaneWidth();
-    }
-
-    /**
-     * Starts dragging the divider.
-     *
-     * @param event The mouse event.
-     */
-    public onDividerMouseDown( event: MouseEvent ) {
-        if ( event.button !== 0 ) {
-            return;
-        }
-
-        event.preventDefault();
-        this.folderDivider.nativeElement.focus();
-
-        this._dragStartX = event.clientX;
-        this._dragStartWidth = this.folderPane.nativeElement.offsetWidth;
-        this.folderDivider.nativeElement.classList.add( 'dragging' );
-
-        this.ngZone.runOutsideAngular( () => {
-            document.addEventListener( 'mousemove', this._onDragMove );
-            document.addEventListener( 'mouseup', this._onDragEnd );
-        } );
-    }
-
-    /**
-     * Resizes the folder pane while the divider is dragged.
-     *
-     * @param event The mouse event.
-     */
-    private onDividerDrag( event: MouseEvent ) {
-        this.setFolderPaneWidth( this._dragStartWidth + event.clientX - this._dragStartX );
-    }
-
-    /**
-     * Finishes dragging the divider and stores the width.
-     */
-    private endDividerDrag() {
-        this.removeDragListeners();
-        this.folderDivider.nativeElement.classList.remove( 'dragging' );
-        this.saveFolderPanePercent();
-    }
-
-    /**
-     * Removes the document listeners used while dragging.
-     */
-    private removeDragListeners() {
-        document.removeEventListener( 'mousemove', this._onDragMove );
-        document.removeEventListener( 'mouseup', this._onDragEnd );
-    }
-
-    /**
-     * Resizes the folder pane with the left and right arrow keys.
-     *
-     * @param event The keyboard event.
-     */
-    public onDividerKeydown( event: KeyboardEvent ) {
-        if ( event.key !== 'ArrowLeft' && event.key !== 'ArrowRight' ) {
-            return;
-        }
-
-        event.preventDefault();
-
-        const step = event.key === 'ArrowLeft' ? -TriggersComponent.folderPaneStepPx : TriggersComponent.folderPaneStepPx;
-        this.setFolderPaneWidth( this.folderPane.nativeElement.offsetWidth + step );
-        this.saveFolderPanePercent();
-    }
-
-    /**
-     * Resets the folder pane to its default width.
-     */
-    public resetFolderPaneWidth() {
-        this._folderPanePercent = TriggersComponent.folderPaneDefaultPercent;
-        this.applyFolderPaneWidth();
-        this.saveFolderPanePercent();
-    }
-
-    ngOnDestroy() {
-        window.removeEventListener( 'resize', this._onWindowResize );
-        this.removeDragListeners();
-    }
-
     ngOnInit() {
-
-        this._folderPanePercent = this.loadFolderPanePercent();
-        this.applyFolderPaneWidth();
-        this.ngZone.runOutsideAngular( () => window.addEventListener( 'resize', this._onWindowResize ) );
 
         this.triggerScroller.elementScrolled().subscribe( e => {
             this.ngZone.run( () => {

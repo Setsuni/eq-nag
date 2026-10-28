@@ -127,10 +127,10 @@
 
         </div>
 
-        <div class="ft-divider" #folderDivider role="separator" aria-orientation="vertical" aria-label="Resize the folder pane" tabindex="0"
-            (mousedown)="onDividerMouseDown($event)" (dblclick)="resetFolderPaneWidth()" (keydown)="onDividerKeydown($event)"></div>
+        <div class="ft-divider" nagPaneDivider [paneTarget]="folderPane" [paneSibling]="triggerPane" storageKey="nagTriggerFolderPaneWidth"
+            role="separator" aria-orientation="vertical" aria-label="Resize the folder pane" tabindex="0"></div>
 
-        <div class="ft-item" style="margin: 3px; flex: 1 1 0; min-width: 300px;">
+        <div class="ft-item" style="margin: 3px; flex: 1 1 0; min-width: 300px;" #triggerPane>
             <div class="ft-content">
                 <cdk-virtual-scroll-viewport tvsItemSize itemSize="27" class="wrapper mat-elevation-z2" style="height: 100%" #triggerScroller>
                     <table mat-table #triggersTable="matTable" style="width: 100%; min-width: 600px;" 
