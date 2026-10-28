@@ -80,31 +80,6 @@ legend.full-width {
     scrollbar-gutter: stable;
 }
 
-.show-scrollbar::-webkit-scrollbar {
-    width: 8px;  /* Make the scrollbar a bit wider for visibility */
-    padding: 0%;
-}
-
-.show-scrollbar::-webkit-scrollbar-track {
-    /* Color of the scrollbar background track */
-    background: #3a3a3a; 
-}
-
-.show-scrollbar::-webkit-scrollbar-thumb {
-    /* Color of the draggable scrollbar thumb */
-    background-color: #5a5a5a;
-}
-
-.show-scrollbar::-webkit-scrollbar-thumb:hover {
-    /* Color of the thumb when the user hovers over it */
-    background-color: #7a7a7a;
-}
-
-
-
-
-
-
 :host ::ng-deep .mat-tab-header-pagination {
     display: none !important;
 }
