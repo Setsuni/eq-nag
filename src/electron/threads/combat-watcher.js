@@ -684,6 +684,7 @@ function CombatWatcher() {
         .invoke( 'settings:get', { key: 'dpsMeterSettings', subscribe: true } )
         .then( data => {
             dpsMeterSettings = data ?? new DpsMeterSettings();
+            perf.enabled && perf.note( 'dps meter', !!dpsMeterSettings.show );
         } );
     
     ipcRenderer.on( 'combat-database:add:pet',
@@ -874,6 +875,7 @@ function CombatWatcher() {
         async ( event, data ) => {
             let prevShow = dpsMeterSettings.show;
             dpsMeterSettings = data ?? new DpsMeterSettings();
+            perf.enabled && perf.note( 'dps meter', !!dpsMeterSettings.show );
 
             if ( dpsMeterSettings.show && !prevShow ) {
                 startDpsTracking();
@@ -972,6 +974,7 @@ function CombatWatcher() {
     ipcRenderer.on( 'tick', function ( event, data ) {
 
         enableFct = data.enableFct;
+        perf.enabled && perf.note( 'fct', !!enableFct );
         isDev = data.isDev;
         charModel = data.characterModel ? data.characterModel : charModel;
         overlays = data.overlays;

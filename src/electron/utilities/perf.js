@@ -11,6 +11,7 @@
 //     ...work...
 //     perf.enabled && perf.record( 'log-watcher: line', t );
 //     perf.record( name, t, 10 );   // when only timing 1 call in 10: scales it up
+//     perf.enabled && perf.note( 'fct', true );   // a setting worth knowing when reading the report
 //
 //     fn = perf.wrap( 'renderer: render', fn );   // returns fn itself when disabled
 //
@@ -43,5 +44,6 @@ module.exports = taps ?? {
     enabled: false,
     now: () => 0,
     record: () => { },
+    note: () => { },
     wrap: ( name, fn ) => fn,
 };

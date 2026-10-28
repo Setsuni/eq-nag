@@ -66,7 +66,7 @@ jobs:
         shell: bash
         run: |
           git checkout -- src/electron/utilities/perf-taps.js
-          echo '{}' > src/electron/utilities/perf-always-on.json
+          node -e "require( 'fs' ).writeFileSync( 'src/electron/utilities/perf-always-on.json', JSON.stringify( { commit: process.env.GITHUB_SHA, ref: process.env.GITHUB_REF_NAME } ) + '\n' )"
           rm -rf electron/output
           npx electron-builder build --win portable --publish never
           if ! npx asar list electron/output/win-unpacked/resources/app.asar | grep -q 'perf-always-on'; then
@@ -100,7 +100,9 @@ jobs:
           - **eq_nag_portable-perf.exe**: the same build, timing itself while it runs.
             Use it when Nag seems slow: run it the same way, then send
             \`perf-report.json\` from \`%APPDATA%\\electron-angular-eq-parse\`. It
-            contains timings and trigger names, nothing else.
+            contains timings, trigger names, character names (in window labels),
+            the build commit, your CPU model and core count, screen sizes, and
+            whether the DPS meter and floating combat text are on.
 
           These aren't code-signed, so Windows SmartScreen may warn the first time:
           click "More info", then "Run anyway".
