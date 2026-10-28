@@ -1,4 +1,4 @@
-import { Component, DoCheck, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, DoCheck, ElementRef, HostListener, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { IpcService } from '../ipc.service';
 import * as _ from 'lodash-es';
 import { ConsoleListComponent } from './console-list.component';
@@ -52,8 +52,10 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
             }
 
             this.publishHeight( value.nativeElement.offsetHeight );
-            this._resizeObserver = new ResizeObserver( () => this.publishHeight( value.nativeElement.offsetHeight ) );
-            this._resizeObserver.observe( value.nativeElement );
+            this.ngZone.runOutsideAngular( () => {
+                this._resizeObserver = new ResizeObserver( () => this.publishHeight( value.nativeElement.offsetHeight ) );
+                this._resizeObserver.observe( value.nativeElement );
+            } );
         } else {
             this.publishHeight( DebugConsoleComponent.collapsedHeight );
         }
@@ -70,7 +72,9 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
 
     public scrolling: boolean = false;
 
-    @HostListener( 'document:mouseup' ) onMouseupHandler() {
+    private readonly _mouseupListener = () => this.onMouseupHandler();
+
+    private onMouseupHandler() {
         if ( this.container?.nativeElement ) {
             let height = this.container.nativeElement.offsetHeight;
             if ( height !== this._savedHeight ) {
@@ -81,7 +85,10 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
     }
 
     @HostListener( 'wheel', [ '$event' ] ) onScroll( event: Event ) {
-        
+        if ( !this.container?.nativeElement ) {
+            return;
+        }
+
         if ( this.container.nativeElement.scrollTop >= this.container.nativeElement.scrollHeight - this.container.nativeElement.offsetHeight ) {
             this.scrolling = false;
         } else {
@@ -92,10 +99,12 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
 
     constructor(
         private readonly ipcService: IpcService,
+        private readonly ngZone: NgZone,
     ) { }
 
     ngOnInit() {
-        
+        this.ngZone.runOutsideAngular( () => document.addEventListener( 'mouseup', this._mouseupListener ) );
+
         this.ipcService.getCharacters().subscribe( options => {
             this.characterOptions = _.orderBy( options.map( x => ( { id: x.characterId, name: x.name, server: x.server } ) ), [ 'server', 'name' ] );
         } );
@@ -103,6 +112,7 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
     }
 
     ngOnDestroy() {
+        document.removeEventListener( 'mouseup', this._mouseupListener );
         this._resizeObserver?.disconnect();
         document.documentElement.style.removeProperty( '--nag-console-height' );
     }
