@@ -10,7 +10,18 @@ import { ConsoleListComponent } from './console-list.component';
 } )
 export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
 
-    public show: boolean = false;
+    private static readonly collapsedHeight: number = 24;
+    private static readonly minHeight: number = 50;
+    private static readonly maxHeightRatio: number = 0.8;
+
+    private _show: boolean = DebugConsoleComponent.loadOpen();
+    public get show(): boolean {
+        return this._show;
+    }
+    public set show( value: boolean ) {
+        this._show = value;
+        DebugConsoleComponent.store( 'nagConsoleOpen', value ? 'true' : 'false' );
+    }
     public showInput: boolean = true;
     public consoleCommand: string | undefined = undefined;
     public showTriggerHistory: boolean = false;
@@ -31,7 +42,29 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
     }
 
     @ViewChild( 'consoleList', { static: false } ) consoleList: ConsoleListComponent;
-    @ViewChild( 'container', { static: false } ) container: ElementRef<HTMLDivElement>;
+    private _container: ElementRef<HTMLDivElement>;
+    private _resizeObserver: ResizeObserver;
+    private _savedHeight: number | null = null;
+    @ViewChild( 'container', { static: false } ) set container( value: ElementRef<HTMLDivElement> ) {
+        this._resizeObserver?.disconnect();
+        this._container = value;
+
+        if ( value?.nativeElement ) {
+            let savedHeight = DebugConsoleComponent.loadHeight();
+            if ( savedHeight ) {
+                value.nativeElement.style.height = `${savedHeight}px`;
+            }
+
+            this.publishHeight( value.nativeElement.offsetHeight );
+            this._resizeObserver = new ResizeObserver( () => this.publishHeight( value.nativeElement.offsetHeight ) );
+            this._resizeObserver.observe( value.nativeElement );
+        } else {
+            this.publishHeight( DebugConsoleComponent.collapsedHeight );
+        }
+    }
+    get container(): ElementRef<HTMLDivElement> {
+        return this._container;
+    }
     
     @HostListener( 'document:keyup', [ '$event' ] ) onKeydownHandler( event: KeyboardEvent ) {
         if ( event.key === 'F12' ) {
@@ -40,6 +73,16 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
     }
 
     public scrolling: boolean = false;
+
+    @HostListener( 'document:mouseup' ) onMouseupHandler() {
+        if ( this.container?.nativeElement ) {
+            let height = this.container.nativeElement.offsetHeight;
+            if ( height !== this._savedHeight ) {
+                this._savedHeight = height;
+                DebugConsoleComponent.store( 'nagConsoleHeight', `${height}` );
+            }
+        }
+    }
 
     @HostListener( 'wheel', [ '$event' ] ) onScroll( event: Event ) {
         
@@ -65,16 +108,9 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
 
     ngOnDestroy(): void {
         clearTimeout( this._searchTimeoutId );
+        this._resizeObserver?.disconnect();
+        document.documentElement.style.removeProperty( '--nag-console-height' );
     }
-
-
-
-
-
-
-
-
-
 
     ngDoCheck(): void {
         if ( this.container?.nativeElement ) {
@@ -102,6 +138,80 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
         this._searchTimeoutId = setTimeout( () => this.appliedSearchText = this.searchText, 150 );
     }
 
+
+
+    /**
+     * Publishes the height the console currently occupies at the bottom of the window.
+     *
+     * @param height The height in pixels.
+     */
+    private publishHeight( height: number ): void {
+        document.documentElement.style.setProperty( '--nag-console-height', `${height}px` );
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns the persisted open state of the console.
+     */
+    private static loadOpen(): boolean {
+        try {
+            return localStorage.getItem( 'nagConsoleOpen' ) === 'true';
+        } catch ( error ) {
+            return false;
+        }
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns the persisted console height clamped to the allowed range, or null when none is stored.
+     */
+    private static loadHeight(): number | null {
+        try {
+            let height = parseInt( localStorage.getItem( 'nagConsoleHeight' ), 10 );
+            if ( isNaN( height ) ) {
+                return null;
+            }
+
+            return Math.max( DebugConsoleComponent.minHeight, Math.min( height, window.innerHeight * DebugConsoleComponent.maxHeightRatio ) );
+        } catch ( error ) {
+            return null;
+        }
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Stores a value in local storage, ignoring failures.
+     *
+     * @param key The storage key.
+     * @param value The value to store.
+     */
+    private static store( key: string, value: string ): void {
+        try {
+            localStorage.setItem( key, value );
+        } catch ( error ) {
+        }
+    }
 
 
 
