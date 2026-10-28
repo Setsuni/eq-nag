@@ -1,22 +1,24 @@
 import DOMPurify from 'dompurify';
+import { sanitizeConfig, checkAttribute } from '../../electron/utilities/sanitize-rules';
 
-// Matches src/electron/utilities/html.js: formatting and styles are kept,
-// anything that can run code is removed.
-const sanitizeConfig = {
-    FORBID_TAGS: [ 'style', 'form', 'input', 'button', 'textarea', 'select', 'option', 'dialog' ],
-};
+let hookInstalled = false;
 
 /**
- * Removes anything that can run code from the given HTML, keeping formatting
- * and styles.
- * 
+ * Removes everything but simple formatting from the given HTML.  The rules are
+ * shared with src/electron/utilities/html.js.  Do not use it on the app's own
+ * markup; sanitize the text that goes into it instead.
+ *
  * @param html The html to sanitize.
  */
 export function sanitizeHtml( html: string ): string {
     if ( html === null || html === undefined || html === '' ) {
         return '';
     }
-    return DOMPurify.sanitize( String( html ), sanitizeConfig ) as string;
+    if ( !hookInstalled ) {
+        DOMPurify.addHook( 'uponSanitizeAttribute', checkAttribute as any );
+        hookInstalled = true;
+    }
+    return DOMPurify.sanitize( String( html ), sanitizeConfig as any ) as unknown as string;
 }
 
 /**

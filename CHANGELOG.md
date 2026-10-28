@@ -20,7 +20,7 @@ description, which Nag shows in the Update Notes window.
 - **The EQ Spell Resources trigger generator no longer hangs** when the page fails to load. It now reports the failure instead of waiting forever.
 
 ### Security
-- **Safer shared triggers.** HTML in trigger text, overlay names and log text is now cleaned before it is shown, so formatting and styles still work but nothing in it can run. Overlays no longer load images, sounds or fonts from other websites, and sound files from shared packages and quick-shares are checked before they are saved.
+- **Safer shared triggers.** Trigger text, overlay names and log text now only keep simple formatting: bold, italic, colors, sizes, fonts, line breaks, lists, tables and images embedded in the text. Links, and images from the internet or from your computer, are no longer shown in trigger text, and remote images in package descriptions are blocked. Overlays no longer load images, sounds or fonts from other websites, and sound files from shared packages and quick-shares are checked before they are saved.
 - **Timer icons in shares** must be embedded images (PNG, JPEG, GIF, WebP or SVG) up to 256 KB. Other icons are dropped when a share or package is installed, and Nag warns you when you share a trigger that has one.
 
 ### New
