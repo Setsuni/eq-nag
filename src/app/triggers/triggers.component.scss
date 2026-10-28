@@ -50,3 +50,35 @@ mat-progress-bar {
     position: absolute;
     height: 10px;
 }
+.ft-row {
+    flex-wrap: nowrap;
+}
+
+.ft-divider {
+    flex: 0 0 6px;
+    align-self: stretch;
+    cursor: col-resize;
+    position: relative;
+    outline: none;
+
+    &::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 2px;
+        width: 2px;
+        background-color: currentColor;
+        opacity: 0;
+        transition: opacity 0.15s;
+    }
+
+    &:hover::after,
+    &:focus-visible::after {
+        opacity: 0.25;
+    }
+
+    &.dragging::after {
+        opacity: 0.5;
+    }
+}
