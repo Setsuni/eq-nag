@@ -224,7 +224,7 @@
                             </div>
                             <div class="triggers-list">
                                 <h2>Character Triggers</h2>
-                                <div class="tree-container" *ngIf="characterData[character.characterId] != undefined">
+                                <div class="tree-container nag-scrollbar" *ngIf="characterData[character.characterId] != undefined">
                                     <mat-tree [dataSource]="characterData[character.characterId].dataSource" [treeControl]="characterData[character.characterId].treeControl" #tree>
                 
                                         <!-- This is the tree node template for leaf/trigger nodes -->

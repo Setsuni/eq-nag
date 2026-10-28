@@ -6,7 +6,7 @@
     <button mat-button (click)="installQuickShare()" title="Import settings from another player." class="color-orange"><mat-icon class="material-icons-outlined">cloud_download</mat-icon> Import</button>
     <button mat-button color="accent" (click)="newCombatGroup()"><mat-icon class="material-icons-outlined">add</mat-icon> New</button>
 </mat-toolbar>
-<div class="tab-content">
+<div class="tab-content nag-scrollbar">
     
     <!-- TODO: This checkbox doesn't work immediately -->
     <div style="text-align: right; padding: 0 25px 20px;"><mat-checkbox [(ngModel)]="enableFct" (change)="onEnableFctChange()">Enable FCT</mat-checkbox></div>
