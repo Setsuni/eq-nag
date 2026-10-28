@@ -621,7 +621,7 @@ function createDpsWindow() {
             let dropdownHtml = dropdownMenuTemplate( menuObject );
 
             let menuDiv = document.createElement( 'div' );
-            menuDiv.innerHTML = sanitizeHtml( dropdownHtml );
+            menuDiv.innerHTML = dropdownHtml;
             document.body.appendChild( menuDiv );
 
             let dropdown = menuDiv.firstElementChild;
@@ -847,7 +847,7 @@ function renderDpsItems( characterName ) {
         dpsItem.dom = createElement( 'div' );
         dpsItem.dom.classList.add( 'dps-item' );
         dpsMeterSettings?.highlightMyName && mine && dpsItem.dom.classList.add( 'mine' );
-        dpsItem.dom.innerHTML = sanitizeHtml( dpsWindowItemTemplate( model ) );
+        dpsItem.dom.innerHTML = dpsWindowItemTemplate( model );
         dpsItemsDom.appendChild( dpsItem.dom );
 
         let bar = dpsItem.dom.querySelector( '.determinate' );
@@ -897,7 +897,7 @@ function renderDpsItems( characterName ) {
         if ( dpsWindowDisplayType === EncounterDisplayTypes.allData ) {
             encounterName.innerHTML = 'All Encounters';
         } else {
-            encounterName.innerHTML = sanitizeHtml( displayedEncounter.npcs.join( ', ' ) );
+            encounterName.textContent = displayedEncounter.npcs.join( ', ' );
         }
     }
 
@@ -1971,7 +1971,7 @@ function renderToken( token ) {
         let listHtml = listTemplate( listObj );
 
         let listDiv = document.createElement( 'div' );
-        listDiv.innerHTML = sanitizeHtml( listHtml );
+        listDiv.innerHTML = listHtml;
         document.body.appendChild( listDiv );
         token.dom = listDiv;
 
@@ -2724,7 +2724,7 @@ function tryAccumulateHit( renderGroup, model ) {
                                 }
 
                                 // Apply the text change.
-                                accumlationTarget.dom.querySelector( '.fctSource' ).innerHTML = sanitizeHtml( `(${c.action})` );
+                                accumlationTarget.dom.querySelector( '.fctSource' ).textContent = `(${c.action})`;
                             }
 
                             break;
@@ -2837,7 +2837,7 @@ function renderFct2( model ) {
         let content = fct2Template( { value: text, damageSource: damageSourceText } );
         let div = createElement( 'div' );
 
-        div.innerHTML = sanitizeHtml( content );
+        div.innerHTML = content;
         div.classList.add( 'fct-values' );
 
         /** @type {string} */
@@ -3121,7 +3121,7 @@ function renderFct( overlayId, comp ) {
 
         if ( comp.critical && !showCriticalsInline ) {
             let content = fctCriticalTemplate( { value: comp.text, damageSource: comp.attack } );
-            div.innerHTML = sanitizeHtml( content );
+            div.innerHTML = content;
 
             div.classList.add( 'animate-fade-shrink' );
             div.style.animation = `animate-fadeshrink ${animateFadeShrinkDuration}ms ease-out`;
@@ -3160,7 +3160,7 @@ function renderFct( overlayId, comp ) {
                     
                     let _textEl = overlayInstances[ overlayId ].criticalComp.dom.querySelector( '.fct-text' );
                     if ( _textEl ) {
-                        _textEl.innerHTML = sanitizeHtml( overlayInstances[ overlayId ].criticalComp.text );
+                        _textEl.textContent = overlayInstances[ overlayId ].criticalComp.text;
                     }
 
                 }
@@ -3191,7 +3191,7 @@ function renderFct( overlayId, comp ) {
             }
         
             let content = fctTemplate( { value: comp.text, damageSource: damageSourceText } );
-            div.innerHTML = sanitizeHtml( content );
+            div.innerHTML = content;
 
             div.classList.add( 'animate-fade-out' );
             div.style.animation = `animate-fadeout ${animateFadeOutDuration}ms ease`;
@@ -3283,9 +3283,9 @@ function render( overlayId, comp ) {
 
             if ( comp?.action?.actionType === ActionTypes.DisplayText ) {
                 comp.removeAt = new Date( now.setSeconds( comp.action.duration ) );
-                let content = displayTextTemplate( { value: StringUtilities.format( comp.action.displayText, comp.matches ) } );
+                let content = displayTextTemplate( { value: sanitizeHtml( StringUtilities.format( comp.action.displayText, comp.matches ) ) } );
                 let div = createElement( 'div' );
-                div.innerHTML = sanitizeHtml( content );
+                div.innerHTML = content;
                 div.style.animation = `animate-fadeout ${comp.action.duration * 1.05}s ease`;
                 comp.dom = div;
 
@@ -3661,7 +3661,7 @@ function renderListAction( component, restore ) {
         let listHtml = listTemplate( listObj );
         let listDiv = document.createElement( 'div' );
 
-        listDiv.innerHTML = sanitizeHtml( listHtml );
+        listDiv.innerHTML = listHtml;
         document.body.appendChild( listDiv );
 
         component.dom = listDiv;
@@ -3691,7 +3691,7 @@ function renderListAction( component, restore ) {
             } );
 
             let itemDiv = document.createElement( 'div' );
-            itemDiv.innerHTML = sanitizeHtml( itemHtml );
+            itemDiv.innerHTML = itemHtml;
             itemDiv = itemDiv.querySelector( 'div' );
 
             if ( component.listNames.indexOf( name ) === component.listNames.length - 1 ) {
@@ -4261,10 +4261,10 @@ function prependTimerIcon( div, icon ) {
  */
 function createGroupedDotTimer( overlayId, contentArea, group, comp ) {
     let displayText = getTimerLabel( overlayId, comp );
-    let content = targetGroupTimerTemplate( { value: displayText } );
+    let content = targetGroupTimerTemplate( { value: sanitizeHtml( displayText ) } );
 
     let div = createElement( 'div' );
-    div.innerHTML = sanitizeHtml( content );
+    div.innerHTML = content;
     comp.dom = div;
     
     if ( comp.action.timerIcon != null ) {
@@ -4317,10 +4317,10 @@ function createGroupedDotTimer( overlayId, contentArea, group, comp ) {
  */
 function createGroupedTimer( overlayId, contentArea, group, comp ) {
     let displayText = getTimerLabel( overlayId, comp );
-    let content = targetGroupTimerTemplate( { value: displayText } );
+    let content = targetGroupTimerTemplate( { value: sanitizeHtml( displayText ) } );
 
     let div = createElement( 'div' );
-    div.innerHTML = sanitizeHtml( content );
+    div.innerHTML = content;
     comp.dom = div;
     
     if ( comp.action.timerIcon != null ) {
@@ -4379,10 +4379,10 @@ function getTimerGroup( overlayId, contentArea, groupName ) {
         }
     }
 
-    let content = targetGroupTemplate( { name: groupName } );
+    let content = targetGroupTemplate( { name: sanitizeHtml( groupName ) } );
     let div = createElement( 'div' );
     div.classList.add( 'mob-dot-group' );
-    div.innerHTML = sanitizeHtml( content );
+    div.innerHTML = content;
     let h6 = div.querySelector( 'h6' );
 
     h6.style.fontSize = `${overlayInstances[ overlayId ].groupHeaderSize}px`;
@@ -4449,11 +4449,11 @@ function getTimerGroup( overlayId, contentArea, groupName ) {
  */
 function createUngroupedDotTimer( overlayId, contentArea, comp ) {
     let displayText = getTimerLabel( overlayId, comp );
-    let content = timerTemplate( { value: displayText } );
+    let content = timerTemplate( { value: sanitizeHtml( displayText ) } );
 
     // Create the component's dom element and append it to the content area.
     let div = createElement( 'div' );
-    div.innerHTML = sanitizeHtml( content );
+    div.innerHTML = content;
     
     if ( comp.action.timerIcon != null ) {
         prependTimerIcon( div, comp.action.timerIcon );
@@ -4494,11 +4494,11 @@ function createUngroupedDotTimer( overlayId, contentArea, comp ) {
  */
 function createUngroupedTimer( overlayId, contentArea, comp ) {
     let displayText = getTimerLabel( overlayId, comp );
-    let content = timerTemplate( { value: displayText } );
+    let content = timerTemplate( { value: sanitizeHtml( displayText ) } );
 
     // Create the component's dom element and append it to the content area.
     let div = createElement( 'div' );
-    div.innerHTML = sanitizeHtml( content );
+    div.innerHTML = content;
     
     if ( comp.action.timerIcon != null ) {
         prependTimerIcon( div, comp.action.timerIcon );
