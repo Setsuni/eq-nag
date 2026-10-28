@@ -20,6 +20,7 @@ import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getErrorR
 export class TriggerPackageDetailsComponent implements OnInit {
     
     private _pkg: TriggerPackageMetaModel;
+    private _folderFamilies: Map<string, string> = new Map<string, string>();
     public package: TriggerPackageMetaModel = null;
     @Input() public set packageId( value: string ) {
         this.package = null;
@@ -27,6 +28,7 @@ export class TriggerPackageDetailsComponent implements OnInit {
         this.libraryService.getPackage( [ value ] ).subscribe( packages => {
             if ( packages?.length > 0 ) {
                 this.package = packages[ 0 ];
+                this.buildFolderFamilies();
 
                 this.libraryService.isAuthor( this.package.triggerPackageId, this.authorId ).subscribe( isAuth => this.isAuthor = isAuth && this.trustedAuthor );
                 this.ipcService.isPackageInstalled( this.package.triggerPackageId ).subscribe( installed => {
@@ -89,31 +91,43 @@ export class TriggerPackageDetailsComponent implements OnInit {
 
     
     /**
-     * Returns the list of folder parents, including, the specified folder id.
+     * Builds the breadcrumbs for every folder in the given hierarchy.  When
+     * folder ids repeat, the first folder found in pre-order wins.
      * 
-     * @param folderId The id of the end folder.
-     * @param folders The list of folders to search.
-     * @param names The current list of folder names found in the hierarchy.
-     * @returns 
+     * @param folders The list of folders to index.
+     * @param parentFamily The breadcrumbs of the parent folder.
+     * @param families The breadcrumbs by folder id, modified by reference.
      */
-    private getFolderFamilyNames( folderId: string, folders: PackageFolder[], names: string[] ): string[] {
+    private indexFolderFamilies( folders: PackageFolder[], parentFamily: string, families: Map<string, string> ): void {
         
         for ( let i = 0; i < folders?.length; i++ ) {
+            let family = `${parentFamily}\\${folders[ i ].name}`;
 
-            if ( folders[ i ].folderId === folderId ) {
-                return names.concat( [ folders[ i ].name ] );
-
-            } else if ( folders[ i ]?.children?.length > 0 ) {
-                
-                let d = this.getFolderFamilyNames( folderId, folders[ i ].children, names.concat( [ folders[ i ].name ] ) );
-
-                if ( d?.length > 0 ) {
-                    return d;
-                }
-
+            if ( !families.has( folders[ i ].folderId ) ) {
+                families.set( folders[ i ].folderId, family );
             }
 
+            if ( folders[ i ]?.children?.length > 0 ) {
+                this.indexFolderFamilies( folders[ i ].children, family, families );
+            }
         }
+    }
+                
+
+
+
+
+
+
+
+
+
+    /**
+     * Rebuilds the folder breadcrumbs lookup from the current package folders.
+     */
+    private buildFolderFamilies(): void {
+        this._folderFamilies = new Map<string, string>();
+        this.indexFolderFamilies( this.package?.model?.folders, '', this._folderFamilies );
     }
 
 
@@ -131,18 +145,7 @@ export class TriggerPackageDetailsComponent implements OnInit {
      * @param trigger The desired trigger.
      */
     getTriggerFamily( trigger: PackageTrigger ): string {
-
-        let folderFamilyNames = this.getFolderFamilyNames( trigger.folderId, this.package.model.folders, [] );
-        if ( folderFamilyNames?.length > 0 ) {
-            let name = `\\${folderFamilyNames[ 0 ]}`;
-            for ( let i = 1; i < folderFamilyNames.length; i++ ) {
-                name += `\\${folderFamilyNames[ i ]}`;
-            }
-            return name;
-        } else {
-            return null;
-        }
-
+        return this._folderFamilies.get( trigger.folderId ) ?? null;
     }
 
 
@@ -158,6 +161,7 @@ export class TriggerPackageDetailsComponent implements OnInit {
      * Updates the list of triggers in this package.
      */
     updateList(): void {
+        this.buildFolderFamilies();
         this.package.model.triggers = _.orderBy( this.package.model.triggers, f => this.getTriggerFamily( f ) );
     }
 
