@@ -16,6 +16,7 @@ import { TriggerLibraryService } from '../windows/trigger-library.service';
 import { QuickShareService } from '../core/quick-share.service';
 import { FolderConditionsDialogComponent } from './folder-conditions-dialog/folder-conditions-dialog.component';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
+import { buildFileIdMap, remapAudioFileIds } from '../utilities/package-file-ids';
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
 
@@ -2138,11 +2139,17 @@ export class TriggersComponent implements OnInit {
                             
                             // Finally, we can install the package itself after all of the package files have been installed.
                             forkJoin( importTasks ).subscribe( results => {
+                                // Files that collided with a different local file were stored under new ids.
+                                remapAudioFileIds( pkg.model?.triggers, buildFileIdMap( packageFiles, results.slice( 1 ) ) );
+
                                 // Missing package overlays are caught in the main component's ngInit event.
                                 this.ipcService.installTriggerPackage( pkg ).subscribe( installComplete => {
                                     this.snackBar.open( 'Package install complete!', 'dismiss', { duration: 2500 } );
                                     this.ipcService.requestTick();
                                 } );
+                            }, error => {
+                                console.error( 'Could not save a sound from a package.', error );
+                                this.snackBar.open( 'A sound from this package could not be saved, so it was not installed.', 'dismiss', { duration: 5000 } );
                             } );
                             
                         } );

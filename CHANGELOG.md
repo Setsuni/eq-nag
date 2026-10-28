@@ -18,6 +18,7 @@ description, which Nag shows in the Update Notes window.
 - **SVG timer icons now show** in the Timer, DoT Timer and Stopwatch editors. (Thanks, Maxx!)
 - **Quick-share folders no longer vanish** from the receive dialog.
 - **The EQ Spell Resources trigger generator no longer hangs** when the page fails to load. It now reports the failure instead of waiting forever.
+- **Shared sounds never replace or delete a different sound you already have.** Installing a package or quick share overwrote one of your sounds that happened to have the same internal id, and uninstalling a package could delete a sound you also used. The incoming sound now gets its own id when it differs, your sounds are left alone, and an update that changes a sound removes the old copy only when nothing uses it any more.
 
 ### Security
 - **Safer shared triggers.** Trigger text, overlay names and log text now only keep simple formatting: bold, italic, colors, sizes, fonts, line breaks, lists, tables and images embedded in the text. Links, and images from the internet or from your computer, are no longer shown in trigger text, and remote images in package descriptions are blocked. Overlays no longer load images, sounds or fonts from other websites, and sound files from shared packages and quick-shares are checked before they are saved.

@@ -12,6 +12,7 @@ import { NotificationDialogModel, NotificationTypes } from '../notification-dial
 import { NotificationDialogComponent } from '../notification-dialog/notification-dialog.component';
 import { ColoredString } from '../dialog.model';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { buildFileIdMap, remapAudioFileIds } from '../../utilities/package-file-ids';
 
 interface QuickShareTreeNode {
     expandable: boolean;
@@ -571,9 +572,11 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
 
         // Adding a timer makes the following easier (you can't forkjoin an empty array) and I'm being lazy today.
         let importTasks: Observable<any>[] = [ timer( 1 ) ];
+        let importedFiles: { fileId: string }[] = [];
 
         this.data.files?.forEach( file => {
             if ( fileIds.indexOf( file.fileId ) > -1 ) {
+                importedFiles.push( file );
                 importTasks.push( this.ipcService.importPackageFile( file ) );
             }
         } );
@@ -584,6 +587,9 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
         forkJoin( importTasks ).subscribe( results => {
 
             let installTasks: Observable<any>[] = [ timer( 1 ) ];
+
+            // Files that collided with a different local file were stored under new ids.
+            let fileIdMap = buildFileIdMap( importedFiles, results.slice( 1 ) );
             
             this.data.quickShares?.forEach( quickShare => {
 
@@ -592,6 +598,8 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
                 // Remove from the model triggers and folders that are left un-selected.
                 quickShare.model.triggers = quickShare.model.triggers.filter( f => importTriggerIds.indexOf( f.triggerId ) > -1 );
                 quickShare.model.folders = quickShare.model.folders.filter( f => importFolderIds.indexOf( f.folderId ) > -1 );
+
+                remapAudioFileIds( quickShare.model.triggers, fileIdMap );
 
                 // If the user opts to not overwrite existing triggers, then triggers that already exist in the database will be duplicated.
                 if ( !this.overwriteExistingTriggers ) {
@@ -641,6 +649,9 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
                 this.dialogRef.close( true );
             } );
 
+        }, error => {
+            console.error( 'Could not save a sound from a quick share.', error );
+            this.snackBar.open( 'A sound from this quick share could not be saved, so it was not installed.', 'dismiss', { duration: 5000 } );
         } );
 
     }

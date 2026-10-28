@@ -9,6 +9,7 @@ import { SettingsService } from 'src/app/settings/settings-http.service';
 import { forkJoin, Observable, timer } from 'rxjs';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ColoredString } from 'src/app/dialogs/dialog.model';
+import { buildFileIdMap, remapAudioFileIds } from 'src/app/utilities/package-file-ids';
 
 @Component( {
     selector: 'app-trigger-package-details',
@@ -252,12 +253,18 @@ export class TriggerPackageDetailsComponent implements OnInit {
         } );
         
         forkJoin( importTasks ).subscribe( results => {
+            // Files that collided with a different local file were stored under new ids.
+            remapAudioFileIds( triggerPackage.model?.triggers, buildFileIdMap( packageFiles, results.slice( 1 ) ) );
+
             // Missing package overlays are caught in the this component's ngInit event.
             this.ipcService.installTriggerPackage( triggerPackage ).subscribe( installComplete => {
                 this.snackBar.open( 'Package install complete!', 'dismiss', { duration: 2500 } );
                 this.ipcService.requestTick();
                 this.isInstalled = true;
             } );
+        }, error => {
+            console.error( 'Could not save a sound from a package.', error );
+            this.snackBar.open( 'A sound from this package could not be saved, so it was not installed.', 'dismiss', { duration: 5000 } );
         } );
     }
 
