@@ -3,8 +3,8 @@ import { FlatTreeControl } from '@angular/cdk/tree';
 import { Component, OnInit, Inject } from '@angular/core';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatTree, MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';
-import { combineLatest, forkJoin, Observable } from 'rxjs';
-import { AuthorModel, OverlayWindowModel, PackageFileModel, PackageFolder, PackageTrigger, QuickShareFileModel, QuickShareModel, TriggerAction, TriggerFolder, TriggerModel } from 'src/app/core.model';
+import { combineLatest, forkJoin, Observable, of } from 'rxjs';
+import { AuthorModel, OverlayWindowModel, PackageFileModel, PackageFolder, PackageTrigger, QuickShareFileModel, QuickShareMetaModel, QuickShareModel, ShareFilePayload, TriggerAction, TriggerFolder, TriggerModel } from 'src/app/core.model';
 import { IpcService } from 'src/app/ipc.service';
 import { PrepareQuickShareModel } from '../dialog.model';
 import * as _ from 'lodash-es';
@@ -68,6 +68,17 @@ export class PrepareQuickShareDialogComponent implements OnInit {
     public dataSource = new MatTreeFlatDataSource( this.treeControl, this.treeFlattener );
     public hasChild = ( _: number, node: QuickShareTreeNode ) => node.expandable;
     public creatingQuickShare: boolean = false;
+    public shareToServer: boolean = true;
+    public saveAsFile: boolean = false;
+    /** The id of the share uploaded in this dialog, so a retry of a cancelled save does not upload again. */
+    private _uploadedQuickShareId: string = null;
+public readonly shareCodeExample: string = '{NAG:quick-share/...}';
+    public get shareButtonLabel(): string {
+        return this.shareToServer && this.saveAsFile ? 'Share and Save' : this.saveAsFile ? 'Save File...' : 'Copy to Clipboard';
+    }
+    public get canShare(): boolean {
+        return this.shareToServer || this.saveAsFile;
+    }
 
     private allFolders: TriggerFolder[] = [];
     private allTriggers: TriggerModel[] = [];
@@ -126,6 +137,7 @@ export class PrepareQuickShareDialogComponent implements OnInit {
         let trigger = <TriggerModel>node.item;
         if ( trigger.triggerId ) {
             node.selected = !node.selected;
+            this._uploadedQuickShareId = null;
         }
     }
 
@@ -286,7 +298,9 @@ export class PrepareQuickShareDialogComponent implements OnInit {
             let triggers = this.treeControl.dataNodes.filter( t => !t.isFolder && t.item.folderId === familyIds[ i ] );
             triggers.forEach( f => f.selected = value );
         }
-        
+
+        this._uploadedQuickShareId = null;
+
         this.updateFolderStates();
     }
 
@@ -303,6 +317,7 @@ export class PrepareQuickShareDialogComponent implements OnInit {
      * Triggers the update folder states method.
      */
     onTriggerSelectChange(): void {
+        this._uploadedQuickShareId = null;
         this.updateFolderStates();
     }
 
@@ -384,7 +399,53 @@ export class PrepareQuickShareDialogComponent implements OnInit {
 
 
     /**
-     * Creates the quickshare object and submits the quickshare to the nag 
+     * Saves the assembled quickshare to a .nag file, then closes the dialog
+     * unless the user cancelled the save.
+     *
+     * @param author The author of the quickshare, if known.
+     * @param quickShare The assembled quickshare model.
+     * @param files The files used by the quickshare.
+     * @param folders The folders in the quickshare.
+     * @param triggers The triggers in the quickshare.
+     * @param quickShareId The server quickshare id, if the share was also uploaded.
+     */
+    private saveShareFile( author: AuthorModel, quickShare: QuickShareModel, files: QuickShareFileModel[], folders: PackageFolder[], triggers: PackageTrigger[], quickShareId: string ): void {
+
+        let payload: ShareFilePayload = {
+            quickShares: [ Object.assign( new QuickShareMetaModel(), { author: author?.name ?? '', authorDiscord: author?.discord ?? '', model: quickShare } ) ],
+            files: files,
+        };
+
+        let now = new Date();
+        let date = `${now.getFullYear()}-${String( now.getMonth() + 1 ).padStart( 2, '0' )}-${String( now.getDate() ).padStart( 2, '0' )}`;
+        let name = triggers.length === 1 ? triggers[ 0 ].name : folders[ 0 ]?.name ?? triggers[ 0 ]?.name ?? 'triggers';
+
+        this.ipcService.saveShareFile( payload, `Nag - ${name} - ${date}.nag` ).subscribe( result => {
+
+            this.creatingQuickShare = false;
+
+            if ( result.ok ) {
+                this.snackBar.open( 'Share saved to file', 'Dismiss', { duration: 5000 } );
+                this.dialogRef.close( quickShareId );
+            } else if ( result.code !== 'cancelled' ) {
+                this.snackBar.open( result.code === 'tooLarge' ? 'The share is too large to save as a file' : 'Could not save the file', 'Dismiss', { duration: 5000 } );
+            }
+
+        } );
+
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Creates the quickshare object and submits the quickshare to the nag
      * service to generate an id.
      */
     createQuickShare(): void {
@@ -396,7 +457,7 @@ export class PrepareQuickShareDialogComponent implements OnInit {
         let authorObs = new Observable<AuthorModel>( observer => {
             this.ipcService.getAuthor().subscribe( author => {
                 
-                if ( author?.authorId ) {
+                if ( author?.authorId || !this.shareToServer ) {
                     observer.next( author );
                     observer.complete();
 
@@ -494,18 +555,29 @@ export class PrepareQuickShareDialogComponent implements OnInit {
                     } );
                 } );
 
-                // Submits the final quickshare to the server to generate a 
-                // quickShareId.
-                this.quickShareService
-                    .createQuickShare( author.authorId, quickShare, quickShareFiles, null )
-                    .subscribe( quickShareId => {
+                // Submits the final quickshare to the server to generate a
+                // quickShareId, when sharing to the server.
+                let alreadyUploaded = this.shareToServer && !!this._uploadedQuickShareId;
+                let upload: Observable<string> = this.shareToServer && !alreadyUploaded ?
+                    this.quickShareService.createQuickShare( author.authorId, quickShare, quickShareFiles, null ) :
+                    of( this.shareToServer ? this._uploadedQuickShareId : null );
+
+                upload.subscribe( quickShareId => {
+
+                    if ( quickShareId && !alreadyUploaded ) {
+                        this._uploadedQuickShareId = quickShareId;
                         let code = `{NAG:quick-share/${quickShareId}}`;
                         this.ipcService.sendTextToClipboard( code );
                         this.snackBar.open( 'Quickshare copied to clipboard', 'Dismiss', { duration: 5000 } );
+                    }
+
+                    if ( this.saveAsFile ) {
+                        this.saveShareFile( author, quickShare, quickShareFiles, quickShareFolders, quickShareTriggers, quickShareId );
+                    } else {
                         this.dialogRef.close( quickShareId );
-                    } );
-                
-                this.creatingQuickShare = false;
+                    }
+
+                }, () => this.creatingQuickShare = false );
 
             }, ( err: HttpErrorResponse | string ) => {
                 
