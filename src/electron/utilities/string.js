@@ -1,14 +1,11 @@
-const { result } = require( "lodash" );
-const {
-    NConditionalModel,
-    NConditionalOperationModel,
-    VConditionalModel,
-    VConditionalOperationModel,
-    LConditionalModel,
-    LConditionalOperationModel,
-    SConditionalModel,
-    SConditionalOperationModel,
-} = require( "../data/models/common" );
+/** @typedef {import( '../data/models/common' ).NConditionalModel} NConditionalModel */
+/** @typedef {import( '../data/models/common' ).NConditionalOperationModel} NConditionalOperationModel */
+/** @typedef {import( '../data/models/common' ).VConditionalModel} VConditionalModel */
+/** @typedef {import( '../data/models/common' ).VConditionalOperationModel} VConditionalOperationModel */
+/** @typedef {import( '../data/models/common' ).LConditionalModel} LConditionalModel */
+/** @typedef {import( '../data/models/common' ).LConditionalOperationModel} LConditionalOperationModel */
+/** @typedef {import( '../data/models/common' ).SConditionalModel} SConditionalModel */
+/** @typedef {import( '../data/models/common' ).SConditionalOperationModel} SConditionalOperationModel */
 const { nagId } = require( "./nag-id" );
 
 

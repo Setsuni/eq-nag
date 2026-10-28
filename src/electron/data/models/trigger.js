@@ -1,4 +1,4 @@
-const { OverlayWindow } = require( "./overlay-window" )
+/** @typedef {import( './overlay-window' ).OverlayWindow} OverlayWindow */
 
 const ErrorMessages = {
     generalParsingError: () => 'Failed to parse log entry.',
