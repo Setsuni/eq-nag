@@ -6,7 +6,6 @@ import { customAlphabet } from 'nanoid';
 import { SelectIconDialogComponent } from '../select-icon-dialog/select-icon-dialog.component';
 import * as _ from 'lodash-es';
 import { NewTriggerDialogModel } from '../dialog.model';
-import { forkJoin, Observable } from 'rxjs';
 import { MatStepper } from '@angular/material/stepper';
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
