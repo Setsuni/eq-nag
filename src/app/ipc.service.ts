@@ -1894,13 +1894,16 @@ export class IpcService {
     public importPackageFile( file: PackageFileModel ): Observable<string> {
         let obs: Observable<string> = new Observable<string>( ( observer: Observer<string> ) => {
 
-            window.api.ipc.once( 'file:importFromPackage', ( e, fileId: string ) => {
-                this.ngZone.run( () => {
-                    observer.next( fileId );
-                    observer.complete();
+            window.api.ipc.invoke<string>( 'file:importFromPackage', file )
+                .then( fileId => {
+                    this.ngZone.run( () => {
+                        observer.next( fileId );
+                        observer.complete();
+                    } );
+                } )
+                .catch( error => {
+                    this.ngZone.run( () => observer.error( error ) );
                 } );
-            } );
-            window.api.ipc.send( 'file:importFromPackage', file );
 
         } );
 
