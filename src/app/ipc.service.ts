@@ -1227,13 +1227,14 @@ export class IpcService {
     public getTriggers(): Observable<TriggerModel[]> {
         let obs: Observable<TriggerModel[]> = new Observable<TriggerModel[]>( ( observer: Observer<TriggerModel[]> ) => {
             
-            window.api.ipc.once( 'trigger:get', ( e, triggers: TriggerModel[] ) => {
-                this.ngZone.run( () => {
-                    observer.next( triggers );
-                    observer.complete();
-                } );
-            } );
-            window.api.ipc.send( 'trigger:get', null );
+            window.api.ipc.invoke<TriggerModel[]>( 'trigger:get', null )
+                .then( triggers => {
+                    this.ngZone.run( () => {
+                        observer.next( triggers );
+                        observer.complete();
+                    } );
+                } )
+                .catch( error => this.ngZone.run( () => observer.error( error ) ) );
 
         } );
 
@@ -1243,13 +1244,14 @@ export class IpcService {
     public getTrigger( triggerId: string ): Observable<TriggerModel> {
         let obs: Observable<TriggerModel> = new Observable<TriggerModel>( ( observer: Observer<TriggerModel> ) => {
             
-            window.api.ipc.once( 'trigger:get', ( e, trigger: TriggerModel ) => {
-                this.ngZone.run( () => {
-                    observer.next( trigger );
-                    observer.complete();
-                } );
-            } );
-            window.api.ipc.send( 'trigger:get', triggerId );
+            window.api.ipc.invoke<TriggerModel>( 'trigger:get', triggerId )
+                .then( trigger => {
+                    this.ngZone.run( () => {
+                        observer.next( trigger );
+                        observer.complete();
+                    } );
+                } )
+                .catch( error => this.ngZone.run( () => observer.error( error ) ) );
 
         } );
 
@@ -2229,6 +2231,11 @@ export class IpcService {
                         observer.next( setupCompleted );
                         observer.complete();
                     } );
+                } )
+                .catch( error => {
+                    console.error( 'settings:get:setupCompleted failed', error );
+                    this.logException( `settings:get:setupCompleted failed: ${error?.message ?? error}` );
+                    this.ngZone.run( () => observer.error( error ) );
                 } );
 
         } );
@@ -2245,6 +2252,11 @@ export class IpcService {
                         observer.next( spell );
                         observer.complete();
                     } );
+                } )
+                .catch( error => {
+                    console.error( 'scraper:get:eqsr-spell failed', error );
+                    this.logException( `scraper:get:eqsr-spell failed: ${error?.message ?? error}` );
+                    this.ngZone.run( () => observer.error( error ) );
                 } );
 
         } );
@@ -2261,6 +2273,11 @@ export class IpcService {
                         observer.next( spell );
                         observer.complete();
                     } );
+                } )
+                .catch( error => {
+                    console.error( 'scraper:get:eqsr-itemClick failed', error );
+                    this.logException( `scraper:get:eqsr-itemClick failed: ${error?.message ?? error}` );
+                    this.ngZone.run( () => observer.error( error ) );
                 } );
 
         } );
@@ -2279,6 +2296,14 @@ export class IpcService {
                             characterOptions[ key ] = characterOptions[ key ].map( c => Object.assign( new CharacterModel(), c ) );
                         } );
                         observer.next( characterOptions );
+                        observer.complete();
+                    } );
+                } )
+                .catch( error => {
+                    console.error( 'character:get:options failed', error );
+                    this.logException( `character:get:options failed: ${error?.message ?? error}` );
+                    this.ngZone.run( () => {
+                        observer.next( {} );
                         observer.complete();
                     } );
                 } );

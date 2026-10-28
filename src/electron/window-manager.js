@@ -33,6 +33,9 @@ const rendererCursorPollMs = 33;
 // disappears under a still cursor is still picked up.
 const rendererCursorResendMs = 500;
 
+/** Maximum time a scraper window may take before the scrape is abandoned. */
+const scraperTimeoutMs = 30 * 1000;
+
 class WindowManager {
 
     /** @type {BrowserWindow} */
@@ -1751,21 +1754,43 @@ class WindowManager {
                 scraperWindow.webContents.openDevTools( { mode: 'undocked' } );
             }
             
-            ipcMain.once( 'scraper:done[' + wi + ']', ( event, spell ) => {
-                ipcMain.removeAllListeners( 'scraper:error' );
-                scraperWindow.close();
+            const doneChannel = 'scraper:done[' + wi + ']';
+            const errorChannel = 'scraper:error[' + wi + ']';
+            let settled = false;
+            let timeoutId = null;
+            const onClosed = () => settle( reject, new Error( 'Scraper window closed' ) );
+
+            const settle = ( fn, value ) => {
+                if ( settled ) {
+                    return;
+                }
+                settled = true;
+                clearTimeout( timeoutId );
+                ipcMain.removeAllListeners( doneChannel );
+                ipcMain.removeAllListeners( errorChannel );
+                if ( scraperWindow != null && !scraperWindow.isDestroyed() ) {
+                    scraperWindow.removeListener( 'closed', onClosed );
+                    scraperWindow.destroy();
+                }
                 scraperWindow = null;
-                resolve( spell );
+                fn( value );
+            };
+
+            ipcMain.once( doneChannel, ( event, spell ) => settle( resolve, spell ) );
+            ipcMain.once( errorChannel, ( event, error ) => settle( reject, error ) );
+
+            scraperWindow.once( 'closed', onClosed );
+
+            timeoutId = setTimeout( () => settle( reject, new Error( 'Timed out loading the EQ Spell Resources page.' ) ), scraperTimeoutMs );
+
+            scraperWindow.webContents.on( 'did-fail-load', ( event, errorCode, errorDescription, validatedUrl, isMainFrame ) => {
+                if ( isMainFrame ) {
+                    settle( reject, new Error( 'Failed to load the EQ Spell Resources page: ' + errorDescription ) );
+                }
             } );
 
-            ipcMain.once( 'scraper:error[' + wi + ']', ( event, error ) => {
-                ipcMain.removeAllListeners( 'scraper:done' );
-                scraperWindow.close();
-                scraperWindow = null;
-                reject( error );
-            } );
-
-            scraperWindow.loadURL( `file://${__dirname}/threads/scraper-eqsr.html?i=${wi}&action=${scrapeAction}&url=${encodeURI( JSON.stringify( url ) )}` );
+            scraperWindow.loadURL( `file://${__dirname}/threads/scraper-eqsr.html?i=${wi}&action=${scrapeAction}&url=${encodeURI( JSON.stringify( url ) )}` )
+                .catch( error => settle( reject, error ) );
 
         } );
     

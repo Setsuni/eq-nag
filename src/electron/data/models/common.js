@@ -1,5 +1,4 @@
 const activeWindow = require( 'active-win' );
-const StringUtilities = require( '../../utilities/string' );
 const { DpsMeterSettings } = require( './combat-parser' );
 
 const customAlphabet = require( 'nanoid' ).customAlphabet;

@@ -181,14 +181,13 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
             if ( folders[ i ].children == null || folders[ i ].children.length === 0 ) {
                 let c = this.allTriggers.filter( f => f.folderId === folders[ i ].folderId ).length;
                 if ( c === 0 ) {
-                    console.log( 'remove', folders[ i ].name );
                     ri.push( i );
                 }
             }
         }
 
         for ( let i = ri.length - 1; i >= 0; i-- ) {
-            folders.splice( i, 1 );
+            folders.splice( ri[ i ], 1 );
         }
 
     }

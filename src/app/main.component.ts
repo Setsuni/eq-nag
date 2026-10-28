@@ -106,11 +106,14 @@ export class MainComponent implements OnInit {
             this.showingUpdateConfirmation = true;
         } );
         
-        this.ipcService.getSetupCompleted().subscribe( completed => {
-            this.setupCompleted = completed;
-            if ( !completed ) {
-                this.runSetupWizard();
-            }
+        this.ipcService.getSetupCompleted().subscribe( {
+            next: completed => {
+                this.setupCompleted = completed;
+                if ( !completed ) {
+                    this.runSetupWizard();
+                }
+            },
+            error: error => console.error( 'Could not read the setup state', error ),
         } );
 
         this.ipcService.tickReceived().subscribe( data => {
@@ -124,7 +127,10 @@ export class MainComponent implements OnInit {
             this.damageTakenOverlayId = data.damageReceivedOverlayId;
             this.fctStyles = data.fctStyles;
             
-            this.ipcService.getSetupCompleted().subscribe( completed => this.setupCompleted = completed );
+            this.ipcService.getSetupCompleted().subscribe( {
+                next: completed => this.setupCompleted = completed,
+                error: error => console.error( 'Could not read the setup state', error ),
+            } );
 
         } );
 

@@ -485,12 +485,12 @@ class TriggerDatabaseStore extends Store {
             sendTick();
         } );
 
-        ipcMain.on( 'trigger:get', ( event, triggerId ) => {
-            if ( triggerId != null && triggerId.length > 0 ) {
-                event.sender.send( 'trigger:get', this.find( triggerId ) );
-            } else {
-                event.sender.send( 'trigger:get', this.getAll() );
+        ipcMain.handle( 'trigger:get', ( event, triggerId ) => {
+            if ( typeof triggerId === 'string' && triggerId.length > 0 ) {
+                return this.find( triggerId );
             }
+
+            return this.getAll();
         } );
 
         ipcMain.on( 'trigger:update', ( event, trigger ) => {
