@@ -4,6 +4,7 @@ import { Component, OnInit, Inject } from '@angular/core';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatTree, MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';
 import { combineLatest, forkJoin, Observable } from 'rxjs';
+import { findSoundSizeProblem } from 'src/app/utilities/package-file-ids';
 import { AuthorModel, OverlayWindowModel, PackageFileModel, PackageFolder, PackageTrigger, QuickShareFileModel, QuickShareModel, TriggerAction, TriggerFolder, TriggerModel } from 'src/app/core.model';
 import { IpcService } from 'src/app/ipc.service';
 import { PrepareQuickShareModel } from '../dialog.model';
@@ -493,6 +494,14 @@ export class PrepareQuickShareDialogComponent implements OnInit {
     
                     } );
                 } );
+
+                // A share is limited in the size of each sound and of all sounds together.
+                let sizeProblem = findSoundSizeProblem( quickShareFiles );
+                if ( sizeProblem ) {
+                    this.snackBar.open( `${sizeProblem} Remove it from the share or use a smaller sound.`, 'Dismiss', { duration: 8000 } );
+                    this.creatingQuickShare = false;
+                    return;
+                }
 
                 // Submits the final quickshare to the server to generate a 
                 // quickShareId.
