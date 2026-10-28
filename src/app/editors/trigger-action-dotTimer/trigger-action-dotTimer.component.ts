@@ -86,6 +86,9 @@ export class TriggerActionDotTimerComponent implements OnInit {
             this.ipcService
                 .saveAudioFile( this.audioFileSelector.nativeElement.files[ 0 ] )
                 .subscribe( fileId => {
+                    if ( !fileId ) {
+                        return;
+                    }
                     this.ipcService.getAudioFiles().subscribe( files => {
                         this.audioFiles = files;
                         this.action.endingPlayAudioFileId = fileId;
@@ -100,6 +103,9 @@ export class TriggerActionDotTimerComponent implements OnInit {
             this.ipcService
                 .saveAudioFile( this.audioFileSelector.nativeElement.files[ 0 ] )
                 .subscribe( fileId => {
+                    if ( !fileId ) {
+                        return;
+                    }
                     this.ipcService.getAudioFiles().subscribe( files => {
                         this.audioFiles = files;
                         this.action.endedPlayAudioFileId = fileId;
