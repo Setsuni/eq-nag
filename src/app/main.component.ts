@@ -7,13 +7,14 @@ import { customAlphabet } from 'nanoid';
 import { SetupService } from './setup/setup.service';
 import { CharactersListComponent } from './characters-list/characters-list.component';
 import { TriggerLibraryService } from './windows/trigger-library.service';
-import { forkJoin, Observable, timer } from 'rxjs';
+import { forkJoin, Observable, of, timer } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { ColoredString } from './dialogs/dialog.model';
 import { SettingsComponent } from './settings/settings-component/settings.component';
 import { QuickShareService } from './core/quick-share.service';
 import { TriggersComponent } from './triggers/triggers.component';
 import { JoinChatRoomDialogResult } from './dialogs/join-chat-room-dialog/join-chat-room-dialog.component';
-import { buildFileIdMap, remapAudioFileIds } from './utilities/package-file-ids';
+import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getSkippedSounds, remapAudioFileIds, SkippedSound, toSkippedSound } from './utilities/package-file-ids';
 
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
@@ -417,6 +418,7 @@ export class MainComponent implements OnInit {
                             .subscribe( packages => {
                                 let installedCount = 0;
                                 let failedCount = 0;
+                                let skippedSounds: SkippedSound[] = [];
 
                                 const installNext = () => {
                                     installedCount += 1;
@@ -424,8 +426,9 @@ export class MainComponent implements OnInit {
                                         installPackage( packages[ installedCount ] );
                                     } else {
                                         sb?.dismiss();
+                                        // A failure toast stays up; it isn't replaced by a success message.
                                         if ( failedCount === 0 ) {
-                                            this.snackBar.open( 'All updates installed successfully!', 'dismiss', { duration: 5000 } );
+                                            this.snackBar.open( skippedSounds.length > 0 ? `All updates installed.  ${describeSkippedSounds( skippedSounds )}` : 'All updates installed successfully!', 'dismiss', { duration: skippedSounds.length > 0 ? 15000 : 5000 } );
                                         }
                                         this.ipcService.requestTick();
                                         window.setTimeout( () => this.checkForTriggerUpdates(), updateIntervalDuration );
@@ -437,17 +440,27 @@ export class MainComponent implements OnInit {
                                         .getPackageFiles( pkg.triggerPackageId )
                                         .subscribe( packageFiles => {
                                             
+                                            let sizeProblem = findSoundTotalProblem( packageFiles );
+                                            if ( sizeProblem ) {
+                                                console.error( 'Could not install a package update.', sizeProblem );
+                                                failedCount += 1;
+                                                this.snackBar.open( `${sizeProblem} The update to "${pkg.name}" was not installed.`, 'dismiss', { duration: 10000 } );
+                                                installNext();
+                                                return;
+                                            }
+
                                             // Adding a timer makes the following easier and I'm being lazy today.
                                             let importTasks: Observable<any>[] = [ timer( 1 ) ];
 
                                             // Files already stored locally with identical contents are reused; a different local file is never replaced.
                                             packageFiles?.forEach( file => {
-                                                importTasks.push( this.ipcService.importPackageFile( file ) );
+                                                importTasks.push( this.ipcService.importPackageFile( file ).pipe( catchError( error => of( toSkippedSound( file, error ) ) ) ) );
                                             } );
 
                                             forkJoin( importTasks ).subscribe( results => {
-                                                // Files that collided with a different local file were stored under new ids.
+                                                // Files that collided with a different local file were stored under new ids.  Skipped files are removed from the actions that use them.
                                                 remapAudioFileIds( pkg.model?.triggers, buildFileIdMap( packageFiles, results.slice( 1 ) ) );
+                                                skippedSounds.push( ...getSkippedSounds( results.slice( 1 ) ) );
 
                                                 // Missing package overlays are caught in the main component's ngInit event.
                                                 this.ipcService.installTriggerPackage( pkg ).subscribe( installComplete => installNext() );
