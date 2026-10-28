@@ -79,7 +79,7 @@
     <mat-progress-bar mode="indeterminate" *ngIf="processing"></mat-progress-bar>
 
     <div class="ft-row" style="position: fixed; top: 200px; left: 10px; right: 0; bottom: calc(10px + var(--nag-console-height, 24px));">
-        <div class="ft-item" style="margin: 3px; width: 32%;">
+        <div class="ft-item" style="margin: 3px; width: 32%; flex: 0 0 auto; min-width: 160px;" #folderPane>
 
             <div class="ft-content">
 
@@ -127,7 +127,10 @@
 
         </div>
 
-        <div class="ft-item" style="margin: 3px; width: 66%;">
+        <div class="ft-divider" nagPaneDivider [paneTarget]="folderPane" [paneSibling]="triggerPane" storageKey="nagTriggerFolderPaneWidth"
+            role="separator" aria-orientation="vertical" aria-label="Resize the folder pane" tabindex="0"></div>
+
+        <div class="ft-item" style="margin: 3px; flex: 1 1 0; min-width: 300px;" #triggerPane>
             <div class="ft-content">
                 <cdk-virtual-scroll-viewport tvsItemSize="41" class="wrapper mat-elevation-z2 show-scrollbar" style="height: 100%" #triggerScroller>
                     <table mat-table style="width: 100%; min-width: 600px;"
