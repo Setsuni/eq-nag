@@ -8,6 +8,7 @@ const { ActionTypes, TriggerAction, TriggerConditionTypes, OperatorTypes, TimerR
 const { ipcRenderer } = require( 'electron' );
 const Handlebars = require( "handlebars" );
 const { sanitizeHtml } = require( '../utilities/html' );
+const { sanitizeTimerIcon } = require( '../utilities/icons' );
 const perf = require( '../utilities/perf' );
 const _ = require( 'lodash' );
 const customAlphabet = require( 'nanoid' ).customAlphabet;
@@ -246,7 +247,6 @@ var overlayTemplate;
 var overlayFctTemplate;
 var displayTextTemplate;
 var timerTemplate;
-var timerIconTemplate;
 var targetGroupTemplate;
 var targetGroupTimerTemplate;
 /** @type {HandlebarsTemplateDelegate<any>} */
@@ -1045,7 +1045,6 @@ function Renderer( originX, originY, glowOnStart ) {
         overlayFctTemplate = Handlebars.compile( document.querySelector( '#overlayFct' ).innerHTML );
         displayTextTemplate = Handlebars.compile( document.querySelector( '#displayTextTemplate' ).innerHTML );
         timerTemplate = Handlebars.compile( document.querySelector( '#timerTemplate' ).innerHTML );
-        timerIconTemplate = Handlebars.compile( document.querySelector( '#timerIconTemplate' ).innerHTML );
         fctTemplate = Handlebars.compile( document.querySelector( '#fctTemplate' ).innerHTML );
         fct2Template = Handlebars.compile( document.querySelector( '#fct2Template' ).innerHTML );
         fctCriticalTemplate = Handlebars.compile( document.querySelector( '#fctCriticalTemplate' ).innerHTML );
@@ -4226,6 +4225,33 @@ function getTimerLabel( overlayId, comp ) {
 
 
 /**
+ * Puts the timer icon in front of the content of the given element.  Only
+ * embedded images (png, jpeg, gif, webp or svg) are shown.
+ *
+ * @param {HTMLElement} div The element for the timer.
+ * @param {string} icon The icon of the timer action.
+ */
+function prependTimerIcon( div, icon ) {
+    let source = sanitizeTimerIcon( icon, Infinity );
+    if ( source !== null ) {
+        let img = document.createElement( 'img' );
+        img.src = source;
+        img.classList.add( 'dot-icon' );
+        img.style.cssText = 'position: absolute; margin-left: -1.7em;  height: 1.5em;';
+        div.insertBefore( img, div.firstChild );
+    }
+}
+
+
+
+
+
+
+
+
+
+
+/**
  * Creates a new grouped overlay component.
  * 
  * @param {string} overlayId The id of the desired overlay.
@@ -4242,7 +4268,7 @@ function createGroupedDotTimer( overlayId, contentArea, group, comp ) {
     comp.dom = div;
     
     if ( comp.action.timerIcon != null ) {
-        div.innerHTML = sanitizeHtml( timerIconTemplate( { icon: comp.action.timerIcon, iconStyle: `"style="position: absolute; margin-left: -1.7em;  height: 1.5em;` } ) ) + div.innerHTML;
+        prependTimerIcon( div, comp.action.timerIcon );
     }
 
     comp.dom = div;
@@ -4298,7 +4324,7 @@ function createGroupedTimer( overlayId, contentArea, group, comp ) {
     comp.dom = div;
     
     if ( comp.action.timerIcon != null ) {
-        div.innerHTML = sanitizeHtml( timerIconTemplate( { icon: comp.action.timerIcon, iconStyle: `"style="position: absolute; margin-left: -1.7em;  height: 1.5em;` } ) ) + div.innerHTML;
+        prependTimerIcon( div, comp.action.timerIcon );
     }
 
     comp.dom = div;
@@ -4430,7 +4456,7 @@ function createUngroupedDotTimer( overlayId, contentArea, comp ) {
     div.innerHTML = sanitizeHtml( content );
     
     if ( comp.action.timerIcon != null ) {
-        div.innerHTML = sanitizeHtml( timerIconTemplate( { icon: comp.action.timerIcon, iconStyle: `"style="position: absolute; margin-left: -1.7em;  height: 1.5em;` } ) ) + div.innerHTML;
+        prependTimerIcon( div, comp.action.timerIcon );
     }
 
     comp.dom = div;
@@ -4475,7 +4501,7 @@ function createUngroupedTimer( overlayId, contentArea, comp ) {
     div.innerHTML = sanitizeHtml( content );
     
     if ( comp.action.timerIcon != null ) {
-        div.innerHTML = sanitizeHtml( timerIconTemplate( { icon: comp.action.timerIcon, iconStyle: `"style="position: absolute; margin-left: -1.7em;  height: 1.5em;` } ) ) + div.innerHTML;
+        prependTimerIcon( div, comp.action.timerIcon );
     }
 
     comp.dom = div;

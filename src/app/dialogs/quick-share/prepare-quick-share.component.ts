@@ -4,6 +4,7 @@ import { Component, OnInit, Inject } from '@angular/core';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatTree, MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';
 import { combineLatest, forkJoin, Observable } from 'rxjs';
+import { findUnshareableIconTriggers } from 'src/app/utilities/timer-icons';
 import { AuthorModel, OverlayWindowModel, PackageFileModel, PackageFolder, PackageTrigger, QuickShareFileModel, QuickShareModel, TriggerAction, TriggerFolder, TriggerModel } from 'src/app/core.model';
 import { IpcService } from 'src/app/ipc.service';
 import { PrepareQuickShareModel } from '../dialog.model';
@@ -494,6 +495,10 @@ export class PrepareQuickShareDialogComponent implements OnInit {
                     } );
                 } );
 
+                // The receiver drops timer icons that are not embedded images up to 256 KB.
+                let iconTriggers = findUnshareableIconTriggers( quickShareTriggers );
+                let iconWarning = iconTriggers.length > 0 ? `  The timer icon of ${iconTriggers.slice( 0, 5 ).map( f => `"${f}"` ).join( ', ' )}${iconTriggers.length > 5 ? ' and more' : ''} is not an embedded image up to 256 KB, so the receiver will not get it.` : '';
+
                 // Submits the final quickshare to the server to generate a 
                 // quickShareId.
                 this.quickShareService
@@ -501,7 +506,7 @@ export class PrepareQuickShareDialogComponent implements OnInit {
                     .subscribe( quickShareId => {
                         let code = `{NAG:quick-share/${quickShareId}}`;
                         this.ipcService.sendTextToClipboard( code );
-                        this.snackBar.open( 'Quickshare copied to clipboard', 'Dismiss', { duration: 5000 } );
+                        this.snackBar.open( `Quickshare copied to clipboard${iconWarning}`, 'Dismiss', { duration: iconWarning ? 15000 : 5000 } );
                         this.dialogRef.close( quickShareId );
                     } );
                 
