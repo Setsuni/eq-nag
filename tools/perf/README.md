@@ -66,7 +66,20 @@ a release (no taps), and `eq_nag_portable-perf.exe`, the same code with the
 taps switched on by default (the workflow adds `perf-always-on.json`). A
 tester who sees Nag being slow runs the perf portable the same way and sends
 you `perf-report.json` from `%APPDATA%\electron-angular-eq-parse`. It
-contains timings and trigger names, nothing else.
+contains timings, trigger names, character names (in window labels), the
+build commit, the CPU model and core count, screen sizes, and whether the DPS
+meter and floating combat text are on.
+
+Besides `processes` and `taps`, the report has:
+
+| Field | Meaning |
+| --- | --- |
+| `startedAt`, `uptimeSeconds` | When the session started and how long it had run. Each process in `processes` also has its own `startedAt`. |
+| `build` | `{ commit, ref }` the perf portable was built from, or `null`. |
+| `machine` | CPU model, core count and each screen's size and scale factor. |
+| `notes` (inside each `taps` entry) | Settings the code reported through `perf.note`, such as `dps meter` and `fct`. |
+| `closedAt` (inside a `taps` entry) | When that window closed. Its last counts stay in the report. |
+| `timeline` | One sample a minute (up to 24 hours): `t` (uptime seconds), `cpu` per process label, the count of each tap other than triggers per label, and `notes` per label (left out when there are none). Values are cumulative, so diff consecutive samples. `cpu` comes from running processes, so a process that exits drops out of later `cpu` values; tap counts of closed windows stay. |
 
 `--perf` itself adds a little work: in a raid replay, about 1.5% of one core
 on top of ~7%. Triggers are timed on one log line in ten (and scaled up) to
