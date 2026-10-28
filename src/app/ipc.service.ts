@@ -10,6 +10,11 @@ import { nagId } from './core/nag-id.util';
 import { DialogService } from './dialogs/dialog.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
+/** An overlay of a package or quick share that the user has to map, with the id of the install that is waiting for the answer. */
+export interface MissingOverlayRequest extends OverlayWindowModel {
+    mappingRequestId?: string;
+}
+
 export class ConsoleData {
 
     successful: TriggerParseHistoryModel[];
@@ -66,7 +71,7 @@ export class IpcService {
     private _onReceivedQuickShare: Observer<string>[] = [];
     private _onReceivedQuickSharePackage: Observer<string>[] = [];
     private _onOrphanedTriggerWarning: Observer<boolean>[] = [];
-    private _onMissingPackageOverlay: Observer<OverlayWindowModel>[] = [];
+    private _onMissingPackageOverlay: Observer<MissingOverlayRequest>[] = [];
     private _onQuitFalure: Observer<QuitFailureData>[] = [];
     private _onBackupProgress: Observer<Progress>[] = [];
     private _simProgress: Record<string, Observer<SimulationProgress>[]> = {};
@@ -186,7 +191,7 @@ export class IpcService {
                     window.api.ipc.send( `color:darken`, data );
                 } );
 
-                window.api.ipc.on( 'pkg:missing-overlay', ( event: any, data: OverlayWindowModel ) => {
+                window.api.ipc.on( 'pkg:missing-overlay', ( event: any, data: MissingOverlayRequest ) => {
                     ngZone.run( () => {
                         this._onMissingPackageOverlay?.forEach( f => {
                             f.next( data );
@@ -530,16 +535,23 @@ export class IpcService {
         return obs;
     }
 
-    public missingPackageOverlayFound(): Observable<OverlayWindowModel> {
-        let obs: Observable<OverlayWindowModel> = new Observable<OverlayWindowModel>( ( observer: Observer<OverlayWindowModel> ) => {
+    public missingPackageOverlayFound(): Observable<MissingOverlayRequest> {
+        let obs: Observable<MissingOverlayRequest> = new Observable<MissingOverlayRequest>( ( observer: Observer<MissingOverlayRequest> ) => {
             this._onMissingPackageOverlay.push( observer );
         } );
 
         return obs;
     }
 
-    public packageOverlayMapped( packageOverlayId: string, mappedOverlayId: string ): void {
-        window.api.ipc.send( `trigger:missing-overlay:${packageOverlayId}`, mappedOverlayId );
+    /**
+     * Answers the install that is waiting for the user to map a package overlay.
+     *
+     * @param packageOverlayId The id of the package overlay.
+     * @param mappedOverlayId The id of the overlay it is mapped to, or null when the user cancelled.
+     * @param requestId The id of the request the answer is for.
+     */
+    public packageOverlayMapped( packageOverlayId: string, mappedOverlayId: string | null, requestId?: string ): void {
+        window.api.ipc.send( `trigger:missing-overlay:${requestId ?? packageOverlayId}`, mappedOverlayId );
     }
 
     public orphanedTriggersFound(): Observable<boolean> {
@@ -1915,13 +1927,16 @@ export class IpcService {
     public installTriggerPackage( triggerPackage: TriggerPackageMetaModel ): Observable<boolean> {
         let obs: Observable<boolean> = new Observable<boolean>( ( observer: Observer<boolean> ) => {
 
-            window.api.ipc.once( 'pkg:install', ( e, installComplete: boolean ) => {
-                this.ngZone.run( () => {
-                    observer.next( installComplete );
-                    observer.complete();
+            window.api.ipc.invoke<boolean>( 'pkg:install', triggerPackage )
+                .then( installComplete => {
+                    this.ngZone.run( () => {
+                        observer.next( installComplete );
+                        observer.complete();
+                    } );
+                } )
+                .catch( error => {
+                    this.ngZone.run( () => observer.error( error ) );
                 } );
-            } );
-            window.api.ipc.send( 'pkg:install', triggerPackage );
 
         } );
 
@@ -1979,13 +1994,16 @@ export class IpcService {
     public installQuickShare( quickShare: QuickShareMetaModel ): Observable<boolean> {
         let obs: Observable<boolean> = new Observable<boolean>( ( observer: Observer<boolean> ) => {
 
-            window.api.ipc.once( 'quickShare:install', ( e, installComplete: boolean ) => {
-                this.ngZone.run( () => {
-                    observer.next( installComplete );
-                    observer.complete();
+            window.api.ipc.invoke<boolean>( 'quickShare:install', quickShare )
+                .then( installComplete => {
+                    this.ngZone.run( () => {
+                        observer.next( installComplete );
+                        observer.complete();
+                    } );
+                } )
+                .catch( error => {
+                    this.ngZone.run( () => observer.error( error ) );
                 } );
-            } );
-            window.api.ipc.send( 'quickShare:install', quickShare );
 
         } );
 
@@ -2784,10 +2802,15 @@ export class IpcService {
     installOverlays( overlays: OverlayWindowModel[], packagePrimaryDisplaySize: Electron.Size ): Observable<OverlayWindowModel[]> {
         let obs: Observable<OverlayWindowModel[]> = new Observable<OverlayWindowModel[]>( ( observer: Observer<OverlayWindowModel[]> ) => {
                     
-            window.api.ipc.once( 'overlay:install-overlays', ( e, data: OverlayWindowModel[] ) => {
+            window.api.ipc.once( 'overlay:install-overlays', ( e, data: OverlayWindowModel[] | null ) => {
                 this.ngZone.run( () => {
-                    observer.next( data );
-                    observer.complete();
+                    if ( data === null ) {
+                        // The user cancelled the mapping of an overlay.
+                        observer.error( new Error( 'The overlay install was cancelled.' ) );
+                    } else {
+                        observer.next( data );
+                        observer.complete();
+                    }
                 } );
             } );
             window.api.ipc.send( 'overlay:install-overlays', { overlays: overlays, packagePrimaryDisplaySize: packagePrimaryDisplaySize } );

@@ -17,7 +17,7 @@ import { TriggerLibraryService } from '../windows/trigger-library.service';
 import { QuickShareService } from '../core/quick-share.service';
 import { FolderConditionsDialogComponent } from './folder-conditions-dialog/folder-conditions-dialog.component';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getSkippedSounds, remapAudioFileIds, toSkippedSound } from '../utilities/package-file-ids';
+import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getErrorReason, getSkippedSounds, remapAudioFileIds, toSkippedSound } from '../utilities/package-file-ids';
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
 
@@ -2154,10 +2154,13 @@ export class TriggersComponent implements OnInit {
                                 this.ipcService.installTriggerPackage( pkg ).subscribe( installComplete => {
                                     this.snackBar.open( skippedSounds.length > 0 ? `Package install complete.  ${describeSkippedSounds( skippedSounds )}` : 'Package install complete!', 'dismiss', { duration: skippedSounds.length > 0 ? 15000 : 2500 } );
                                     this.ipcService.requestTick();
+                                }, error => {
+                                    console.error( 'Could not install the package.', error );
+                                    this.snackBar.open( `The package could not be installed: ${getErrorReason( error )}`, 'dismiss', { duration: 10000 } );
                                 } );
                             }, error => {
                                 console.error( 'Could not save a sound from a package.', error );
-                                this.snackBar.open( 'A sound from this package could not be saved, so it was not installed.', 'dismiss', { duration: 5000 } );
+                                this.snackBar.open( `The package was not installed: ${getErrorReason( error )}`, 'dismiss', { duration: 10000 } );
                             } );
                             
                         } );
