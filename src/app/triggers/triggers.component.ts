@@ -11,12 +11,13 @@ import { MatTable } from '@angular/material/table';
 import { customAlphabet } from 'nanoid';
 import { TableVirtualScrollDataSource } from 'ng-table-virtual-scroll';
 import { CdkVirtualScrollViewport } from '@angular/cdk/scrolling';
-import { BehaviorSubject, forkJoin, Observable, timer } from 'rxjs';
+import { BehaviorSubject, forkJoin, Observable, of, timer } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { TriggerLibraryService } from '../windows/trigger-library.service';
 import { QuickShareService } from '../core/quick-share.service';
 import { FolderConditionsDialogComponent } from './folder-conditions-dialog/folder-conditions-dialog.component';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
-import { buildFileIdMap, remapAudioFileIds } from '../utilities/package-file-ids';
+import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getSkippedSounds, remapAudioFileIds, toSkippedSound } from '../utilities/package-file-ids';
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
 
@@ -2129,22 +2130,29 @@ export class TriggersComponent implements OnInit {
                         .getPackageFiles( packageId )
                         .subscribe( packageFiles => {
                     
+                            let sizeProblem = findSoundTotalProblem( packageFiles );
+                            if ( sizeProblem ) {
+                                this.snackBar.open( `${sizeProblem} The package was not installed.`, 'dismiss', { duration: 8000 } );
+                                return;
+                            }
+
                             // Adding a timer makes the following easier and I'm being lazy forever-today-.
                             let importTasks: Observable<any>[] = [ timer( 1 ) ];
                     
                             // Install all of the package files first.
                             packageFiles?.forEach( file => {
-                                importTasks.push( this.ipcService.importPackageFile( file ) );
+                                importTasks.push( this.ipcService.importPackageFile( file ).pipe( catchError( error => of( toSkippedSound( file, error ) ) ) ) );
                             } );
                             
                             // Finally, we can install the package itself after all of the package files have been installed.
                             forkJoin( importTasks ).subscribe( results => {
-                                // Files that collided with a different local file were stored under new ids.
+                                // Files that collided with a different local file were stored under new ids.  Skipped files are removed from the actions that use them.
                                 remapAudioFileIds( pkg.model?.triggers, buildFileIdMap( packageFiles, results.slice( 1 ) ) );
+                                let skippedSounds = getSkippedSounds( results.slice( 1 ) );
 
                                 // Missing package overlays are caught in the main component's ngInit event.
                                 this.ipcService.installTriggerPackage( pkg ).subscribe( installComplete => {
-                                    this.snackBar.open( 'Package install complete!', 'dismiss', { duration: 2500 } );
+                                    this.snackBar.open( skippedSounds.length > 0 ? `Package install complete.  ${describeSkippedSounds( skippedSounds )}` : 'Package install complete!', 'dismiss', { duration: skippedSounds.length > 0 ? 15000 : 2500 } );
                                     this.ipcService.requestTick();
                                 } );
                             }, error => {

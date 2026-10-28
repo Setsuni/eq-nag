@@ -5,6 +5,7 @@ const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 const nanoid = customAlphabet( alphabet, 16 );
 import * as _ from 'lodash-es';
 import { forkJoin, Observable, Observer } from 'rxjs';
+import { tap } from 'rxjs/operators';
 import { IpcService } from '../ipc.service';
 import { nagId } from '../core/nag-id.util';
 
@@ -15,6 +16,27 @@ enum CaptureMethods {
 }
 
 export class GinaImporter {
+
+    private static skippedSounds = new Set<string>();
+
+    /**
+     * Returns the names of the sounds that could not be imported since the
+     * last time this was called, because they are not a supported audio type
+     * or could not be read.
+     */
+    public static takeSkippedSounds(): string[] {
+        let names = Array.from( GinaImporter.skippedSounds );
+        GinaImporter.skippedSounds.clear();
+        return names;
+    }
+
+    private static importSound( ipcService: IpcService, mediaFileName: string ): Observable<string|undefined> {
+        return ipcService.importAudioFile( mediaFileName ).pipe( tap( fileId => {
+            if ( !fileId ) {
+                GinaImporter.skippedSounds.add( String( mediaFileName ).split( /[\\/]/ ).pop() );
+            }
+        } ) );
+    }
     public static GetTrigger( gina: GinaTrigger, ipcService: IpcService, detrimentalOverlayId: string|null = null, beneficialOverlayId: string|null = null, alertOverlayId: string|null = null, ginaConfig: GinaConfiguration | null = null ): Observable<TriggerModel> {
         let obs: Observable<TriggerModel> = new Observable<TriggerModel>( ( observer: Observer<TriggerModel> ) => {
 
@@ -77,7 +99,7 @@ export class GinaImporter {
                 } );
             }
             if ( gina.PlayMediaFile === 'True' ) {
-                let importObs = ipcService.importAudioFile( gina.MediaFileName );
+                let importObs = GinaImporter.importSound( ipcService, gina.MediaFileName );
                 tasks.push( importObs );
                 importObs.subscribe( fileId => {
                     if ( fileId ) {
@@ -157,7 +179,7 @@ export class GinaImporter {
                     timerAction.endingPlayAudio = gina.TimerEndingTrigger.PlayMediaFile === 'True';
 
                     if ( timerAction.endingPlayAudio ) {
-                        let endingAudioTask = ipcService.importAudioFile( gina.TimerEndingTrigger.MediaFileName );
+                        let endingAudioTask = GinaImporter.importSound( ipcService, gina.TimerEndingTrigger.MediaFileName );
                         tasks.push( endingAudioTask );
                         endingAudioTask.subscribe( fileId => {
                             if ( fileId ) {
@@ -182,7 +204,7 @@ export class GinaImporter {
                     timerAction.endedPlayAudio = gina.TimerEndedTrigger.PlayMediaFile === 'True';
 
                     if ( timerAction.endedPlayAudio ) {
-                        let endedAudioTask = ipcService.importAudioFile( gina.TimerEndedTrigger.MediaFileName );
+                        let endedAudioTask = GinaImporter.importSound( ipcService, gina.TimerEndedTrigger.MediaFileName );
                         tasks.push( endedAudioTask );
                         endedAudioTask.subscribe( fileId => {
                             if ( fileId ) {

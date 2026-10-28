@@ -14,6 +14,7 @@ const StringUtilities = require( "../utilities/string" );
 const Fuse = require( 'fuse.js' );
 const { MediaTypes, FileModel, PackageFileModel } = require( './models/trigger' );
 const { hashFileData, resolvePackageFileId } = require( './package-file-ids' );
+const { checkSoundFile } = require( '../utilities/sound-files' );
 const log = require( 'electron-log' );
 
 const eqSpellPages = 63;
@@ -21,9 +22,9 @@ const eqIconPageSize = 256;
 const eqIconSize = 40;
 const filesFolder = 'resource-files';
 
-// Audio types that can be installed from a shared package.  WAV is accepted
-// here so packages made from GINA imports still install; it can't be uploaded
-// from Nag (see storeFile).
+// Audio types that can be installed from a shared package or imported from
+// GINA.  WAV is accepted here so packages made from GINA imports still
+// install; the editors don't offer it.
 const packageFileExtensions = new Set( [ '.mp3', '.ogg', '.m4a', '.opus', '.webm', '.aac', '.wav' ] );
 const fileIdRegex = /^[A-Za-z0-9_-]{1,64}$/;
 
@@ -77,13 +78,23 @@ class FilesDatabaseStore extends Store {
              * @param {{name: string, arrayBuffer: ArrayBuffer}} file 
              */
             ( event, file ) => {
-                var buffer = Buffer.from( file.arrayBuffer );
-                let fileId = this.storeFile( buffer, file.name );
+                let fileId = null;
+                try {
+                    var buffer = Buffer.from( file.arrayBuffer );
+                    fileId = this.storeFile( buffer, file.name );
+                } catch ( error ) {
+                    log.error( `[files-database:audio-file:save] Could not save the sound: ${error}` );
+                }
                 event.sender.send( 'audio-file:save', fileId );
             } );
 
         ipcMain.on( 'audio-file:import', ( event, filename ) => {
-            let fileId = this.storeFileByName( filename );
+            let fileId = null;
+            try {
+                fileId = this.storeFileByName( filename ) ?? null;
+            } catch ( error ) {
+                log.error( `[files-database:audio-file:import] Could not import the sound: ${error}` );
+            }
             event.sender.send( 'audio-file:import', fileId );
         } );
 
@@ -154,7 +165,7 @@ class FilesDatabaseStore extends Store {
         const ext = path.extname( name ).toLowerCase();
         if ( !allowedExtensions.has( ext ) )
             return null;
-        
+
         let id = nanoid();
         let model = new FileModel();
         
@@ -165,7 +176,7 @@ class FilesDatabaseStore extends Store {
         model.hash = hashFileData( buffer );
         model.size = buffer.length;
 
-        fs.writeFile( model.physicalName, buffer, () => { } );
+        this.#writeFile( model.physicalName, buffer );
 
         this.#data.files.push( model );
         this.storeDataFile( this.#data );
@@ -262,12 +273,18 @@ class FilesDatabaseStore extends Store {
         // plain characters and a known audio extension may become a file name
         // in the files folder.
         const ext = path.extname( `${file?.fileName ?? ''}` ).toLowerCase();
+        const fileName = `${file?.fileName ?? ''}`.slice( 0, 80 );
         if ( !fileIdRegex.test( `${file?.fileId ?? ''}` ) || !packageFileExtensions.has( ext ) || typeof file.contents !== 'string' ) {
-            log.warn( `[files-database:importPackageFile] Skipped package file with an invalid id or type: ${JSON.stringify( `${file?.fileName ?? ''}` )}` );
-            return null;
+            log.warn( `[files-database:importPackageFile] Rejected package file with an invalid id or type: ${JSON.stringify( fileName )}` );
+            throw new Error( 'The sound has an invalid id or type.' );
         }
 
         let contents = Buffer.from( file.contents, 'base64' );
+        let problem = checkSoundFile( contents, ext );
+        if ( problem ) {
+            log.warn( `[files-database:importPackageFile] Rejected package file ${JSON.stringify( fileName )}: ${problem}` );
+            throw new Error( problem );
+        }
 
         let incomingHash = hashFileData( contents );
         let existing = this.#data.files.find( f => f.fileId === file.fileId );
@@ -297,7 +314,7 @@ class FilesDatabaseStore extends Store {
         let model = new FileModel();
 
         model.fileId = resolution.fileId;
-        model.mediaType = +file.mediaType;
+        model.mediaType = MediaTypes.Audio;
         model.fileName = file.fileName;
         model.physicalName = path.join( this.#filePath, `${resolution.fileId}${ext}` );
         model.hash = incomingHash;
@@ -432,20 +449,27 @@ class FilesDatabaseStore extends Store {
             } else {
                 let id = nanoid();
                 let model = new FileModel();
-            
+                let buffer;
+
                 model.fileId = id;
                 model.mediaType = MediaTypes.Audio;
                 model.fileName = name;
                 model.physicalName = path.join( this.#filePath, `${id}${path.extname( name )}` );
-                try {
-                    let buffer = fs.readFileSync( filename );
-                    model.hash = hashFileData( buffer );
-                    model.size = buffer.length;
-                } catch ( error ) {
-                    log.warn( `[files-database:storeFileByName] Could not hash the file: ${error}` );
+                if ( !packageFileExtensions.has( path.extname( name ).toLowerCase() ) ) {
+                    log.warn( `[files-database:storeFileByName] Skipped a sound that is not a supported type: ${JSON.stringify( name )}` );
+                    return undefined;
                 }
-    
-                fs.copyFile( filename, model.physicalName, () => { } );
+
+                try {
+                    buffer = fs.readFileSync( filename );
+                } catch ( error ) {
+                    log.warn( `[files-database:storeFileByName] Could not read the file: ${error}` );
+                    return undefined;
+                }
+
+                model.hash = hashFileData( buffer );
+                model.size = buffer.length;
+                this.#writeFile( model.physicalName, buffer );
     
                 this.#data.files.push( model );
                 this.storeDataFile( this.#data );

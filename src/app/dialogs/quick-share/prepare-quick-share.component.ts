@@ -5,6 +5,7 @@ import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dial
 import { MatTree, MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';
 import { combineLatest, forkJoin, Observable } from 'rxjs';
 import { findUnshareableIconTriggers } from 'src/app/utilities/timer-icons';
+import { findSoundSizeProblem } from 'src/app/utilities/package-file-ids';
 import { AuthorModel, OverlayWindowModel, PackageFileModel, PackageFolder, PackageTrigger, QuickShareFileModel, QuickShareModel, TriggerAction, TriggerFolder, TriggerModel } from 'src/app/core.model';
 import { IpcService } from 'src/app/ipc.service';
 import { PrepareQuickShareModel } from '../dialog.model';
@@ -494,6 +495,14 @@ export class PrepareQuickShareDialogComponent implements OnInit {
     
                     } );
                 } );
+
+                // A share is limited in the size of each sound and of all sounds together.
+                let sizeProblem = findSoundSizeProblem( quickShareFiles );
+                if ( sizeProblem ) {
+                    this.snackBar.open( `${sizeProblem} Remove it from the share or use a smaller sound.`, 'Dismiss', { duration: 8000 } );
+                    this.creatingQuickShare = false;
+                    return;
+                }
 
                 // The receiver drops timer icons that are not embedded images up to 256 KB.
                 let iconTriggers = findUnshareableIconTriggers( quickShareTriggers );

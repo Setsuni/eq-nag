@@ -21,8 +21,9 @@ description, which Nag shows in the Update Notes window.
 - **Shared sounds never replace or delete a different sound you already have.** Installing a package or quick share overwrote one of your sounds that happened to have the same internal id, and uninstalling a package could delete a sound you also used. The incoming sound now gets its own id when it differs, your sounds are left alone, and an update that changes a sound removes the old copy only when nothing uses it any more.
 
 ### Security
-- **Safer shared triggers.** Trigger text, overlay names and log text now only keep simple formatting: bold, italic, colors, sizes, fonts, line breaks, lists, tables and images embedded in the text. Links, and images from the internet or from your computer, are no longer shown in trigger text, and remote images in package descriptions are blocked. Overlays no longer load images, sounds or fonts from other websites, and sound files from shared packages and quick-shares are checked before they are saved.
+- **Safer shared triggers.** Trigger text, overlay names and log text now only keep simple formatting: bold, italic, colors, sizes, fonts, line breaks, lists, tables and images embedded in the text. Links, and images from the internet or from your computer, are no longer shown in trigger text, and remote images in package descriptions are blocked. Overlays no longer load images, sounds or fonts from other websites.
 - **Timer icons in shares** must be embedded images (PNG, JPEG, GIF, WebP or SVG) up to 256 KB. Other icons are dropped when a share or package is installed, and Nag warns you when you share a trigger that has one.
+- **Shared sounds are checked.** Sounds in packages and quick shares must be real audio files, up to 5 MB each and 25 MB per share. A sound that doesn't qualify is skipped, Nag tells you which one and why, and the rest of the package still installs. Sounds you add yourself are not limited.
 
 ### New
 - **Pets in Combat Statistics.** Pets can now be added and assigned to their owner from the Combat Statistics screen, and Nag detects pet ownership from the log, so pet damage is credited to the right player.
