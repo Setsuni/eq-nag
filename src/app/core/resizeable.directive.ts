@@ -1,12 +1,13 @@
 import { DOCUMENT } from '@angular/common';
-import { Directive, ElementRef, HostListener, Inject, Input, OnInit, Renderer2 } from '@angular/core';
+import { Directive, ElementRef, HostListener, Inject, Input, OnDestroy, OnInit, Renderer2 } from '@angular/core';
 
 @Directive( {
     selector: '[nagResizeable]',
 } )
-export class ResizeableDirective implements OnInit {
+export class ResizeableDirective implements OnInit, OnDestroy {
 
     private _dragElement: HTMLDivElement;
+    private _resizeObserver: ResizeObserver;
     private _userSelectValue: string | undefined = undefined;
 
     private _heightMax: number | undefined = undefined;
@@ -80,6 +81,10 @@ export class ResizeableDirective implements OnInit {
         }
     }
 
+    @HostListener( 'window:resize' ) onWindowResizeHandler() {
+        this.setPosition();
+    }
+
     @HostListener( 'document:mouseup', [ '$event' ] ) onMouseupHandler( event: MouseEvent ) {
         this.elementRef.nativeElement.style.userSelect = this._userSelectValue;
         this._dragging = false;
@@ -129,6 +134,17 @@ export class ResizeableDirective implements OnInit {
         }
 
         this.createDragElement();
+
+        this._resizeObserver = new ResizeObserver( () => this.setPosition() );
+        this._resizeObserver.observe( this.elementRef.nativeElement );
+    }
+
+    ngOnDestroy() {
+        this._resizeObserver?.disconnect();
+
+        if ( this._dragElement ) {
+            this.renderer.removeChild( this.document.body, this._dragElement );
+        }
     }
 
     private createDragElement() {
