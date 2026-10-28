@@ -1,8 +1,7 @@
 import { Component, ViewChild, ElementRef, OnInit } from '@angular/core';
-import * as _ from 'lodash-es';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { IpcService } from './ipc.service';
-import { DkpEntryModel, OverlayWindowModel, FocusEffectSettings, StylePropertiesModel, FctStylesModel, QuickShareMetaModel, QuickShareFileModel, TriggerPackageMetaModel, VersionNumber, AuthorModel, SettingsKeys } from './core.model';
+import { DkpEntryModel, OverlayWindowModel, FocusEffectSettings, StylePropertiesModel, FctStylesModel, QuickShareMetaModel, QuickShareFileModel, TriggerPackageMetaModel, VersionNumber, SettingsKeys } from './core.model';
 import { DialogService } from './dialogs/dialog.service';
 import { customAlphabet } from 'nanoid';
 import { SetupService } from './setup/setup.service';

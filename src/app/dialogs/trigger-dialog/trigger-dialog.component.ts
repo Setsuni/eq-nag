@@ -6,7 +6,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { IpcService } from 'src/app/ipc.service';
 import { DialogService } from '../dialog.service';
 import { ColorUtility } from 'src/app/utilities';
-import { TriggerModel, ActionTypes, TriggerAction, OverlayWindowModel, OperatorTypes, ImportTypes, ExternalDataSources } from 'src/app/core.model';
+import { TriggerModel, ActionTypes, TriggerAction, OperatorTypes, ImportTypes, ExternalDataSources } from 'src/app/core.model';
 import { Observable } from 'rxjs';
 
 @Component( {
