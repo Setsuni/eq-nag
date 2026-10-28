@@ -197,8 +197,8 @@ function scrapeSpell( url ) {
             let wearsOff = queryContains( 'tr', 'b', 'Wear off', 'td', 1 )?.innerHTML.trim();
             let name = document.querySelectorAll( 'h2' )[ 0 ].textContent?.trim();
             // https://regex101.com/r/IqDrwx/1
-            let gemSrc = div.querySelector( 'img[src*="spellicons"]' ).getAttribute( 'src' );
-            let gemIndex = /.*\/(?<number>\d+).*/gi.exec( gemSrc ).groups?.number;
+            let gemSrc = div.querySelector( 'img[src*="spellicons"]' )?.getAttribute( 'src' );
+            let gemIndex = gemSrc ? /.*\/(?<number>\d+).*/gi.exec( gemSrc )?.groups?.number : undefined;
             let duration = queryContains( 'tr', 'b', 'Duration:', 'td', 1 )?.innerHTML.trim();
             let itemsSource = document.querySelector( '#items' );
             let itemAnchors = itemsSource.querySelectorAll( 'a' );
