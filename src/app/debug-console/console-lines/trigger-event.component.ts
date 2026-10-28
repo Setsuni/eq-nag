@@ -2,7 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { LogTypes, TriggerParseHistoryModel } from 'src/app/core.model';
 import { IpcService } from 'src/app/ipc.service';
-import { sanitizeHtml } from 'src/app/utilities/html.utilities';
+import { escapeHtml } from 'src/app/utilities/html.utilities';
 
 @Component( {
     selector: 'console-trigger-event',
@@ -42,7 +42,7 @@ export class ConsoleTriggerEventComponent implements OnInit {
     public renderParseToHtml( obj: TriggerParseHistoryModel ): SafeHtml {
         
         if ( !obj._modelHtml ) {
-            obj._modelHtml = sanitizeHtml( this.renderJsonHtml( obj ) );
+            obj._modelHtml = this.renderJsonHtml( obj );
         }
 
         return this.sanitizer.bypassSecurityTrustHtml( obj._modelHtml );
@@ -86,19 +86,19 @@ export class ConsoleTriggerEventComponent implements OnInit {
             }
 
             if ( obj ) {
-                html += `<li><b class="color-blue">${key}</b>: ${value}</li>`;
+                html += `<li><b class="color-blue">${escapeHtml( key )}</b>: ${value}</li>`;
             } else if ( typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint' ) {
-                html += `<li><b class="color-blue">${key}</b>: <span class="color-purple">${value}</span></li>`;
+                html += `<li><b class="color-blue">${escapeHtml( key )}</b>: <span class="color-purple">${value}</span></li>`;
             } else if ( value === null ) {
-                html += `<li><b class="color-blue">${key}</b>: <span style="color: #808080;"><i>null</i></span></li>`;
+                html += `<li><b class="color-blue">${escapeHtml( key )}</b>: <span style="color: #808080;"><i>null</i></span></li>`;
             } else if ( value === undefined ) {
-                html += `<li><b class="color-blue">${key}</b>: <span style="color: #808080;"><i>undefined</i></span></li>`;
+                html += `<li><b class="color-blue">${escapeHtml( key )}</b>: <span style="color: #808080;"><i>undefined</i></span></li>`;
             } else if ( emptyArray ) {
-                html += `<li><b class="color-blue">${key}</b>: ${value}</li>`;
+                html += `<li><b class="color-blue">${escapeHtml( key )}</b>: ${value}</li>`;
             } else if ( typeof value === 'string' && value.match( /\d{4}-[01]\d-[0-3]\dT[0-2]\d:[0-5]\d:[0-5]\d\.\d+([+-][0-2]\d:[0-5]\d|Z)/gi ) ) {
-                html += `<li><b class="color-blue">${key}</b>: <span>${new Date(value)}</span></li>`;
+                html += `<li><b class="color-blue">${escapeHtml( key )}</b>: <span>${new Date(value)}</span></li>`;
             } else {
-                html += `<li><b class="color-blue">${key}</b>: <span class="color-brown">"${value?.replace(/</gmi, '&lt;').replace(/>/gmi, '&gt;')}"</span></li>`;
+                html += `<li><b class="color-blue">${escapeHtml( key )}</b>: <span class="color-brown">"${value?.replace(/</gmi, '&lt;').replace(/>/gmi, '&gt;')}"</span></li>`;
             }
             
         }
