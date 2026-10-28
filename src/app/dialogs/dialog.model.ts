@@ -4,7 +4,7 @@ export class NewTriggerDialogModel {
     
     trigger: TriggerModel;
     selectedFolderId: string;
-    dataSource: ExternalDataSources = ExternalDataSources.Allakhazam;
+    dataSource: ExternalDataSources = ExternalDataSources.EqSpellResources;
 
 }
 
