@@ -244,10 +244,10 @@ export class ConsoleListComponent implements OnInit, OnChanges {
         let search = this.searchText?.toLowerCase();
         this.history = this.history.filter( x => {
             if ( x instanceof TriggerParseHistoryModel ) {
-                return ( !search || x.rawLogEntry.toLowerCase().indexOf( search.toLowerCase() ) > -1 ) &&
+                return ( !search || String( x.rawLogEntry ?? '' ).toLowerCase().indexOf( search ) > -1 ) &&
                     ( !this.characterId || x.characterId === this.characterId );
             } else {
-                return ( !search || x.message.toLowerCase().indexOf( search.toLowerCase() ) > -1 );
+                return ( !search || String( x.message ?? '' ).toLowerCase().indexOf( search ) > -1 );
             }
         } );
         
