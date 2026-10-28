@@ -3,6 +3,7 @@ import { GlobalErrorHandler } from './global-error-handler';
 import { HorizontalScrollDirective } from './horizontal-scroll.directive';
 import { QuickShareService } from './quick-share.service';
 import { NgVar } from './ng-var.directive';
+import { PaneDividerDirective } from './pane-divider.directive';
 import { ResizeableDirective } from './resizeable.directive';
 
 @NgModule( {
@@ -12,11 +13,13 @@ import { ResizeableDirective } from './resizeable.directive';
     exports: [
         HorizontalScrollDirective,
         NgVar,
+        PaneDividerDirective,
         ResizeableDirective,
     ],
     declarations: [
         HorizontalScrollDirective,
         NgVar,
+        PaneDividerDirective,
         ResizeableDirective,
     ],
     providers: [
