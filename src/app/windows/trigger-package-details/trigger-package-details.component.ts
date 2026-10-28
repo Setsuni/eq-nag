@@ -6,10 +6,11 @@ import { IpcService } from 'src/app/ipc.service';
 import * as _ from 'lodash-es';
 import { TriggerLibraryService } from '../trigger-library.service';
 import { SettingsService } from 'src/app/settings/settings-http.service';
-import { forkJoin, Observable, timer } from 'rxjs';
+import { forkJoin, Observable, of, timer } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ColoredString } from 'src/app/dialogs/dialog.model';
-import { buildFileIdMap, remapAudioFileIds } from 'src/app/utilities/package-file-ids';
+import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getSkippedSounds, remapAudioFileIds, toSkippedSound } from 'src/app/utilities/package-file-ids';
 
 @Component( {
     selector: 'app-trigger-package-details',
@@ -245,20 +246,27 @@ export class TriggerPackageDetailsComponent implements OnInit {
      * @param packageFiles The files attached to this package.
      */
     installTriggerPackage( triggerPackage: TriggerPackageMetaModel, packageFiles: PackageFileModel[] ): void {
+        let sizeProblem = findSoundTotalProblem( packageFiles );
+        if ( sizeProblem ) {
+            this.snackBar.open( `${sizeProblem} The package was not installed.`, 'dismiss', { duration: 8000 } );
+            return;
+        }
+
         // Adding a timer makes the following easier and I'm being lazy today.
         let importTasks: Observable<any>[] = [ timer( 1 ) ];
 
         packageFiles?.forEach( file => {
-            importTasks.push( this.ipcService.importPackageFile( file ) );
+            importTasks.push( this.ipcService.importPackageFile( file ).pipe( catchError( error => of( toSkippedSound( file, error ) ) ) ) );
         } );
         
         forkJoin( importTasks ).subscribe( results => {
-            // Files that collided with a different local file were stored under new ids.
+            // Files that collided with a different local file were stored under new ids.  Skipped files are removed from the actions that use them.
             remapAudioFileIds( triggerPackage.model?.triggers, buildFileIdMap( packageFiles, results.slice( 1 ) ) );
+            let skippedSounds = getSkippedSounds( results.slice( 1 ) );
 
             // Missing package overlays are caught in the this component's ngInit event.
             this.ipcService.installTriggerPackage( triggerPackage ).subscribe( installComplete => {
-                this.snackBar.open( 'Package install complete!', 'dismiss', { duration: 2500 } );
+                this.snackBar.open( skippedSounds.length > 0 ? `Package install complete.  ${describeSkippedSounds( skippedSounds )}` : 'Package install complete!', 'dismiss', { duration: skippedSounds.length > 0 ? 15000 : 2500 } );
                 this.ipcService.requestTick();
                 this.isInstalled = true;
             } );

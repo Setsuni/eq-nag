@@ -11,6 +11,7 @@ import { MatChipInputEvent } from '@angular/material/chips';
 import { getPackageImportProperties } from 'src/app/core.decorators';
 import { ColoredString } from 'src/app/dialogs/dialog.model';
 import { nagId } from 'src/app/core/nag-id.util';
+import { findSoundSizeProblem } from 'src/app/utilities/package-file-ids';
 
 @Component( {
     selector: 'app-new-trigger-package',
@@ -897,8 +898,8 @@ export class NewTriggerPackageComponent implements OnInit {
             
             if ( cont ) {
 
-                // Grab all of the files used.
-                this.package.files = this.package.files ? this.package.files : [];
+                // Grab all of the files used.  They are only kept on the package once the sizes are accepted.
+                let packageFiles = this.package.files ? this.package.files.slice() : [];
                 let dataObservables = [
                     this.ipcService.getAudioFileData(),
                     this.ipcService.getDetrimentalOverlayId(),
@@ -933,9 +934,9 @@ export class NewTriggerPackageComponent implements OnInit {
                                 let file = audioFiles.find( f => f.fileId === audoFileId );
 
                                 if ( file ) {
-                                    let exists = this.package.files.findIndex( f => f.fileId === file.fileId ) > -1;
+                                    let exists = packageFiles.findIndex( f => f.fileId === file.fileId ) > -1;
                                     if ( !exists ) {
-                                        this.package.files.push( file );
+                                        packageFiles.push( file );
                                     }
                                 }
                             } );
@@ -947,6 +948,14 @@ export class NewTriggerPackageComponent implements OnInit {
                     this.package.model.beneficialOverlayId = beneficialOverlayId;
                     this.package.model.textOverlayId = textOverlayId;
                     this.package.model.primaryDisplaySize = primaryDisplay.size;
+
+                    // A package is limited in the size of each sound and of all sounds together.
+                    let sizeProblem = findSoundSizeProblem( packageFiles );
+                    if ( sizeProblem ) {
+                        this.snackBar.open( `${sizeProblem} Remove it from the package or use a smaller sound.`, 'dismiss', { duration: 8000 } );
+                        return;
+                    }
+                    this.package.files = packageFiles;
 
                     this.savePackage();
 

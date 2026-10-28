@@ -8,6 +8,7 @@ import { GinaConfiguration, GinaTriggerGroups } from './gina.model';
 import { ColorUtility } from './utilities';
 import { nagId } from './core/nag-id.util';
 import { DialogService } from './dialogs/dialog.service';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 export class ConsoleData {
 
@@ -95,6 +96,7 @@ export class IpcService {
     constructor(
         private readonly ngZone: NgZone,
         private readonly dialogService: DialogService,
+        private readonly snackBar: MatSnackBar,
     ) {
         if ( window.api ) {
             try {
@@ -1988,14 +1990,23 @@ export class IpcService {
         return obs;
     }
 
+    /**
+     * Saves the given sound file.  When the sound can't be saved, the user is
+     * told and null is returned, so the caller keeps the current selection.
+     *
+     * @param file The sound file the user picked.
+     */
     public saveAudioFile( file: File ): Observable<string> {
         let obs: Observable<string> = new Observable<string>( ( observer: Observer<string> ) => {
-            let name = file.name;
+            let name = file?.name ?? '';
 
             const allowedExtensions = [ '.mp3', '.ogg', '.m4a', '.opus', '.webm', '.aac' ];
-            const ext = name.slice( name.lastIndexOf( '.' ) ).toLowerCase();
+            const ext = name.lastIndexOf( '.' ) > -1 ? name.slice( name.lastIndexOf( '.' ) ).toLowerCase() : '';
             if ( !allowedExtensions.includes( ext ) ) {
-                throw `Only audio files of type ${ allowedExtensions.join( ', ' ) } are supported!`;
+                this.snackBar.open( `Only audio files of type ${ allowedExtensions.join( ', ' ) } are supported!  Your selection was not changed.`, 'Dismiss', { duration: 8000 } );
+                observer.next( null );
+                observer.complete();
+                return;
             }
 
             let reader = new FileReader();
@@ -2008,6 +2019,9 @@ export class IpcService {
 
             window.api.ipc.once( 'audio-file:save', ( e, fileId: string ) => {
                 this.ngZone.run( () => {
+                    if ( !fileId ) {
+                        this.snackBar.open( 'The sound could not be saved.  Your selection was not changed.', 'Dismiss', { duration: 8000 } );
+                    }
                     observer.next( fileId );
                     observer.complete();
                 } );
@@ -2023,7 +2037,7 @@ export class IpcService {
 
             window.api.ipc.once( 'audio-file:import', ( e, fileId: string|undefined ) => {
                 this.ngZone.run( () => {
-                    observer.next( fileId ?? 'asdf' );
+                    observer.next( fileId ?? undefined );
                     observer.complete();
                 } );
             } );

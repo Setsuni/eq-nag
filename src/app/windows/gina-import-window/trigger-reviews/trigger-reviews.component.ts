@@ -261,6 +261,11 @@ export class TriggerReviewsComponent implements OnInit {
                     
                         forkJoin( observables ).subscribe( triggers => {
                             this.triggers = triggers;
+
+                            let skippedSounds = GinaImporter.takeSkippedSounds();
+                            if ( skippedSounds.length > 0 ) {
+                                this.dialogService.showWarningDialog( 'Sounds Skipped', [ `${skippedSounds.length} sound(s) could not be imported because they are not a supported audio type or could not be read:`, skippedSounds.join( ', ' ) ] );
+                            }
         
                             subscriber.next();
                             subscriber.complete();
