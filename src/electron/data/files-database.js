@@ -13,6 +13,7 @@ const ArrayUtilities = require( '../utilities/arrays' );
 const StringUtilities = require( "../utilities/string" );
 const Fuse = require( 'fuse.js' );
 const { MediaTypes, FileModel, PackageFileModel } = require( './models/trigger' );
+const { hashFileData, resolvePackageFileId } = require( './package-file-ids' );
 const log = require( 'electron-log' );
 
 const eqSpellPages = 63;
@@ -99,8 +100,8 @@ class FilesDatabaseStore extends Store {
             event.sender.send( 'audio-file:getData', this.getAudioFileData() );
         } );
 
-        ipcMain.on( 'file:importFromPackage', ( event, packageFile ) => {
-            event.sender.send( 'file:importFromPackage', this.importPackageFile( packageFile ) );
+        ipcMain.handle( 'file:importFromPackage', ( event, packageFile ) => {
+            return this.importPackageFile( packageFile );
         } );
 
     }
@@ -161,6 +162,8 @@ class FilesDatabaseStore extends Store {
         model.mediaType = MediaTypes.Audio;
         model.fileName = name;
         model.physicalName = path.join( this.#filePath, `${id}${path.extname( name )}` );
+        model.hash = hashFileData( buffer );
+        model.size = buffer.length;
 
         fs.writeFile( model.physicalName, buffer, () => { } );
 
@@ -205,6 +208,29 @@ class FilesDatabaseStore extends Store {
 
     
     /**
+     * Removes the specified file when a package no longer uses it, unless a
+     * package import only reused it because it already existed.
+     *
+     * @param {string} fileId The id of the file to remove.
+     * @param {boolean} [requireImported] True to remove the file only when a package import created it.
+     */
+    deletePackageFile( fileId, requireImported = false ) {
+        let file = this.#data.files.find( f => f.fileId === fileId );
+        if ( file && ( requireImported ? file.packageImport === true : file.packageImport !== false ) ) {
+            this.deleteFile( fileId );
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
      * Returns true if the given path is a file directly inside the files folder.
      * 
      * @param {string} physicalName The full path of the file.
@@ -223,9 +249,12 @@ class FilesDatabaseStore extends Store {
 
     
     /**
-     * Imports the given package file into the data store.
+     * Imports the given package file into the data store.  A local file that
+     * has the same id but different contents is never replaced; the package
+     * file is stored under a new id instead.
      * 
      * @param {PackageFileModel} file The package file to import.
+     * @returns {string|null} Returns the id the file is stored under, which differs from the package file id when that id was already used by a different local file.
      */
     importPackageFile( file ) {
 
@@ -238,28 +267,141 @@ class FilesDatabaseStore extends Store {
             return null;
         }
 
-        // If the file exists, delete it and remove it from the data store.
-        let existingIndex = this.#data.files.findIndex( f => f.fileId === file.fileId );
-        if ( existingIndex > -1 ) {
-            let existing = this.#data.files.splice( existingIndex, 1 )[ 0 ];
-            if ( this.isInFilesFolder( existing.physicalName ) && fs.existsSync( existing.physicalName ) ) {
-                fs.unlinkSync( existing.physicalName );
+        let contents = Buffer.from( file.contents, 'base64' );
+
+        let incomingHash = hashFileData( contents );
+        let existing = this.#data.files.find( f => f.fileId === file.fileId );
+
+        let resolution = resolvePackageFileId(
+            file.fileId,
+            incomingHash,
+            existing ? this.#getFileState( existing ) : null,
+            hash => this.#findIdByHash( hash ),
+            id => this.#data.files.some( f => f.fileId === id ),
+            nanoid );
+        if ( !resolution.install ) {
+            let reused = this.#data.files.find( f => f.fileId === resolution.fileId );
+            if ( reused && ( reused.packageImport === null || reused.packageImport === undefined ) ) {
+                // The same id means an earlier package import wrote this file.  A different id means the contents matched a file that was already there.
+                reused.packageImport = resolution.fileId === file.fileId;
+                this.storeDataFile( this.#data );
             }
+            return resolution.fileId;
+        }
+
+        // Only a record whose file is missing from disk is replaced.
+        if ( existing && resolution.fileId === file.fileId ) {
+            this.#data.files.splice( this.#data.files.indexOf( existing ), 1 );
         }
 
         let model = new FileModel();
 
-        model.fileId = file.fileId;
+        model.fileId = resolution.fileId;
         model.mediaType = +file.mediaType;
         model.fileName = file.fileName;
-        model.physicalName = path.join( this.#filePath, `${file.fileId}${ext}` );
+        model.physicalName = path.join( this.#filePath, `${resolution.fileId}${ext}` );
+        model.hash = incomingHash;
+        model.size = contents.length;
+        model.packageImport = true;
 
-        fs.writeFile( model.physicalName, Buffer.from( file.contents, 'base64' ), () => { } );
+        this.#writeFile( model.physicalName, contents );
 
         this.#data.files.push( model );
         this.storeDataFile( this.#data );
 
-        return file.fileId;
+        return resolution.fileId;
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Writes the file under a temporary name and renames it, so a partly
+     * written file never has the final name.
+     *
+     * @param {string} target The full path of the file.
+     * @param {Buffer} buffer The file data.
+     */
+    #writeFile( target, buffer ) {
+        let temporary = `${target}.${nanoid()}.tmp`;
+        try {
+            fs.writeFileSync( temporary, buffer );
+            fs.renameSync( temporary, target );
+        } catch ( error ) {
+            fs.rmSync( temporary, { force: true } );
+            throw error;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns the state of the file behind the given record.  The stored hash
+     * is used when the file on disk still has the size it had when the hash
+     * was taken; otherwise the file is read and the hash is saved on the record.
+     *
+     * @param {FileModel} record The file record.
+     * @param {() => void} [onHashed] Called instead of saving the data file when a hash was added to the record.
+     * @returns {import('./package-file-ids').ExistingFileState}
+     */
+    #getFileState( record, onHashed ) {
+        if ( !fs.existsSync( record.physicalName ) ) {
+            return { status: 'missing', hash: null };
+        }
+        try {
+            if ( record.hash && record.size === fs.statSync( record.physicalName ).size ) {
+                return { status: 'ok', hash: record.hash };
+            }
+            let buffer = fs.readFileSync( record.physicalName );
+            record.hash = hashFileData( buffer );
+            record.size = buffer.length;
+            if ( onHashed ) {
+                onHashed();
+            } else {
+                this.storeDataFile( this.#data );
+            }
+            return { status: 'ok', hash: record.hash };
+        } catch ( error ) {
+            log.warn( `[files-database:getFileState] Could not read the existing file: ${error}` );
+            return { status: 'unreadable', hash: null };
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns the id of a local file that has the given hash, if any.
+     *
+     * @param {string} hash The file hash.
+     * @returns {string|null}
+     */
+    #findIdByHash( hash ) {
+        let backfilled = false;
+        let match = this.#data.files.find( f => ( !f.hash || f.hash === hash ) && this.#getFileState( f, () => { backfilled = true; } ).hash === hash );
+        if ( backfilled ) {
+            this.storeDataFile( this.#data );
+        }
+        return match?.fileId ?? null;
     }
 
 
@@ -295,6 +437,13 @@ class FilesDatabaseStore extends Store {
                 model.mediaType = MediaTypes.Audio;
                 model.fileName = name;
                 model.physicalName = path.join( this.#filePath, `${id}${path.extname( name )}` );
+                try {
+                    let buffer = fs.readFileSync( filename );
+                    model.hash = hashFileData( buffer );
+                    model.size = buffer.length;
+                } catch ( error ) {
+                    log.warn( `[files-database:storeFileByName] Could not hash the file: ${error}` );
+                }
     
                 fs.copyFile( filename, model.physicalName, () => { } );
     
