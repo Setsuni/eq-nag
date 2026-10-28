@@ -1,4 +1,4 @@
-const { TriggerAction } = require( './trigger' );
+/** @typedef {import( './trigger' ).TriggerAction} TriggerAction */
 const { StylePropertiesModel } = require( './core' );
 
 var TimerSortTypes = {
