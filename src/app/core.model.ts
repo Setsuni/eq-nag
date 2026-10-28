@@ -1,4 +1,4 @@
-import { Color, StringUtility } from './utilities';
+import { StringUtility } from './utilities';
 import * as _ from 'lodash-es';
 import { nagId } from './core/nag-id.util';
 import { TriggerPackageExportTypes, TriggerPackageProperty } from './core.decorators';
