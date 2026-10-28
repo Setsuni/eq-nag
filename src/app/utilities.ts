@@ -116,7 +116,7 @@ export class ArrayUtility {
 
     /**
      * Groups the given items by key, keeping the original order within each group.
-     * 
+     *
      * @param items The list of items to group.
      * @param getKey Returns the group key of an item.
      * @returns {Map<string, T[]>} Returns the items grouped by key, in their original order.
