@@ -67,7 +67,8 @@ function isValidResult( r ) {
         && typeof r.characterName === 'string' && Number.isFinite( r.fightSeconds ) && Number.isFinite( r.damageTaken ) && Number.isFinite( r.events )
         && Number.isFinite( r.assumed ) && Number.isFinite( r.pushValue ) && typeof r.named === 'boolean'
         && Array.isArray( r.players ) && r.players.every( p => p != null && typeof p === 'object' && typeof p.name === 'string' && Number.isFinite( p.events ) && p.spells != null && typeof p.spells === 'object' )
-        && r.unattributed != null && typeof r.unattributed === 'object' && Array.isArray( r.npcAbilities );
+        && r.unattributed != null && typeof r.unattributed === 'object' && Array.isArray( r.npcAbilities )
+        && ( r.timeline == null || ( Array.isArray( r.timeline ) && Array.isArray( r.timelineTexts ) ) );
 }
 
 
