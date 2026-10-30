@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, ChangeDetectorRef, Component, Input, OnChanges } from '@angular/core';
 import { PushRecapSummary } from '../core.model';
+import { axisStep } from './push-totals';
 
 interface TimelineEvent {
     time: number;
@@ -177,16 +178,6 @@ export class PushTimelineComponent implements OnChanges {
         this.selected = Math.min( this.selected, this.count - 1 );
     }
 
-    private axisStep( max: number ): number {
-        for ( let scale = 1; ; scale *= 10 ) {
-            for ( let base of [ 1, 2, 5 ] ) {
-                if ( Math.ceil( max / ( base * scale ) ) <= 6 ) {
-                    return base * scale;
-                }
-            }
-        }
-    }
-
     private draw(): void {
         this.bars = [];
         this.grid = [];
@@ -210,7 +201,7 @@ export class PushTimelineComponent implements OnChanges {
             }
         } );
         let max = Math.max( 1, ...this.totals.map( b => b.player + b.proc + b.possible ) );
-        let step = this.axisStep( max );
+        let step = axisStep( max );
         let ceiling = Math.ceil( max / step ) * step;
 
         for ( let v = 0; v <= ceiling + step / 2; v += step ) {
