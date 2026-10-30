@@ -7,7 +7,7 @@ const { buildListRow } = require( '../utilities/push-recap-summary' );
 
 const cacheFileName = 'push-scan-cache.json';
 const badCacheFileName = 'push-scan-cache.json.bad';
-const cacheVersion = 3;
+const cacheVersion = 4;
 const maxCachedLogs = 10;
 const maxResults = 300;
 const defaultDamage = 1000000;
