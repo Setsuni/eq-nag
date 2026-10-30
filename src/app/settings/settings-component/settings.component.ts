@@ -1,4 +1,5 @@
-import { ChangeDetectorRef, Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, Input, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { DialogService } from 'src/app/dialogs/dialog.service';
 import { IpcService } from 'src/app/ipc.service';
 import { MatTable } from '@angular/material/table';
@@ -26,7 +27,7 @@ interface IPhoneticTransform {
     templateUrl: 'settings.component.html', 
     styleUrls: [ 'settings.component.scss', '../../core.scss' ],
 } )
-export class SettingsComponent implements OnInit {
+export class SettingsComponent implements OnInit, OnDestroy {
     
     public phoneticTransforms: IPhoneticTransform[] = [];
     public phoneticTransformsModified: boolean = false;
@@ -47,6 +48,7 @@ export class SettingsComponent implements OnInit {
     public deathRecapPreferences: DeathRecapPreferences = new DeathRecapPreferences();
     public pushRecapPreferences: PushRecapPreferences = new PushRecapPreferences();
     public pushRecapHotkeyCommand: string = pushRecapHotkeyCommand;
+    private pushRecapSubscription: Subscription = new Subscription();
     public minimizeToTrayOnLoad: boolean = false;
     public glowOnStartup: boolean = true;
     public quickShareAuthorListTypes: typeof QuickShareAuthorListTypes = QuickShareAuthorListTypes;
@@ -88,6 +90,10 @@ export class SettingsComponent implements OnInit {
         speechSynthesis.onvoiceschanged = () => {
             this.voiceOptions = speechSynthesis.getVoices();
         };
+    }
+
+    ngOnDestroy() {
+        this.pushRecapSubscription.unsubscribe();
     }
 
     ngOnInit() {
@@ -170,6 +176,7 @@ export class SettingsComponent implements OnInit {
         this.ipcService.getMinimizeToTrayOnLoad().subscribe( enabled => this.minimizeToTrayOnLoad = enabled );
         this.ipcService.getDeathRecapPreferences().subscribe( recapPrefs => this.deathRecapPreferences = recapPrefs ?? new DeathRecapPreferences() );
         this.ipcService.getPushRecapPreferences().subscribe( recapPrefs => this.pushRecapPreferences = Object.assign( new PushRecapPreferences(), recapPrefs ) );
+        this.pushRecapSubscription.add( this.ipcService.onPushRecapPreferencesChanged().subscribe( recapPrefs => this.pushRecapPreferences.hiddenProcTexts = recapPrefs?.hiddenProcTexts ?? [] ) );
         this.ipcService.getEnableGlowOnStartup().subscribe( f => this.glowOnStartup = f );
         this.ipcService.getQuickShareAuthorsListType().subscribe( f => this.quickShareAuthorListType = f );
         this.ipcService.getQuickShareAuthorsList().subscribe( f => {
@@ -528,6 +535,22 @@ export class SettingsComponent implements OnInit {
 
 
 
+
+    /**
+     * Shows a hidden push recap message again.
+     *
+     * @param {string} text The landing message.
+     */
+    onRestorePushRecapText( text: string ): void {
+        this.ipcService.setPushProcHidden( text, false );
+    }
+
+    /**
+     * Shows all hidden push recap messages again.
+     */
+    onRestoreAllPushRecapTexts(): void {
+        this.ipcService.clearHiddenPushProcTexts();
+    }
 
     /**
      * Saves changes to the push recap quiet gap.

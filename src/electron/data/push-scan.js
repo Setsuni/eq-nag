@@ -3,10 +3,11 @@ const fsp = fs.promises;
 const path = require( 'path' );
 const crypto = require( 'crypto' );
 const { Worker } = require( 'worker_threads' );
+const { buildListRow } = require( '../utilities/push-recap-summary' );
 
 const cacheFileName = 'push-scan-cache.json';
 const badCacheFileName = 'push-scan-cache.json.bad';
-const cacheVersion = 2;
+const cacheVersion = 3;
 const maxCachedLogs = 10;
 const maxResults = 300;
 const defaultDamage = 1000000;
@@ -184,7 +185,7 @@ class PushScanService {
      * @returns {any[]} The recaps.
      */
     getRows() {
-        return this.#results.map( ( { players, npcAbilities, unattributed, ...row } ) => ( { ...row, unattributed: { events: unattributed.events, pushValue: unattributed.pushValue } } ) );
+        return this.#results.map( buildListRow );
     }
 
     /**
