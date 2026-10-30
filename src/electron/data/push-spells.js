@@ -3,8 +3,7 @@ const path = require( 'path' );
 const readline = require( 'readline' );
 
 const cacheFileName = 'push-spells.json';
-const cacheVersion = 2;
-// e.g. "Color Flux Rk. II" becomes "Color Flux".
+const cacheVersion = 3;
 const rankRgx = / Rk\. ?I+$/i;
 
 /**
@@ -18,8 +17,8 @@ const rankRgx = / Rk\. ?I+$/i;
 /**
  * @typedef {Object} PushSpellTable
  * @property {Record<string, PushSpell>} spells Spells by name, ranks merged under the base name.
- * @property {Record<string, PushSpell>} exact Per-rank entries for the families whose ranks
- *     differ in push.
+ * @property {Record<string, PushSpell>} exact Per-rank entries for the families whose ranks differ in push.
+ * @property {string[]} noPushTexts The landing texts that a push spell shares with a spell that does not push.
  */
 
 /**
@@ -129,12 +128,18 @@ async function buildPushSpellTable( spellsFile, stringsFile ) {
     } );
 
     /** @type {Record<string, string>} */
-    const landTexts = {};
+    let landTexts = {};
+    /** @type {Set<string>} */
+    let otherTexts = new Set();
     if ( fs.existsSync( stringsFile ) ) {
         await streamLines( stringsFile, line => {
-            const f = readFields( line, 5 );
-            if ( f.length === 5 && f[ 4 ] && pushIds[ f[ 0 ] ] ) {
-                landTexts[ f[ 0 ] ] = f[ 4 ];
+            let f = readFields( line, 5 );
+            if ( f.length === 5 && f[ 4 ] ) {
+                if ( pushIds[ f[ 0 ] ] ) {
+                    landTexts[ f[ 0 ] ] = f[ 4 ];
+                } else {
+                    otherTexts.add( f[ 4 ] );
+                }
             }
         } );
     }
@@ -154,7 +159,7 @@ async function buildPushSpellTable( spellsFile, stringsFile ) {
     Object.keys( byName ).forEach( name => ( families[ stripRank( name ) ] ??= [] ).push( name ) );
 
     /** @type {PushSpellTable} */
-    const table = { spells: {}, exact: {} };
+    let table = { spells: {}, exact: {}, noPushTexts: [] };
     Object.keys( families ).forEach( base => {
         const names = families[ base ];
         const best = names.map( n => byName[ n ] ).reduce( ( a, b ) => b.push > a.push ? b : a );
@@ -163,6 +168,9 @@ async function buildPushSpellTable( spellsFile, stringsFile ) {
             names.forEach( n => table.exact[ n ] = byName[ n ] );
         }
     } );
+
+    let pushTexts = new Set( Object.keys( byName ).map( name => byName[ name ].landText ) );
+    table.noPushTexts = Array.from( otherTexts ).filter( text => pushTexts.has( text ) );
 
     return table;
 }
@@ -229,14 +237,9 @@ async function loadPushSpells( eqFolder, cacheFolder ) {
     const cacheFile = path.join( cacheFolder, cacheFileName );
 
     try {
-        const cached = JSON.parse( fs.readFileSync( cacheFile, 'utf8' ) );
-        const sourceUnchanged = cached.version === cacheVersion
-            && cached.sourceMtimeMs === stat.mtimeMs && cached.sourceSize === stat.size
-            && cached.stringsMtimeMs === stringsMtimeMs && cached.stringsSize === stringsSize;
-        const tablesPresent = cached.spells !== null && cached.spells !== undefined && typeof cached.spells === 'object'
-            && cached.exact !== null && cached.exact !== undefined && typeof cached.exact === 'object';
-        if ( sourceUnchanged && tablesPresent ) {
-            return { spells: cached.spells, exact: cached.exact };
+        let cached = JSON.parse( fs.readFileSync( cacheFile, 'utf8' ) );
+        if ( cached.version === cacheVersion && cached.sourceMtimeMs === stat.mtimeMs && cached.sourceSize === stat.size && cached.stringsMtimeMs === stringsMtimeMs && cached.stringsSize === stringsSize && cached.spells != null && typeof cached.spells === 'object' && cached.exact != null && typeof cached.exact === 'object' && Array.isArray( cached.noPushTexts ) ) {
+            return { spells: cached.spells, exact: cached.exact, noPushTexts: cached.noPushTexts };
         }
     } catch ( error ) {
         // No usable cache; rebuild below.
@@ -245,15 +248,7 @@ async function loadPushSpells( eqFolder, cacheFolder ) {
     const table = await buildPushSpellTable( spellsFile, stringsFile );
 
     try {
-        fs.writeFileSync( cacheFile, JSON.stringify( {
-            version: cacheVersion,
-            sourceMtimeMs: stat.mtimeMs,
-            sourceSize: stat.size,
-            stringsMtimeMs: stringsMtimeMs,
-            stringsSize: stringsSize,
-            spells: table.spells,
-            exact: table.exact
-        } ) );
+        fs.writeFileSync( cacheFile, JSON.stringify( { version: cacheVersion, sourceMtimeMs: stat.mtimeMs, sourceSize: stat.size, stringsMtimeMs: stringsMtimeMs, stringsSize: stringsSize, spells: table.spells, exact: table.exact, noPushTexts: table.noPushTexts } ) );
     } catch ( error ) {
         // The cache is optional.
     }
