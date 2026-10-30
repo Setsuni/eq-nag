@@ -154,6 +154,12 @@ export class PushTrackerComponent implements OnInit, OnDestroy {
         this.ipcService.showPushRecap( character.logFile, character.name, character.server );
     }
 
+    public openSelectedFight(): void {
+        if ( this.detail != null && this.selected != null ) {
+            this.ipcService.showPushRecap( '', this.detail.characterName, '', this.detail, this.source === 'saved' || this.isSaved( this.selected ) );
+        }
+    }
+
     public procPush( proc: PushRecapProc ): string {
         if ( proc.pushMin == null ) {
             return '-';

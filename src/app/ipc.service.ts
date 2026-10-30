@@ -2668,8 +2668,8 @@ export class IpcService {
         } );
     }
 
-    public showPushRecap( logFilePath: string, characterName: string, serverName: string ): void {
-        let message = new IpcMessage( { logFilePath: logFilePath, characterName: characterName, serverName: serverName } );
+    public showPushRecap( logFilePath: string, characterName: string, serverName: string, recap?: PushRecapSummary, saved?: boolean ): void {
+        let message = new IpcMessage( { logFilePath: logFilePath, characterName: characterName, serverName: serverName, recap: recap, saved: saved } );
         window.api.ipc.send( 'window:push-recap', message );
     }
 
