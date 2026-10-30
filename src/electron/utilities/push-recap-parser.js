@@ -68,6 +68,94 @@ function parseTimestamp( line ) {
 
 
 /**
+ * Tells whether the given log line can matter to a recap.
+ *
+ * @returns {boolean} True when the line is worth keeping.
+ *
+ * @param {string} line The log line.
+ * @param {{ suffixes: Set<string>, suffixLength: number }} landing The landing index.
+ */
+function isRelevantLine( line, landing ) {
+    return prefilterRgx.test( line ) || landing.suffixes.has( line.slice( -landing.suffixLength ) );
+}
+
+
+
+
+
+
+
+
+
+
+/**
+ * Tells whether the given name looks like a player name.
+ *
+ * @returns {boolean} True for a one-word capitalised name.
+ *
+ * @param {string} name The name.
+ */
+function isPlayerName( name ) {
+    return rgx.PlayerName.test( name );
+}
+
+
+
+
+
+
+
+
+
+
+/**
+ * Tells whether the given name is the name of a pet, warder or familiar.
+ *
+ * @returns {boolean} True for a pet name.
+ *
+ * @param {string} name The name.
+ */
+function isPetName( name ) {
+    return rgx.PetName.test( name );
+}
+
+
+
+
+
+
+
+
+
+
+/**
+ * Matches a damage or a slain line.  A damage match has a damage group, a slain match does not.
+ *
+ * @returns {RegExpExecArray | null} The match, or null when the line is neither.
+ *
+ * @param {string} text The text of the line, after the timestamp.
+ */
+function matchCombat( text ) {
+    if ( text.indexOf( ' points of ' ) > -1 ) {
+        return text.indexOf( ' points of damage' ) > -1 ? rgx.MeleeDamage.exec( text ) : rgx.DirectDamage.exec( text );
+    } else if ( text.indexOf( ' damage from ' ) > -1 ) {
+        return rgx.YourDoT.exec( text ) ?? rgx.OtherDoT.exec( text );
+    } else if ( text.indexOf( ' slain' ) > -1 ) {
+        return rgx.Slain.exec( text ) ?? rgx.YouHaveSlain.exec( text );
+    }
+    return null;
+}
+
+
+
+
+
+
+
+
+
+
+/**
  * Formats the given time as HH:MM:SS.
  *
  * @returns {string} The formatted time.
@@ -219,7 +307,7 @@ async function readSession( logFilePath, characterName, landing ) {
 
                 oldestTime = time;
 
-                if ( prefilterRgx.test( line ) || landing.suffixes.has( line.slice( -landing.suffixLength ) ) ) {
+                if ( isRelevantLine( line, landing ) ) {
                     lines.push( line );
                     times.push( time );
                 }
@@ -281,49 +369,41 @@ function summarize( session ) {
 
     for ( let i = 0; i < session.lines.length; i++ ) {
         let text = session.lines[ i ].substring( textOffset );
-        let m = null;
+        let m = matchCombat( text );
 
-        if ( text.indexOf( ' points of ' ) > -1 ) {
-            m = text.indexOf( ' points of damage' ) > -1 ? rgx.MeleeDamage.exec( text ) : rgx.DirectDamage.exec( text );
-        } else if ( text.indexOf( ' damage from ' ) > -1 ) {
-            m = rgx.YourDoT.exec( text ) ?? rgx.OtherDoT.exec( text );
-        } else if ( text.indexOf( ' slain' ) > -1 ) {
-            m = rgx.Slain.exec( text ) ?? rgx.YouHaveSlain.exec( text );
-            if ( m != null ) {
-                let target = m.groups.target;
-                candidates.push( { index: i, time: session.times[ i ], name: target, killer: m.groups.actor ?? 'You', certain: m.groups.verb !== 'has been' && m.groups.verb !== 'have been', damage: damage.get( target ) ?? 0 } );
-                damage.delete( target );
-            }
-            continue;
-        } else {
+        if ( m == null ) {
             continue;
         }
 
-        if ( m != null ) {
-            let target = m.groups.target;
-            let actor = m.groups.actor;
-            damage.set( target, ( damage.get( target ) ?? 0 ) + +m.groups.damage );
+        let target = m.groups.target;
+        if ( m.groups.damage === undefined ) {
+            candidates.push( { index: i, time: session.times[ i ], name: target, killer: m.groups.actor ?? 'You', certain: m.groups.verb !== 'has been' && m.groups.verb !== 'have been', damage: damage.get( target ) ?? 0 } );
+            damage.delete( target );
+            continue;
+        }
 
-            let actorMine = actor === 'You' || rgx.PetName.test( actor );
-            let targetMine = target === 'You' || rgx.PetName.test( target );
-            if ( actorMine && !targetMine ) {
-                npcNames.add( target );
-            } else if ( targetMine && !actorMine ) {
-                npcNames.add( actor );
-            }
+        let actor = m.groups.actor;
+        damage.set( target, ( damage.get( target ) ?? 0 ) + +m.groups.damage );
 
-            if ( rgx.PlayerName.test( actor ) ) {
-                let targets = actorTargets.get( actor );
-                if ( targets == null ) {
-                    targets = new Set();
-                    actorTargets.set( actor, targets );
-                }
-                targets.add( target );
-            }
+        let actorMine = actor === 'You' || rgx.PetName.test( actor );
+        let targetMine = target === 'You' || rgx.PetName.test( target );
+        if ( actorMine && !targetMine ) {
+            npcNames.add( target );
+        } else if ( targetMine && !actorMine ) {
+            npcNames.add( actor );
+        }
 
-            if ( !othersSeen && actor !== 'You' && ( rgx.PlayerName.test( actor ) || rgx.PetName.test( actor ) ) && target !== 'You' && !rgx.PlayerName.test( target ) ) {
-                othersSeen = true;
+        if ( rgx.PlayerName.test( actor ) ) {
+            let targets = actorTargets.get( actor );
+            if ( targets == null ) {
+                targets = new Set();
+                actorTargets.set( actor, targets );
             }
+            targets.add( target );
+        }
+
+        if ( !othersSeen && actor !== 'You' && ( rgx.PlayerName.test( actor ) || rgx.PetName.test( actor ) ) && target !== 'You' && !rgx.PlayerName.test( target ) ) {
+            othersSeen = true;
         }
     }
 
@@ -707,4 +787,4 @@ function analyzeKill( session, summary, table, landing, kill, quietGapSeconds ) 
     };
 }
 
-module.exports = { readSession, summarize, analyzeKill, buildLandingIndex, parseTimestamp };
+module.exports = { readSession, summarize, analyzeKill, buildLandingIndex, parseTimestamp, isRelevantLine, matchCombat, isPlayerName, isPetName, textOffset, lookbackMs };

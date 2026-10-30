@@ -39,6 +39,7 @@ import CharacterDatabaseStore from "./src/electron/data/character-database.js";
 import LogBootstrapper from "./src/electron/log-bootstrap.js";
 import GameResources from "./src/electron/data/game-resources.js";
 import PushRecapStore from "./src/electron/data/push-recap-store.js";
+import PushScanService from "./src/electron/data/push-scan.js";
 import FilesDatabaseStore from "./src/electron/data/files-database.js";
 import GinaImporter from "./src/electron/gina-importer.js";
 
@@ -83,6 +84,7 @@ const characterDatabase = new CharacterDatabaseStore();
 const logBootstrap = new LogBootstrapper();
 const gameResources = new GameResources();
 const pushRecapStore = new PushRecapStore( app.getPath( 'userData' ) );
+const pushScanService = new PushScanService( app.getPath( 'userData' ), characterDatabase, userPreferences );
 const fileDatabase = new FilesDatabaseStore();
 const ginaImporter = new GinaImporter();
 // const verifiedPlayersDatabase = new VerifiedPlayersStore();
@@ -293,6 +295,7 @@ app.commandLine.appendSwitch( 'enable-speech-dispatcher' );
 
 app.on( 'before-quit', async () => {
     pushRecapStore.flushSync();
+    pushScanService.shutdown();
     trayMenu.destroy();
     trayMenu = null;
 } );
@@ -1071,6 +1074,7 @@ app.whenReady().then( () => {
     logBootstrap.boostrapLogWatchers( mainWindowRef, app.isDev(), characterDatabase, sendTick, userPreferences, appLogException, combatDatabase );
     gameResources.attachIpcEvents( mainWindowRef, userPreferences );
     pushRecapStore.attachIpcEvents( mainWindowRef );
+    pushScanService.attachIpcEvents( mainWindowRef );
     ginaImporter.initGinaImporter( mainWindowRef, app.isDev() );
 
     // TODO: Update this method with the new mouse.js implementation.
