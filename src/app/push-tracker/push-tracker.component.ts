@@ -219,9 +219,21 @@ export class PushTrackerComponent implements OnInit, OnDestroy {
         } );
     }
 
-    public select( recap: PushRecapSummary ): void {
+    public select( recap: PushRecapSummary, event: Event ): void {
+        let row = event.currentTarget as HTMLElement;
         this.selected = recap;
         this.loadDetail();
+        setTimeout( () => row.scrollIntoView( { block: 'nearest' } ) );
+    }
+
+    public closeDetails(): void {
+        this.selected = null;
+        this.loadDetail();
+    }
+
+    public spellHeader( spell: string ): string {
+        let push = this.gridSpellPush.get( spell );
+        return push == null ? spell : `${spell} (${push})`;
     }
 
     public remove( recap: PushRecapSummary, event: Event ): void {
