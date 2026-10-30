@@ -200,6 +200,10 @@ function buildSummaryText( summary ) {
         let top = ( summary.unattributed.procs ?? [] ).slice( 0, 5 ).map( p => `${p.name} ${p.count}` ).join( ', ' );
         lines.push( `Procs with no player named: ${summary.unattributed.events}${top === '' ? '' : ` (${top})`}` );
     }
+    if ( ( summary.unattributed?.possibleEvents ?? 0 ) > 0 ) {
+        let top = ( summary.unattributed.possible ?? [] ).slice( 0, 5 ).map( p => `${p.name} ${p.count}` ).join( ', ' );
+        lines.push( `Possible procs: ${summary.unattributed.possibleEvents}${top === '' ? '' : ` (${top})`}` );
+    }
     return lines.join( '\n' );
 }
 
@@ -342,6 +346,26 @@ function render( summary ) {
             tr.appendChild( el( 'td', 'num', `${p.count}` ) );
             tr.appendChild( el( 'td', 'num', formatProcTotal( p ) ) );
             procRows.appendChild( tr );
+        } );
+    }
+    let possible = summary.unattributed?.possible;
+    let hasPossible = Array.isArray( possible ) && possible.length > 0;
+    document.getElementById( 'possible' ).hidden = !hasPossible;
+    let possibleRows = document.getElementById( 'possibleRows' );
+    possibleRows.textContent = '';
+    if ( hasPossible ) {
+        possible.forEach( p => {
+            let tr = el( 'tr' );
+            let name = el( 'td', null, p.name );
+            if ( p.names?.length > 1 ) {
+                name.title = p.names.join( ', ' );
+            }
+            tr.appendChild( name );
+            tr.appendChild( el( 'td', 'num', formatProcPush( p ) ) );
+            tr.appendChild( el( 'td', 'num', `${p.count}` ) );
+            let total = formatProcTotal( p );
+            tr.appendChild( el( 'td', 'num', total.startsWith( '~' ) || p.pushMin == null ? total : `~${total}` ) );
+            possibleRows.appendChild( tr );
         } );
     }
     let procsFallback = document.getElementById( 'procsFallback' );

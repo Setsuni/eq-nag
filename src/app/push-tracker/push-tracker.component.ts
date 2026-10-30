@@ -175,6 +175,11 @@ export class PushTrackerComponent implements OnInit, OnDestroy {
         return proc.push != null ? `${round( proc.count * proc.push )}` : `~${round( proc.count * proc.pushMin )}\u2013${round( proc.count * proc.pushMax )}`;
     }
 
+    public possibleTotal( proc: PushRecapProc ): string {
+        let total = this.procTotal( proc );
+        return total.startsWith( '~' ) || total === '-' ? total : `~${total}`;
+    }
+
     public onSourceChange(): void {
         this.selected = null;
         this.applyFilters();
@@ -265,6 +270,10 @@ export class PushTrackerComponent implements OnInit, OnDestroy {
         if ( recap.unattributed.events > 0 ) {
             let top = ( recap.unattributed.procs ?? [] ).slice( 0, 5 ).map( p => `${p.name} ${p.count}` ).join( ', ' );
             lines.push( `Procs with no player named: ${recap.unattributed.events}${top === '' ? '' : ` (${top})`}` );
+        }
+        if ( ( recap.unattributed.possibleEvents ?? 0 ) > 0 ) {
+            let top = ( recap.unattributed.possible ?? [] ).slice( 0, 5 ).map( p => `${p.name} ${p.count}` ).join( ', ' );
+            lines.push( `Possible procs: ${recap.unattributed.possibleEvents}${top === '' ? '' : ` (${top})`}` );
         }
         this.ipcService.sendTextToClipboard( lines.join( '\n' ) );
     }
