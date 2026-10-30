@@ -212,6 +212,16 @@
         </ng-template>
 
         <div class="formless-hint full-width" style="margin-top: 15px;">
+            <div class="formless-input"><mat-checkbox [(ngModel)]="pushRecapPreferences.showTab" name="cbxPushRecapShowTab" (change)="onPushRecapTabPrefsChange()">Show the Push tab</mat-checkbox></div>
+            <mat-hint>Adds a tab that lists your saved push recaps, with a filter and a player by spell grid.</mat-hint>
+        </div>
+
+        <div class="formless-hint full-width" style="margin-top: 5px;">
+            <div class="formless-input"><mat-checkbox [(ngModel)]="pushRecapPreferences.saveRecaps" name="cbxPushRecapSaveRecaps" (change)="onPushRecapTabPrefsChange()">Save every recap to the Push tab</mat-checkbox></div>
+            <mat-hint>Keeps a small summary of each recap you view, up to 200 fights.  No log lines are stored.</mat-hint>
+        </div>
+
+        <div class="formless-hint full-width" style="margin-top: 15px;">
             <mat-form-field style="width: 320px;">
                 <mat-label>A fight ends after this many seconds with no combat</mat-label>
                 <input matInput type="number" min="5" max="300" [(ngModel)]="pushRecapPreferences.quietGapSeconds" name="txtPushRecapQuietGap" (change)="onPushRecapGapChange()" />

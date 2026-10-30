@@ -514,6 +514,22 @@ export class SettingsComponent implements OnInit {
 
 
     /**
+     * Saves changes to the Push tab preferences.
+     */
+    onPushRecapTabPrefsChange(): void {
+        this.ipcService.updatePushRecapPreferences( this.pushRecapPreferences );
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
      * Saves changes to the push recap quiet gap.
      */
     onPushRecapGapChange(): void {

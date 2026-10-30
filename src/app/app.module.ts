@@ -35,6 +35,7 @@ import { FormInputModule } from './form-inputs/form-inputs.module';
 import { SettingsModule } from './settings/settings.module';
 import { ConsoleProgressComponent } from './debug-console/console-lines/console-progress.component';
 import { CombatStatisticsComponent } from './combat-statistics/combat-statistics.component';
+import { PushTrackerComponent } from './push-tracker/push-tracker.component';
 import { QuickActionsComponent } from './quick-actions/quick-actions.component';
 
 @NgModule( {
@@ -72,6 +73,7 @@ import { QuickActionsComponent } from './quick-actions/quick-actions.component';
         SetupWizardComponent,
         FloatingCombatTextComponent,
         CombatStatisticsComponent,
+        PushTrackerComponent,
     ],
     providers: [
         ScraperService,

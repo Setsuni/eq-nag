@@ -1284,7 +1284,7 @@ class WindowManager {
 
         let pushRecap = this.#pushRecap;
         let recapPrefs = this.#userPrefDb.pushRecap;
-        let query = `logFilePath=${encodeURIComponent( logFilePath )}&characterName=${encodeURIComponent( characterName )}&eqFolder=${encodeURIComponent( this.#userPrefDb.everquestInstallFolder ?? '' )}&userData=${encodeURIComponent( app.getPath( 'userData' ) )}&quietGap=${encodeURIComponent( recapPrefs?.quietGapSeconds ?? 30 )}`;
+        let query = `logFilePath=${encodeURIComponent( logFilePath )}&characterName=${encodeURIComponent( characterName )}&eqFolder=${encodeURIComponent( this.#userPrefDb.everquestInstallFolder ?? '' )}&userData=${encodeURIComponent( app.getPath( 'userData' ) )}&quietGap=${encodeURIComponent( recapPrefs?.quietGapSeconds ?? 30 )}&saveRecaps=${recapPrefs?.saveRecaps !== false}`;
 
         if ( pushRecap != null && !pushRecap.isDestroyed() ) {
             if ( pushRecap.isMinimized() ) {
