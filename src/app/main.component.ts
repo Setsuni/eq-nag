@@ -1,6 +1,7 @@
 import { Component, ViewChild, ElementRef, OnInit } from '@angular/core';
 import * as _ from 'lodash-es';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTabChangeEvent } from '@angular/material/tabs';
 import { IpcService } from './ipc.service';
 import { DkpEntryModel, OverlayWindowModel, FocusEffectSettings, StylePropertiesModel, FctStylesModel, QuickShareMetaModel, QuickShareFileModel, TriggerPackageMetaModel, VersionNumber, AuthorModel, SettingsKeys } from './core.model';
 import { DialogService } from './dialogs/dialog.service';
@@ -17,7 +18,6 @@ import { JoinChatRoomDialogResult } from './dialogs/join-chat-room-dialog/join-c
 
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
-const settingsTabIndex = 5;
 const updateIntervalDuration = 5 * 60 * 1000;
 
 @Component( {
@@ -31,6 +31,7 @@ export class MainComponent implements OnInit {
     public dkpEntries: DkpEntryModel[] = [];
     public logFile: string = 'Not Selected';
     public showConsole: boolean = true;
+    public showPushTab: boolean = false;
     public enableFct: boolean = false;
     public showCriticalsInline: boolean = false;
     public overlays: OverlayWindowModel[] = [];
@@ -83,6 +84,9 @@ export class MainComponent implements OnInit {
     }
 
     ngOnInit(): void {
+
+        this.ipcService.getPushRecapPreferences().subscribe( prefs => this.showPushTab = prefs?.showTab === true );
+        this.ipcService.onPushRecapPreferencesChanged().subscribe( prefs => this.showPushTab = prefs?.showTab === true );
 
         this.ipcService.updateAvailable().subscribe( updateInfo => {
             
@@ -497,11 +501,13 @@ export class MainComponent implements OnInit {
         this.ipcService.updateLogFile( filePath );
     }
 
-    onChangeTabs( selectedIndex: number ): void {
-        this.showConsole = selectedIndex === 0;
-        this.settingsPanel.setActive( selectedIndex === settingsTabIndex );
+    onChangeTabs( event: MatTabChangeEvent ): void {
+        const isSettingsTab = event.tab.textLabel === 'Settings';
 
-        if ( selectedIndex === settingsTabIndex ) {
+        this.showConsole = event.index === 0;
+        this.settingsPanel.setActive( isSettingsTab );
+
+        if ( isSettingsTab ) {
             this.settingsPanel.loadSettings();
         }
     }
