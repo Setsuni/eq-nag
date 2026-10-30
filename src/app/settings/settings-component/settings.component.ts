@@ -3,7 +3,7 @@ import { DialogService } from 'src/app/dialogs/dialog.service';
 import { IpcService } from 'src/app/ipc.service';
 import { MatTable } from '@angular/material/table';
 import { customAlphabet } from 'nanoid';
-import { ActionTypes, AuthorModel, CapturePhrase, DeathRecapPreferences, LogMaintenanceRules, LogMaintenancePlanTypes, OverlayWindowModel, QuickShareAuthorListTypes, TriggerAction, TriggerModel, ScheduledTask, Range, SettingsKeys, SharedTriggerPermissions, DpsMeterSettings } from 'src/app/core.model';
+import { ActionTypes, AuthorModel, CapturePhrase, DeathRecapPreferences, PushRecapPreferences, pushRecapHotkeyCommand, pushRecapCapturePattern, LogMaintenanceRules, LogMaintenancePlanTypes, OverlayWindowModel, QuickShareAuthorListTypes, TriggerAction, TriggerModel, ScheduledTask, Range, SettingsKeys, SharedTriggerPermissions, DpsMeterSettings } from 'src/app/core.model';
 import { SettingsService } from '../settings-http.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { SetupService } from 'src/app/setup/setup.service';
@@ -45,6 +45,8 @@ export class SettingsComponent implements OnInit {
     public enableQuickShareImports: boolean = false;
     public sharedTriggerPermissions: SharedTriggerPermissions = new SharedTriggerPermissions();
     public deathRecapPreferences: DeathRecapPreferences = new DeathRecapPreferences();
+    public pushRecapPreferences: PushRecapPreferences = new PushRecapPreferences();
+    public pushRecapHotkeyCommand: string = pushRecapHotkeyCommand;
     public minimizeToTrayOnLoad: boolean = false;
     public glowOnStartup: boolean = true;
     public quickShareAuthorListTypes: typeof QuickShareAuthorListTypes = QuickShareAuthorListTypes;
@@ -167,6 +169,7 @@ export class SettingsComponent implements OnInit {
         this.ipcService.getEnableQuickShareImports().subscribe( enabled => this.enableQuickShareImports = enabled );
         this.ipcService.getMinimizeToTrayOnLoad().subscribe( enabled => this.minimizeToTrayOnLoad = enabled );
         this.ipcService.getDeathRecapPreferences().subscribe( recapPrefs => this.deathRecapPreferences = recapPrefs ?? new DeathRecapPreferences() );
+        this.ipcService.getPushRecapPreferences().subscribe( recapPrefs => this.pushRecapPreferences = Object.assign( new PushRecapPreferences(), recapPrefs ) );
         this.ipcService.getEnableGlowOnStartup().subscribe( f => this.glowOnStartup = f );
         this.ipcService.getQuickShareAuthorsListType().subscribe( f => this.quickShareAuthorListType = f );
         this.ipcService.getQuickShareAuthorsList().subscribe( f => {
@@ -388,6 +391,153 @@ export class SettingsComponent implements OnInit {
             } );
         }
 
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Builds the capture phrase for the push recap hotkey trigger.
+     */
+    private buildPushRecapCapturePhrase(): CapturePhrase {
+        let capturePhrase = new CapturePhrase();
+        capturePhrase.phraseId = nagId();
+        capturePhrase.requirePreviousPhrase = false;
+        capturePhrase.useRegEx = true;
+        capturePhrase.duration = null;
+        // Live servers prefix /emote messages with "~ "; emulators don't.
+        capturePhrase.phrase = pushRecapCapturePattern;
+        return capturePhrase;
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Applies the push recap trigger name, capture phrase and action to the given trigger.
+     *
+     * @param trigger The generated push recap trigger.
+     */
+    private applyPushRecapTrigger( trigger: TriggerModel ): void {
+        let capturePhrase = this.buildPushRecapCapturePhrase();
+
+        trigger.name = 'Push Recap [Hotkey]';
+        trigger.capturePhrases = [ capturePhrase ];
+        trigger.enabled = this.pushRecapPreferences.enabled;
+
+        let action = new TriggerAction();
+        action.phrases = [ capturePhrase.phraseId ];
+        action.actionType = ActionTypes.DisplayPushRecap;
+        action.actionId = nagId();
+        trigger.actions = [ action ];
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Saves changes to the push recap enabled switch.  The generated trigger is
+     * created on first enable, and switched on or off afterwards.
+     */
+    onPushRecapPrefsChange(): void {
+
+        if ( this.pushRecapPreferences.triggerId != null ) {
+
+            this.ipcService.getTrigger( this.pushRecapPreferences.triggerId ).subscribe( trigger => {
+
+                if ( trigger == null ) {
+                    // The generated trigger was deleted by the user.
+                    this.pushRecapPreferences.triggerId = null;
+                    this.onPushRecapPrefsChange();
+                    return;
+                }
+
+                this.applyPushRecapTrigger( trigger );
+
+                this.ipcService.updateTrigger( trigger ).subscribe( success => {
+                    this.ipcService.updatePushRecapPreferences( this.pushRecapPreferences );
+                    this.snackBar.open( this.pushRecapPreferences.enabled ? 'The push recap trigger has been enabled!' : 'The push recap trigger has been disabled!', 'Dismiss', { duration: 5000 } );
+                } );
+            } );
+
+        } else if ( this.pushRecapPreferences.enabled ) {
+
+            this.dialogService.showSelectTriggerFolderDialog( null, 'Select Trigger Folder', 'Select the folder that will contain the generated trigger.' ).subscribe( folderId => {
+                if ( folderId ) {
+
+                    let trigger = new TriggerModel();
+                    trigger.folderId = folderId;
+                    this.applyPushRecapTrigger( trigger );
+
+                    this.ipcService.createNewTrigger( trigger ).subscribe( triggerId => {
+                        this.pushRecapPreferences.triggerId = triggerId;
+
+                        this.ipcService.updatePushRecapPreferences( this.pushRecapPreferences );
+                        this.snackBar.open( 'The push recap trigger has been created!', 'Dismiss', { duration: 5000 } );
+                    } );
+                } else {
+                    this.pushRecapPreferences.enabled = false;
+                }
+            } );
+
+        } else {
+            this.ipcService.updatePushRecapPreferences( this.pushRecapPreferences );
+        }
+
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Saves changes to the push recap quiet gap.
+     */
+    onPushRecapGapChange(): void {
+        let gap = Math.round( +this.pushRecapPreferences.quietGapSeconds );
+        this.pushRecapPreferences.quietGapSeconds = isNaN( gap ) ? 30 : Math.min( 300, Math.max( 5, gap ) );
+        this.ipcService.updatePushRecapPreferences( this.pushRecapPreferences );
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Copies the push recap hotbutton to the user's clipboard.
+     */
+    onCopyPushRecapHotkeyCommand(): void {
+        this.ipcService.sendTextToClipboard( pushRecapHotkeyCommand );
+
+        this.snackBar.open( 'The command has been copied to your clipboard!', 'Dismiss', { duration: 5000 } );
     }
 
 

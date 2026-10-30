@@ -192,6 +192,33 @@
 
     </fieldset>
 
+    <fieldset style="padding-left: 28px; padding-right: 28px; padding-top: 60px;">
+        <legend><span class="title">Push Recap</span></legend>
+        <p>The push recap window can tell you who pushed the boss.  After a fight, it reads your log backwards to the last boss kill and ranks every player by the number of push events, with the spells behind them.
+        <br />Nothing runs while you fight.  The log is only read when you press the hotkey.</p>
+        <p>To enable the Push Recap window, turn it on below.  Nag will create a trigger, and you can make an EQ <span class="color-blue" style="font-weight: 400;">Hotkey</span> that when pressed, will display the recap of your last boss kill.
+        <br />Turn on other players' hits and spell messages in EverQuest to see the whole raid.  The spell data is read from your EverQuest folder, so set it in Settings first.</p>
+
+        <div class="formless-hint full-width" style="margin-top: 5px;">
+            <div class="formless-input"><mat-checkbox [(ngModel)]="pushRecapPreferences.enabled" name="cbxPushRecapEnabled" (change)="onPushRecapPrefsChange()">Enable the Push Recap hotkey.</mat-checkbox></div>
+            <mat-hint>Creates a trigger that opens the recap when it sees your hotkey in the log.</mat-hint>
+        </div>
+
+        <ng-template [ngIf]="pushRecapPreferences.enabled">
+            <p>To create a hotkey, copy the command below and paste it into EverQuest and hit enter.</p>
+            <code style="margin-left: 25px; margin-bottom: 25px;">{{ pushRecapHotkeyCommand }}</code>
+            <button type="button" style="margin-left: 10px; color: #69b2f0;" mat-button (click)="onCopyPushRecapHotkeyCommand()">Create in-game hotkey</button>
+        </ng-template>
+
+        <div class="formless-hint full-width" style="margin-top: 15px;">
+            <mat-form-field style="width: 320px;">
+                <mat-label>A fight ends after this many seconds with no combat</mat-label>
+                <input matInput type="number" min="5" max="300" [(ngModel)]="pushRecapPreferences.quietGapSeconds" name="txtPushRecapQuietGap" (change)="onPushRecapGapChange()" />
+            </mat-form-field>
+        </div>
+
+    </fieldset>
+
     <fieldset>
         <legend><span class="title">Sharing</span> <button mat-icon-button color="accent" (click)="showVerifiedUserInfo()" *ngIf="trustedAuthor"><mat-icon class="material-icons-outlined">verified_user</mat-icon></button></legend>
 
