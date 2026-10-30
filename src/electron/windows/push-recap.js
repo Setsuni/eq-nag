@@ -227,7 +227,7 @@ function buildSummaryText( summary, hidden ) {
     let players = summary.players ?? [];
     let lines = [
         `Push Recap - ${summary.mob}, killed ${formatKillClock( summary )}, fight ${formatDuration( summary.fightSeconds )}`,
-        `${summary.events} push hits, ${players.length} players pushing`,
+        `${summary.events} push ${summary.events === 1 ? 'hit' : 'hits'}, ${players.length} ${players.length === 1 ? 'player' : 'players'} pushing`,
     ];
     players.forEach( ( p, i ) => {
         let share = summary.events > 0 ? Math.round( p.events * 100 / summary.events ) : 0;
@@ -411,7 +411,7 @@ function createTimeline() {
         let counted = list.filter( e => e.kind !== 3 );
         let clock = formatClock( model.fightStart, a );
         title.textContent = `${formatOffset( a )}–${formatOffset( z )} into the fight${clock === '' ? '' : ` (${clock})`}`;
-        summary.textContent = `${counted.length} hits · ${Math.round( counted.reduce( ( sum, e ) => sum + e.push, 0 ) * 100 ) / 100} push`;
+        summary.textContent = `${counted.length} ${counted.length === 1 ? 'hit' : 'hits'} · ${Math.round( counted.reduce( ( sum, e ) => sum + e.push, 0 ) * 100 ) / 100} push`;
         list.forEach( e => {
             let tr = el( 'tr', e.kind === 3 ? 'dimmed' : null );
             let eventClock = formatClock( model.fightStart, e.time );
@@ -655,7 +655,7 @@ function render( summary, hidden ) {
     renderProcRows( 'possibleRows', 'possibleHidden', hasPossible ? possible : [], hidden, true );
     let procsFallback = document.getElementById( 'procsFallback' );
     procsFallback.hidden = hasProcs || procHits <= 0;
-    procsFallback.textContent = `${procHits} more hits came from procs with no player named. Re-scan the log to see which procs they were.`;
+    procsFallback.textContent = `${procHits} more ${procHits === 1 ? 'hit' : 'hits'} came from procs with no player named. Re-scan the log to see which procs they were.`;
 
     document.getElementById( 'othersHint' ).hidden = summary.othersSeen !== false;
 
