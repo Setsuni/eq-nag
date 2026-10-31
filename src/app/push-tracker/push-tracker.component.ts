@@ -114,6 +114,7 @@ export class PushTrackerComponent implements OnInit, OnDestroy {
     private detailSubscription: Subscription | null = null;
     private totalsSubscription: Subscription | null = null;
     private detailCache: Map<string, PushRecapSummary> = new Map<string, PushRecapSummary>();
+    private detailStale = false;
     private anchorId: string | null = null;
 
     constructor(
@@ -442,6 +443,7 @@ export class PushTrackerComponent implements OnInit, OnDestroy {
             this.detailCache.clear();
             this.recaps = ( recaps ?? [] ).slice().sort( ( a, b ) => b.killTime.localeCompare( a.killTime ) );
             this.savedKeys = new Set( this.recaps.map( r => this.recapKey( r ) ) );
+            this.detailStale = this.detailStale || this.source === 'saved';
             this.loaded = true;
             this.applyFilters();
         } );
@@ -505,7 +507,7 @@ export class PushTrackerComponent implements OnInit, OnDestroy {
         } else {
             this.totals = null;
             this.totalsLoading = false;
-            if ( this.selected == null || this.selected.id !== this.detail?.id || this.selected.savedAt !== this.detail?.savedAt ) {
+            if ( this.detailStale || this.selected == null || this.selected.id !== this.detail?.id || this.selected.savedAt !== this.detail?.savedAt ) {
                 this.loadDetail();
             } else {
                 this.changeDetector.markForCheck();
@@ -610,6 +612,7 @@ export class PushTrackerComponent implements OnInit, OnDestroy {
     }
 
     private loadDetail(): void {
+        this.detailStale = false;
         this.detailSubscription?.unsubscribe();
         this.detailSubscription = null;
         this.detail = null;

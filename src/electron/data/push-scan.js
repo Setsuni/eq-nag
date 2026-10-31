@@ -7,7 +7,7 @@ const { buildListRow } = require( '../utilities/push-recap-summary' );
 
 const cacheFileName = 'push-scan-cache.json';
 const badCacheFileName = 'push-scan-cache.json.bad';
-const cacheVersion = 4;
+const cacheVersion = 5;
 const maxCachedLogs = 10;
 const maxResults = 300;
 const defaultDamage = 1000000;
@@ -128,6 +128,8 @@ class PushScanService {
     #tempCounter = 0;
     /** @type {PushScanStatus} */
     #status = idleStatus();
+    /** @type {((results: any[]) => any) | null} */
+    #resultsListener = null;
 
     /**
      * @param {string} directory The folder to keep the cache file in.
@@ -139,6 +141,15 @@ class PushScanService {
         this.#badCachePath = path.join( directory, badCacheFileName );
         this.#characterDatabase = characterDatabase;
         this.#userPreferences = userPreferences;
+    }
+
+    /**
+     * Sets the function that is called with the scanned recaps when a scan is done.
+     *
+     * @param {((results: any[]) => any) | null} listener The function.
+     */
+    setResultsListener( listener ) {
+        this.#resultsListener = listener;
     }
 
     /**
@@ -348,6 +359,7 @@ class PushScanService {
                 results: result.results,
             } );
             this.#finish( worker, 'done', '' );
+            this.#notifyResults( result.results );
 
         } else if ( message.type === 'error' ) {
             if ( message.code !== 'no-folder' && message.code !== 'no-file' ) {
@@ -382,6 +394,19 @@ class PushScanService {
         }
         this.#partial = [];
         this.#send( 'push-scan:done', this.#status );
+    }
+
+    /**
+     * Gives the scanned recaps to the results listener.  A failing listener does not affect the scan.
+     *
+     * @param {any[]} results The scanned recaps.
+     */
+    #notifyResults( results ) {
+        try {
+            Promise.resolve( this.#resultsListener?.( results ) ).catch( error => console.error( 'The push scan results listener failed.', error ) );
+        } catch ( error ) {
+            console.error( 'The push scan results listener failed.', error );
+        }
     }
 
     /**
