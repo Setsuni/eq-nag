@@ -312,6 +312,13 @@ async function loadPushSpells( eqFolder, cacheFolder ) {
     }
 
     let table = await buildPushSpellTable( spellsFile, stringsFile );
+    let spellCount = Object.keys( table.spells ).length;
+    let instantCount = Object.values( table.spells ).filter( s => s.instantDamage === true ).length;
+    if ( spellCount > 0 && instantCount === 0 ) {
+        console.warn( `Push table built: ${spellCount} spells, 0 instant damage. The spell file format may have changed.` );
+    } else {
+        console.log( `Push table built: ${spellCount} spells, ${instantCount} instant damage.` );
+    }
 
     try {
         fs.writeFileSync( cacheFile, JSON.stringify( { version: cacheVersion, sourceMtimeMs: stat.mtimeMs, sourceSize: stat.size, stringsMtimeMs: stringsMtimeMs, stringsSize: stringsSize, spells: table.spells, exact: table.exact, noPushTexts: table.noPushTexts } ) );

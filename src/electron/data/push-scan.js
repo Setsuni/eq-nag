@@ -7,7 +7,7 @@ const { buildListRow } = require( '../utilities/push-recap-summary' );
 
 const cacheFileName = 'push-scan-cache.json';
 const badCacheFileName = 'push-scan-cache.json.bad';
-const cacheVersion = 5;
+const cacheVersion = 6;
 const maxCachedLogs = 10;
 const maxResults = 300;
 const defaultDamage = 1000000;
@@ -131,6 +131,15 @@ class PushScanService {
     /** @type {((results: any[]) => any) | null} */
     #resultsListener = null;
 
+
+
+
+
+
+
+
+
+
     /**
      * @param {string} directory The folder to keep the cache file in.
      * @param {any} characterDatabase The character database.
@@ -143,6 +152,15 @@ class PushScanService {
         this.#userPreferences = userPreferences;
     }
 
+
+
+
+
+
+
+
+
+
     /**
      * Sets the function that is called with the scanned recaps when a scan is done.
      *
@@ -151,6 +169,15 @@ class PushScanService {
     setResultsListener( listener ) {
         this.#resultsListener = listener;
     }
+
+
+
+
+
+
+
+
+
 
     /**
      * Attaches the ipc events of the service.
@@ -182,6 +209,15 @@ class PushScanService {
 
     }
 
+
+
+
+
+
+
+
+
+
     /**
      * Returns the state of the scan.
      *
@@ -191,6 +227,15 @@ class PushScanService {
         return this.#status;
     }
 
+
+
+
+
+
+
+
+
+
     /**
      * Returns the scanned recaps without their players, procs and NPC abilities.
      *
@@ -199,6 +244,15 @@ class PushScanService {
     getRows() {
         return this.#results.map( buildListRow );
     }
+
+
+
+
+
+
+
+
+
 
     /**
      * Returns the scanned recap with the given id, with its players.
@@ -210,6 +264,15 @@ class PushScanService {
     getResult( id ) {
         return this.#results.find( r => r.id === id ) ?? null;
     }
+
+
+
+
+
+
+
+
+
 
     /**
      * Starts a scan of the log of the given character.  Only one scan runs at a time.
@@ -286,6 +349,15 @@ class PushScanService {
         return { started: true, message: '' };
     }
 
+
+
+
+
+
+
+
+
+
     /**
      * Stops the running scan.
      */
@@ -296,12 +368,30 @@ class PushScanService {
         }
     }
 
+
+
+
+
+
+
+
+
+
     /**
      * Stops the running scan, for use when the app quits.
      */
     shutdown() {
         this.cancel();
     }
+
+
+
+
+
+
+
+
+
 
     /**
      * Handles a message of the worker.
@@ -369,6 +459,15 @@ class PushScanService {
         }
     }
 
+
+
+
+
+
+
+
+
+
     /**
      * Ends the scan with the given outcome, stops the worker and tells the main window.  Does nothing
      * when the scan has already ended.
@@ -396,6 +495,15 @@ class PushScanService {
         this.#send( 'push-scan:done', this.#status );
     }
 
+
+
+
+
+
+
+
+
+
     /**
      * Gives the scanned recaps to the results listener.  A failing listener does not affect the scan.
      *
@@ -409,6 +517,15 @@ class PushScanService {
         }
     }
 
+
+
+
+
+
+
+
+
+
     /**
      * Sends the given event to the main window.
      *
@@ -421,6 +538,15 @@ class PushScanService {
             win.webContents.send( channel, data );
         }
     }
+
+
+
+
+
+
+
+
+
 
     /**
      * Reads the cached logs.  A missing file gives no logs.  A file that is not a valid cache is moved aside.
@@ -456,6 +582,15 @@ class PushScanService {
         return {};
     }
 
+
+
+
+
+
+
+
+
+
     /**
      * Removes the given log from the cache file.
      *
@@ -473,6 +608,15 @@ class PushScanService {
         delete rest[ logFile ];
         return rest;
     }
+
+
+
+
+
+
+
+
+
 
     /**
      * Keeps the result of the given log in the cache file, and drops the logs scanned longest ago.

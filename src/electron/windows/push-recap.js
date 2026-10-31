@@ -367,6 +367,7 @@ function createTimeline() {
 
     let section = document.getElementById( 'timeline' );
     let note = document.getElementById( 'timelineNote' );
+    let truncatedNote = document.getElementById( 'truncatedNote' );
     let svg = document.getElementById( 'chart' );
     let tip = document.getElementById( 'chartTip' );
     let measureButtons = Array.from( document.querySelectorAll( '#measure button' ) );
@@ -510,6 +511,8 @@ function createTimeline() {
             let model = buildTimelineModel( summary, hidden );
             section.hidden = model == null;
             note.hidden = model != null;
+            truncatedNote.hidden = model == null || summary.timelineTruncated !== true;
+            truncatedNote.textContent = `Long fight: the timeline shows only ${summary.timeline?.length ?? 0} entries, so some are left out.`;
             tip.style.display = 'none';
             current = model == null ? null : { model: model, bars: [] };
             if ( current != null ) {
