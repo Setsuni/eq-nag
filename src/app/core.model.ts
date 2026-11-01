@@ -67,6 +67,7 @@ export enum ActionTypes {
     ClearAll = 13,
     Stopwatch = 14,
     List = 15,
+    DisplayPushRecap = 16,
 
 }
 
@@ -109,6 +110,7 @@ export function ActionTypeLabels(actionType: ActionTypes): string {
         actionType === ActionTypes.Clipboard ? 'Clipboard' :
         actionType === ActionTypes.BeneficialTimer ? 'Beneficial Timer' :
         actionType === ActionTypes.DisplayDeathRecap ? 'Display Death Recap' :
+        actionType === ActionTypes.DisplayPushRecap ? 'Display Push Recap' :
         actionType === ActionTypes.ScreenGlow ? 'Screen Glow' :
         actionType === ActionTypes.ClearAll ? 'Clear All' :
         actionType === ActionTypes.Stopwatch ? 'Stopwatch' :
@@ -130,6 +132,7 @@ export function ActionTypeIcons( actionType: ActionTypes ): string {
         actionType === ActionTypes.Clipboard ? 'content_copy' :
         actionType === ActionTypes.BeneficialTimer ? 'watch_later' :
         actionType === ActionTypes.DisplayDeathRecap ? 'sick' :
+        actionType === ActionTypes.DisplayPushRecap ? 'open_with' :
         actionType === ActionTypes.ScreenGlow ? 'brightness_5' :
         actionType === ActionTypes.ClearAll ? 'layers_clear' :
         actionType === ActionTypes.Stopwatch ? 'timer' :
@@ -1551,6 +1554,20 @@ export class DeathRecapPreferences {
     hotkeyPhrase: string;
 }
 
+const pushRecapEmote = 'wonders who is pushing';
+export const pushRecapHotkeyCommand = `/hot "Push Recap" /em ${pushRecapEmote}.`;
+export const pushRecapCapturePattern = '^(?:~ )?${Character} ' + pushRecapEmote + '\\.$';
+
+export class PushRecapPreferences {
+    triggerId: string;
+    enabled: boolean = false;
+    quietGapSeconds: number = 30;
+    showTab: boolean = false;
+    saveRecaps: boolean = true;
+    /** Landing messages (the text after the mob name) that the proc tables, the timeline and the Procs column leave out. */
+    hiddenProcTexts: string[] = [];
+}
+
 export class VersionNumber {
     
     public major: number;
@@ -2058,4 +2075,95 @@ export class TokenChangeModel {
     public actionId: string;
     public bounds: Rectangle;
 
+}
+
+export interface PushRecapSpellCount {
+    events: number;
+    assumed: number;
+    /** The push value of one hit. Missing on recaps saved by older versions. */
+    push?: number;
+}
+
+export interface PushRecapProc {
+    /** The landing message, after the name of the mob. Missing on recaps saved by older versions. In the list, only text and count are set. */
+    text?: string;
+    name: string;
+    /** The spells the landing message can belong to. Missing on recaps saved by older versions. */
+    names?: string[];
+    /** The push value of one hit, or null when the landing message fits spells with different values. */
+    push: number | null;
+    pushMin: number | null;
+    pushMax: number | null;
+    count: number;
+    /** On a possible proc, the first spells with no push that use the same message. */
+    alsoNames?: string[];
+    /** On a possible proc, how many spells with no push use the same message. */
+    alsoCount?: number;
+}
+
+export interface PushRecapNpcAbility {
+    actor: string;
+    name: string;
+    count: number;
+    push: number;
+}
+
+export interface PushRecapPlayerSummary {
+    name: string;
+    events: number;
+    assumed: number;
+    pushValue: number;
+    spells: Record<string, PushRecapSpellCount>;
+}
+
+export interface PushRecapSummary {
+    id: string;
+    savedAt: string;
+    characterName: string;
+    mob: string;
+    killTime: string;
+    fightSeconds: number;
+    damageTaken: number;
+    named: boolean;
+    events: number;
+    assumed: number;
+    pushValue: number;
+    topPusher: string | null;
+    /** Only on a recap fetched by id, not in the list. */
+    players?: PushRecapPlayerSummary[];
+    /** The procs are only on a recap fetched by id, and not on recaps saved by older versions. */
+    unattributed: { events: number, pushValue: number, procs?: PushRecapProc[], possibleEvents?: number, possible?: PushRecapProc[] };
+    /** The NPC abilities are only on a recap fetched by id, and not on recaps saved by older versions. */
+    npcAbilities?: PushRecapNpcAbility[];
+    /** False when no spell damage from other players was in the log. Missing on recaps saved by older versions. */
+    othersSeen?: boolean;
+    /** True when the fight may have started before the part of the log that was read. */
+    startsAtLogEdge?: boolean;
+    /** True when the part of the log that was read began at the start of the log. */
+    reachedStart?: boolean;
+    /** When the fight started, as an ISO date that holds the log's clock as UTC. */
+    fightStart?: string;
+    /** Every counted hit: seconds into the fight, kind (0 hit, 1 assumed cast, 2 proc, 3 possible proc), index in players or -1, spell name or index in timelineTexts, push. Only on a recap fetched by id, and not on recaps saved by older versions. */
+    timeline?: [ number, number, number, string | number, number ][];
+    /** The landing messages the timeline refers to. */
+    timelineTexts?: string[];
+    /** True when a long fight had entries left out of the timeline. */
+    timelineTruncated?: boolean;
+}
+
+export interface PushScanProgress {
+    bytes: number;
+    total: number;
+    kills: number;
+}
+
+export interface PushScanStatus extends PushScanProgress {
+    status: 'idle' | 'running' | 'done' | 'cancelled' | 'error';
+    characterId: string | null;
+    characterName: string | null;
+    minDamage: number;
+    capped: boolean;
+    resumed: boolean;
+    elapsedMs: number;
+    message: string;
 }

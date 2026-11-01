@@ -1,5 +1,6 @@
 import { Component, ViewChild, ElementRef, OnInit, HostListener } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatTabChangeEvent } from '@angular/material/tabs';
 import { IpcService } from './ipc.service';
 import { DkpEntryModel, OverlayWindowModel, FocusEffectSettings, StylePropertiesModel, FctStylesModel, QuickShareMetaModel, QuickShareFileModel, TriggerPackageMetaModel, VersionNumber, SettingsKeys } from './core.model';
 import { DialogService } from './dialogs/dialog.service';
@@ -32,6 +33,7 @@ export class MainComponent implements OnInit {
     public dkpEntries: DkpEntryModel[] = [];
     public logFile: string = 'Not Selected';
     public showConsole: boolean = true;
+    public showPushTab: boolean = false;
     public enableFct: boolean = false;
     public showCriticalsInline: boolean = false;
     public overlays: OverlayWindowModel[] = [];
@@ -204,6 +206,9 @@ export class MainComponent implements OnInit {
 
 
     ngOnInit(): void {
+
+        this.ipcService.getPushRecapPreferences().subscribe( prefs => this.showPushTab = prefs?.showTab === true );
+        this.ipcService.onPushRecapPreferencesChanged().subscribe( prefs => this.showPushTab = prefs?.showTab === true );
 
         this.ipcService.updateAvailable().subscribe( updateInfo => {
             
@@ -709,10 +714,10 @@ export class MainComponent implements OnInit {
         this.ipcService.updateLogFile( filePath );
     }
 
-    onChangeTabs( selectedIndex: number ): void {
-        this.showConsole = selectedIndex === 0;
+    onChangeTabs( event: MatTabChangeEvent ): void {
+        this.showConsole = event.index === 0;
 
-        if ( selectedIndex === 5 ) {
+        if ( event.tab.textLabel === 'Settings' ) {
             this.settingsPanel.loadSettings();
         }
     }

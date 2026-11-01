@@ -35,6 +35,8 @@ import { FormInputModule } from './form-inputs/form-inputs.module';
 import { SettingsModule } from './settings/settings.module';
 import { ConsoleProgressComponent } from './debug-console/console-lines/console-progress.component';
 import { CombatStatisticsComponent } from './combat-statistics/combat-statistics.component';
+import { PushTrackerComponent } from './push-tracker/push-tracker.component';
+import { PushTimelineComponent } from './push-tracker/push-timeline.component';
 import { QuickActionsComponent } from './quick-actions/quick-actions.component';
 import { TableVirtualScrollModule } from 'ng-table-virtual-scroll';
 
@@ -76,6 +78,8 @@ import { TableVirtualScrollModule } from 'ng-table-virtual-scroll';
         FloatingCombatTextComponent,
         CombatStatisticsComponent,
         RollsComponent,
+        PushTrackerComponent,
+        PushTimelineComponent,
     ],
     providers: [
         IpcService,

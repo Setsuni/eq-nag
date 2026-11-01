@@ -10,6 +10,7 @@ const archiver = require( 'archiver' );
 const FsUtilities = require( '../utilities/file-system' );
 const LogBootstrapper = require( "../log-bootstrap" );
 const { DeathRecapPreferences } = require( '../data/models/death-recap' );
+const { PushRecapPreferences, sanitizeHiddenProcTexts } = require( '../data/models/push-recap' );
 const { QuickShareAuthorListTypes } = require( '../data/models/common' );
 const { GinaToNagOverlay } = require( "./models/trigger" );
 const log = require( 'electron-log' );
@@ -141,6 +142,42 @@ class UserPreferencesStore extends Store {
     set deathRecap( val ) {
         this.#data.deathRecap = val;
         this.storeDataFile( this.#data );
+    }
+
+    /** @type {PushRecapPreferences} */
+    get pushRecap() {
+        return this.#data.pushRecap;
+    }
+    set pushRecap( val ) {
+        this.#data.pushRecap = val;
+        this.storeDataFile( this.#data );
+    }
+
+    /**
+     * Returns the push recap messages that are hidden from the proc tables.
+     *
+     * @returns {string[]} The messages.
+     */
+    get hiddenProcTexts() {
+        return sanitizeHiddenProcTexts( this.#data.pushRecap?.hiddenProcTexts );
+    }
+
+    /**
+     * Hides or shows a push recap message, or shows all of them.
+     *
+     * @returns {string[]} The hidden messages.
+     *
+     * @param {{ text?: string, hidden?: boolean, clear?: boolean }} change The change.
+     */
+    changeHiddenProcTexts( change ) {
+        let texts = change?.clear === true ? [] : this.hiddenProcTexts.filter( t => t !== change?.text );
+        if ( change?.clear !== true && change?.hidden === true ) {
+            texts.push( change.text );
+        }
+        let prefs = Object.assign( new PushRecapPreferences(), this.#data.pushRecap );
+        prefs.hiddenProcTexts = sanitizeHiddenProcTexts( texts );
+        this.pushRecap = prefs;
+        return prefs.hiddenProcTexts;
     }
 
     /** @type {string} */
@@ -936,6 +973,17 @@ class UserPreferencesStore extends Store {
 
         ipcMain.on( 'settings:get:deathRecap', ( event ) => {
             event.sender.send( 'settings:get:deathRecap', this.deathRecap );
+        } );
+
+        ipcMain.on( 'settings:set:pushRecap', ( event, pushRecap ) => {
+            this.pushRecap = Object.assign( {}, pushRecap, { hiddenProcTexts: this.hiddenProcTexts } );
+            if ( mainWindowRef.reference != null && !mainWindowRef.reference.isDestroyed() ) {
+                mainWindowRef.reference.webContents.send( 'settings:changed:pushRecap', this.pushRecap );
+            }
+        } );
+
+        ipcMain.on( 'settings:get:pushRecap', ( event ) => {
+            event.sender.send( 'settings:get:pushRecap', this.pushRecap );
         } );
 
         ipcMain.on( 'settings:set:detrimentalOverlayId', ( event, detrimentalOverlayId ) => {
