@@ -44,6 +44,22 @@ function record( name, start, sampling = 1 ) {
 }
 
 /**
+ * Adds a duration the caller already measured to the named tap.
+ *
+ * @param {string} name The tap name.
+ * @param {number} ms The time in milliseconds.
+ * @param {number} [count] How many calls the time covers.
+ */
+function recordMs( name, ms, count = 1 ) {
+    const s = stats[ name ] ?? ( stats[ name ] = { count: 0, totalMs: 0, maxMs: 0 } );
+    s.count += count;
+    s.totalMs += ms;
+    if ( ms > s.maxMs ) {
+        s.maxMs = ms;
+    }
+}
+
+/**
  * Keeps a setting worth knowing when reading the report.
  *
  * @param {string} key The note's name.
@@ -109,7 +125,7 @@ function startCollector() {
     /** @type {Record<number, {label: string, pid: number, stats: object, notes: object, closedAt?: string}>} */
     const reports = {};
 
-    /** @type {Array<{t: number, cpu: Record<string, number>, taps: Record<string, Record<string, number>>, notes?: Record<string, object>}>} */
+    /** @type {Array<{t: number, cpu: Record<string, number>, memory: Record<string, {workingSetKB: number, privateKB?: number}>, taps: Record<string, Record<string, number>>, notes?: Record<string, object>}>} */
     const timeline = [];
 
     let build = null;
@@ -174,9 +190,15 @@ function startCollector() {
         try {
             const labels = labelsByPid();
             const cpu = {};
+            const memory = {};
             app.getAppMetrics().forEach( m => {
                 const label = labelOfProcess( m, labels );
                 cpu[ label ] = Math.round( ( ( cpu[ label ] ?? 0 ) + m.cpu.cumulativeCPUUsage ) * 100 ) / 100;
+                const mem = memory[ label ] ?? ( memory[ label ] = { workingSetKB: 0 } );
+                mem.workingSetKB += m.memory?.workingSetSize ?? 0;
+                if ( Number.isFinite( m.memory?.privateBytes ) ) {
+                    mem.privateKB = ( mem.privateKB ?? 0 ) + m.memory.privateBytes;
+                }
             } );
 
             const taps = {};
@@ -196,7 +218,7 @@ function startCollector() {
                 }
             } );
 
-            const point = { t: uptime(), cpu, taps };
+            const point = { t: uptime(), cpu, memory, taps };
             if ( Object.keys( sampleNotes ).length > 0 ) {
                 point.notes = sampleNotes;
             }
@@ -226,6 +248,12 @@ function startCollector() {
                         label: labelOfProcess( m, labels ),
                         cpuSeconds: m.cpu.cumulativeCPUUsage,
                     };
+                    if ( m.memory ) {
+                        entry.workingSetKB = m.memory.workingSetSize;
+                        if ( Number.isFinite( m.memory.privateBytes ) ) {
+                            entry.privateKB = m.memory.privateBytes;
+                        }
+                    }
                     if ( Number.isFinite( m.creationTime ) && m.creationTime > 0 ) {
                         entry.startedAt = new Date( m.creationTime ).toISOString();
                     }
@@ -272,4 +300,4 @@ if ( process.type === 'browser' ) {
     startReporter();
 }
 
-module.exports = { enabled: true, now, record, note, wrap };
+module.exports = { enabled: true, now, record, recordMs, note, wrap };

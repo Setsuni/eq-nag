@@ -29,6 +29,7 @@ const { FctModel } = require( '../data/models/fct' );
 const { CharacterModel } = require( '../data/models/character' );
 const { nagLog, nagException } = require( './nag-console' );
 const { getEverQuestClassName, getEverQuestClassFromTitle, getEverQuestClassAbbreviation } = require( './everquest' );
+const perf = require( './perf' );
 
 const playerNpcInteractionTimeoutMs = 2000;
 const npcTimeoutMs = 8000;
@@ -98,6 +99,10 @@ const log = ( message, payload, isDebug ) => {
     }
 }
 
+// Perf only: time spent in regex matching and in _updateServerModel, used to split addCombatEvent's cost.
+let perfMatchMs = 0;
+let perfServerMs = 0;
+
 /**
  * Executes the given regular expression against the given log line.
  * 
@@ -106,7 +111,12 @@ const log = ( message, payload, isDebug ) => {
  * @param {RegExp} rgx The combat regular expression to execute.
  * @param {string} logLine The log line to execute the regular expression against.
  */
-const executCombatRgx = ( rgx, logLine ) => {
+const executCombatRgx = perf.enabled ? ( rgx, logLine ) => {
+    const perfStart = perf.now();
+    const result = rgx.exec( logLine );
+    perfMatchMs += perf.now() - perfStart;
+    return result;
+} : ( rgx, logLine ) => {
     return rgx.exec( logLine );
 }
 
@@ -3189,7 +3199,70 @@ class CombatParser {
     
 }
 
+if ( perf.enabled ) {
+    const updateServerModel = CombatParser.prototype._updateServerModel;
+    CombatParser.prototype._updateServerModel = function ( ...args ) {
+        const perfStart = perf.now();
+        try {
+            return updateServerModel.apply( this, args );
+        } finally {
+            const ms = perf.now() - perfStart;
+            perfServerMs += ms;
+            perf.recordMs( 'combat-parser: server-model', ms );
+        }
+    };
+}
+
+/**
+ * Perf only: splits the cost of a parser's addCombatEvent into regex matching
+ * ('combat-parser: match') and everything else, minus _updateServerModel
+ * ('combat-parser: apply').  Does nothing when taps are off.
+ *
+ * @param {typeof CombatParser} parserClass The parser class that defines addCombatEvent.
+ */
+function perfSplitAddCombatEvent( parserClass ) {
+    if ( !perf.enabled ) {
+        return;
+    }
+    const addCombatEvent = parserClass.prototype.addCombatEvent;
+    parserClass.prototype.addCombatEvent = function ( ...args ) {
+        const perfStart = perf.now();
+        const matchStart = perfMatchMs;
+        const serverStart = perfServerMs;
+        try {
+            return addCombatEvent.apply( this, args );
+        } finally {
+            const total = perf.now() - perfStart;
+            const match = perfMatchMs - matchStart;
+            perf.recordMs( 'combat-parser: match', match );
+            perf.recordMs( 'combat-parser: apply', total - match - ( perfServerMs - serverStart ) );
+        }
+    };
+}
+
+/**
+ * Perf only: wraps a parser's own regex helper so its time counts toward
+ * 'combat-parser: match'.  Returns the helper unchanged when taps are off.
+ *
+ * @param {(rgx: RegExp, logLine: string) => RegExpExecArray | null} fn The regex helper.
+ */
+function perfTimeMatch( fn ) {
+    if ( !perf.enabled ) {
+        return fn;
+    }
+    return ( rgx, logLine ) => {
+        const perfStart = perf.now();
+        const result = fn( rgx, logLine );
+        perfMatchMs += perf.now() - perfStart;
+        return result;
+    };
+}
+
+perfSplitAddCombatEvent( CombatParser );
+
 module.exports = {
     CombatParser,
     minifyCombatLogs,
+    perfSplitAddCombatEvent,
+    perfTimeMatch,
 };

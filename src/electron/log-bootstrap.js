@@ -11,6 +11,7 @@ const ForwardRef = require( './forward-ref' );
 const { LogMaintenancePlanTypes, LogMaintenanceRules, ArchiveFilePrefix, SimulationProgress } = require( "./data/models/common" );
 const { nagLog } = require( "./utilities/nag-console" );
 const CombatDatabase = require( "./data/combat-database" );
+const perf = require( "./utilities/perf" );
 const customAlphabet = require( 'nanoid' ).customAlphabet;
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
@@ -143,7 +144,7 @@ class LogBootstrapper {
             }
         } );
         
-        ipcMain.on( 'tick', ( event, tickData ) => {
+        ipcMain.on( 'tick', perf.wrap( 'main: trigger sync', ( event, tickData ) => {
             for ( let key in logWatchers ) {
                 if ( logWatchers.hasOwnProperty( key ) && logWatchers[ key ].window != null ) {
                     logWatchers[ key ].model = characterDatabase.find( key );
@@ -152,9 +153,9 @@ class LogBootstrapper {
                 }
             }
             combatWatcher.window?.webContents.send( 'tick', tickData );
-        } );
+        } ) );
 
-        ipcMain.on( 'log:send:raw', function ( event, data ) {
+        ipcMain.on( 'log:send:raw', perf.wrap( 'main: ipc relay', function ( event, data ) {
             for ( let key in logWatchers ) {
                 if ( logWatchers.hasOwnProperty( key ) && logWatchers[ key ].window != null ) {
                     logWatchers[ key ].window.webContents.send( 'log:parse:raw', data );
@@ -162,7 +163,7 @@ class LogBootstrapper {
                 }
             }
             combatWatcher.window?.webContents.send( 'log:parse:raw', data );
-        } );
+        } ) );
 
         ipcMain.on( 'log:simulate:file', function ( event, data ) {
             for ( let key in logWatchers ) {
@@ -174,21 +175,21 @@ class LogBootstrapper {
             combatWatcher.window?.webContents.send( 'log:simulate:file', data );
         } );
 
-        ipcMain.on( 'log:store:variable', function ( event, data ) {
+        ipcMain.on( 'log:store:variable', perf.wrap( 'main: ipc relay', function ( event, data ) {
             for ( let key in logWatchers ) {
                 if ( logWatchers.hasOwnProperty( key ) && logWatchers[ key ].window != null ) {
                     logWatchers[ key ].window.webContents.send( 'log:store:variable', data );
                 }
             }
-        } );
+        } ) );
 
-        ipcMain.on( 'log:store:scalar-variable', function ( event, data ) {
+        ipcMain.on( 'log:store:scalar-variable', perf.wrap( 'main: ipc relay', function ( event, data ) {
             for ( let key in logWatchers ) {
                 if ( logWatchers.hasOwnProperty( key ) && logWatchers[ key ].window != null ) {
                     logWatchers[ key ].window.webContents.send( 'log:store:scalar-variable', data );
                 }
             }
-        } );
+        } ) );
 
         // TODO: Extend simulation to the combat watcher as well.
         ipcMain.on( 'log:simulate:begin',
@@ -957,6 +958,7 @@ class LogBootstrapper {
      * @param {CharacterDatabaseStore} characterDatabase The character database.
      */
     tick( tickData, characterDatabase ) {
+        const perfStart = perf.enabled ? perf.now() : 0;
         for ( let key in logWatchers ) {
             if ( logWatchers.hasOwnProperty( key ) && logWatchers[ key ].window != null ) {
                 logWatchers[ key ].model = characterDatabase.find( key );
@@ -965,6 +967,7 @@ class LogBootstrapper {
             }
         }
         combatWatcher.window?.webContents.send( 'tick', tickData );
+        perf.enabled && perf.record( 'main: trigger sync', perfStart );
     }
 
 
@@ -983,11 +986,13 @@ class LogBootstrapper {
      * @param {string} value The event value.
      */
     sendToEach( channel, value ) {
+        const perfStart = perf.enabled ? perf.now() : 0;
         for ( let key in logWatchers ) {
             if ( logWatchers.hasOwnProperty( key ) && logWatchers[ key ].window != null ) {
                 logWatchers[ key ].window.webContents.send( channel, value );
             }
         }
+        perf.enabled && perf.record( 'main: ipc relay', perfStart );
     }
 
 
@@ -1006,7 +1011,9 @@ class LogBootstrapper {
      * @param {string} value The event value.
      */
     sendToCombatWatcher( channel, value ) {
+        const perfStart = perf.enabled ? perf.now() : 0;
         combatWatcher.window?.webContents.send( channel, value );
+        perf.enabled && perf.record( 'main: ipc relay', perfStart );
     }
 
     /**
