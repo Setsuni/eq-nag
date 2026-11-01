@@ -41,8 +41,8 @@ callouts:
 
 gh_edit_link: true
 gh_edit_link_text: "Edit this page on GitHub."
-gh_edit_repository: "https://github.com/guildantix/eq-nag"
-gh_edit_branch: "master"
+gh_edit_repository: "https://github.com/Setsuni/eq-nag"
+gh_edit_branch: "docs/preview"
 gh_edit_source: docs
 gh_edit_view_mode: "edit"
 

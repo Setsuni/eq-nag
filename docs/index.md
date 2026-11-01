@@ -5,6 +5,9 @@ hide_meta: true
 nav_collapsed: true
 ---
 
+{: .note }
+This is a **preview** of a proposed new guides site for EQ Nag. The current guides are at [guildantix.github.io/eq-nag](https://guildantix.github.io/eq-nag/).
+
 # EQ Nag
 Nag reads your EverQuest log as you play and tells you what matters, with alerts, timers, sounds and speech.
 {: .fs-6 .fw-300 }
