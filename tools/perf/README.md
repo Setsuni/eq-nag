@@ -79,7 +79,27 @@ Besides `processes` and `taps`, the report has:
 | `machine` | CPU model, core count and each screen's size and scale factor. |
 | `notes` (inside each `taps` entry) | Settings the code reported through `perf.note`, such as `dps meter` and `fct`. |
 | `closedAt` (inside a `taps` entry) | When that window closed. Its last counts stay in the report. |
-| `timeline` | One sample a minute (up to 24 hours): `t` (uptime seconds), `cpu` per process label, the count of each tap other than triggers per label, and `notes` per label (left out when there are none). Values are cumulative, so diff consecutive samples. `cpu` comes from running processes, so a process that exits drops out of later `cpu` values; tap counts of closed windows stay. |
+| `timeline` | One sample a minute (up to 24 hours): `t` (uptime seconds), `cpu` and `memory` per process label (the GPU process is labelled `GPU`), the count of each tap other than triggers per label, and `notes` per label (left out when there are none). Values are cumulative, so diff consecutive samples. `cpu` and `memory` come from running processes, so a process that exits drops out of later values; tap counts of closed windows stay. |
+| `workingSetKB`, `privateKB` (inside `processes` and each timeline `memory` entry) | Memory of the process in KB, from `app.getAppMetrics()`: working set, and private bytes where the OS reports them (Windows). Timeline values are not cumulative; they are the size at the sample, summed over processes with the same label. |
+
+### Timing points for finding CPU suspects
+
+These taps rank what is left to optimize. Compare `totalMs` over the session,
+and use `count` and `uptimeSeconds` for calls per second.
+
+| Tap (in the main process unless noted) | What it measures |
+| --- | --- |
+| `main: active-window` | One run of the active-window check (`checkActiveWindow` in `main.js`, every 100 ms), including waiting for the OS lookup. |
+| `main: on-top` | One run of an always-on-top re-assert interval in `window-manager.js` (overlay window every second, the move dialog every 500 ms). |
+| `main: ipc relay` | One message that main forwards to a window: overlay and token messages in `window-manager.js`, raw log lines and variable stores in `log-bootstrap.js`, and `sendToEach` / `sendToCombatWatcher`. No byte counts: the data is not serialized in main, and measuring it would mean serializing it. |
+| `main: trigger sync` | Sending the tick, which carries every trigger, to all log watchers and the combat watcher (`logBootstrap.tick`, and the relay of a tick from a window). `main: tick` also includes building and sending to the main window. |
+| `combat-parser: match` | Per log line, in the combat watcher: time in regex matching, in `addCombatEvent` and `_updateEntityVerifications`. Count is lines. |
+| `combat-parser: apply` | Per log line: the rest of `addCombatEvent` (the `_add*` work, verified-list lookups and encounter bookkeeping), without `match` and `server-model`. |
+| `combat-parser: server-model` | Each `_updateServerModel` call, wherever it is called from. Count is calls. |
+
+`match` times each regex run with a pair of `performance.now()` calls, so it adds
+about 2 to 4 microseconds per line; `match` + `apply` + `server-model` is
+about the existing `combat-watcher: line`. Taps off, none of this runs.
 
 `--perf` itself adds a little work: in a raid replay, about 1.5% of one core
 on top of ~7%. Triggers are timed on one log line in ten (and scaled up) to

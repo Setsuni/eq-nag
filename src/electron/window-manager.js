@@ -11,6 +11,7 @@ const { LogFileLocation } = require( "./data/log-file-location" );
 const path = require( "path" );
 const ElectronUtilities = require( "./utilities/electron" );
 const CharacterDatabaseStore = require( "./data/character-database" );
+const perf = require( "./utilities/perf" );
 const { RenderTokenModel } = require( "./data/models/renderer" );
 
 /** 
@@ -171,10 +172,10 @@ class WindowManager {
              * @param {Electron.IpcMainEvent} event The event args.
              * @param {RenderTokenModel} data The token data.
              */
-            ( event, data ) => {
+            perf.wrap( 'main: ipc relay', ( event, data ) => {
                 this.#tokenObservers[ data.actionId ] = event.sender;
                 this.#renderer.webContents.send( 'renderer:token:create', data );
-            } );
+            } ) );
 
         ipcMain.on( 'renderer:execute:list-timer',
             /**
@@ -183,10 +184,10 @@ class WindowManager {
              * @param {Electron.IpcMainEvent} event The event args.
              * @param {any} data The list data.
              */
-            ( event, data ) => {
+            perf.wrap( 'main: ipc relay', ( event, data ) => {
                 this.#tokenObservers[ data.actionId ] = event.sender;
                 this.#renderer.webContents.send( 'renderer:execute:list-timer', data );
-            } );
+            } ) );
 
         ipcMain.on( 'renderer:reset:list-timer',
             /**
@@ -195,10 +196,10 @@ class WindowManager {
              * @param {Electron.IpcMainEvent} event The event args.
              * @param {any} data The list data.
              */
-            ( event, data ) => {
+            perf.wrap( 'main: ipc relay', ( event, data ) => {
                 this.#tokenObservers[ data.actionId ] = event.sender;
                 this.#renderer.webContents.send( 'renderer:reset:list-timer', data );
-            } );
+            } ) );
 
         ipcMain.on( 'renderer:kill:list-timer',
             /**
@@ -207,10 +208,10 @@ class WindowManager {
              * @param {Electron.IpcMainEvent} event The event args.
              * @param {any} data The list data.
              */
-            ( event, data ) => {
+            perf.wrap( 'main: ipc relay', ( event, data ) => {
                 this.#tokenObservers[ data.actionId ] = event.sender;
                 this.#renderer.webContents.send( 'renderer:kill:list-timer', data );
-            } );
+            } ) );
 
         ipcMain.on( 'renderer:token:update',
             /**
@@ -219,9 +220,9 @@ class WindowManager {
              * @param {Electron.IpcMainEvent} event The event args.
              * @param {RenderTokenModel} data The token data.
              */
-            ( event, data ) => {
+            perf.wrap( 'main: ipc relay', ( event, data ) => {
                 this.#renderer.webContents.send( 'renderer:token:update', data );
-            } );
+            } ) );
         
         ipcMain.on( 'renderer:token:move',
             /**
@@ -230,11 +231,11 @@ class WindowManager {
              * @param {Electron.IpcMainEvent} event The event args.
              * @param {{ actionId: string, bounds: Electron.Rectangle }} data The movement data.
              */
-            ( event, data ) => {
+            perf.wrap( 'main: ipc relay', ( event, data ) => {
                 if ( this.#tokenObservers[ data.actionId ] ) {
                     this.#tokenObservers[ data.actionId ].send( 'renderer:token:move', data );
                 }
-            } );
+            } ) );
         
         ipcMain.on( 'renderer:token:destroy',
             /**
@@ -367,9 +368,9 @@ class WindowManager {
         ipcMain.on( 'renderer:end-arrange-overlays', ( event ) => {
             this.#renderer.webContents.send( 'renderer:end-arrange-overlays' );
 
-            rendererOnTopId = setInterval( () => {
+            rendererOnTopId = setInterval( perf.wrap( 'main: on-top', () => {
                 this.#renderer.setAlwaysOnTop( true, "screen-saver" );
-            }, 1000 );
+            } ), 1000 );
         } );
 
         ipcMain.on( 'overlay:enable-edit', ( event, overlayId ) => {
@@ -461,9 +462,9 @@ class WindowManager {
                 
             } );
 
-            let moveInterval = setInterval( () => {
+            let moveInterval = setInterval( perf.wrap( 'main: on-top', () => {
                 overlayMoveDialog.setAlwaysOnTop( true, "screen-saver" );
-            }, 500 );
+            } ), 500 );
 
             overlayMoveDialog.on( 'close', function () {
                 clearInterval( moveInterval );
@@ -476,35 +477,35 @@ class WindowManager {
 
         } );
         
-        ipcMain.on( 'overlay:broadcast', ( event, model ) => {
+        ipcMain.on( 'overlay:broadcast', perf.wrap( 'main: ipc relay', ( event, model ) => {
             if ( model?.overlayId ) {
                 this.#renderer.webContents.send( 'renderer:overlay:update', [ model ] );
             }
-        } );
+        } ) );
         
-        ipcMain.on( 'overlay:send:component', ( event, component ) => {
+        ipcMain.on( 'overlay:send:component', perf.wrap( 'main: ipc relay', ( event, component ) => {
             this.#renderer.webContents.send( 'renderer:receive:component', component );
-        } );
+        } ) );
         
-        ipcMain.on( 'renderer:update:component', ( event, e ) => {
+        ipcMain.on( 'renderer:update:component', perf.wrap( 'main: ipc relay', ( event, e ) => {
             this.#renderer.webContents.send( 'renderer:update:component', e );
-        } );
+        } ) );
         
-        ipcMain.on( 'overlay:send:secondary-action', ( event, token ) => {
+        ipcMain.on( 'overlay:send:secondary-action', perf.wrap( 'main: ipc relay', ( event, token ) => {
             this.#renderer.webContents.send( 'renderer:receive:secondary-action', token );
-        } );
+        } ) );
         
-        ipcMain.on( 'overlay:send:fct-component', ( event, component ) => {
+        ipcMain.on( 'overlay:send:fct-component', perf.wrap( 'main: ipc relay', ( event, component ) => {
             this.#renderer.webContents.send( 'renderer:receive:fct-component', component );
-        } );
+        } ) );
         
-        ipcMain.on( 'overlay:destroy:component', ( event, instanceId ) => {
+        ipcMain.on( 'overlay:destroy:component', perf.wrap( 'main: ipc relay', ( event, instanceId ) => {
             this.#renderer.webContents.send( 'component:destroy', instanceId );
-        } );
+        } ) );
 
-        ipcMain.on( 'renderer:kill:component', ( event, instanceId ) => {
+        ipcMain.on( 'renderer:kill:component', perf.wrap( 'main: ipc relay', ( event, instanceId ) => {
             this.#renderer.webContents.send( 'renderer:kill:component', instanceId );
-        } );
+        } ) );
         
         ipcMain.on( 'renderer:stopwatch:stop', ( event, instanceId ) => {
             this.#renderer.webContents.send( 'renderer:stopwatch:stop', instanceId );
@@ -943,11 +944,11 @@ class WindowManager {
 
         this.#renderer = renderer;
 
-        rendererOnTopId = setInterval( () => {
+        rendererOnTopId = setInterval( perf.wrap( 'main: on-top', () => {
             this.#renderer.setAlwaysOnTop( true, "screen-saver" );
             this.#renderer.setVisibleOnAllWorkspaces( true );
             this.#renderer.setFullScreenable( false );
-        }, 1000 );
+        } ), 1000 );
 
         ipcMain.once( 'main:angular-ready', () => {
             if ( this.#userPrefDb.enableCheckWindowPosition ) {

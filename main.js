@@ -1109,6 +1109,7 @@ ipcMain.on( 'main:active-window:unsubscribe', ( event ) => {
 } );
 
 const checkActiveWindow = async () => {
+    const perfStart = perf.enabled ? perf.now() : 0;
     let data = await activeWindow();
 
     if ( nagProcessId == undefined && (data?.owner?.name === 'Electron' || data?.owner?.name === 'EQ Nag') && data?.title === 'Nag' ) {
@@ -1128,6 +1129,7 @@ const checkActiveWindow = async () => {
         }
     }
 
+    perf.enabled && perf.record( 'main: active-window', perfStart );
     setTimeout( checkActiveWindow, 100 );
 };
 

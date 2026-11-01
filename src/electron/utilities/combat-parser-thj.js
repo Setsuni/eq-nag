@@ -1,5 +1,5 @@
 const _ = require( 'lodash' );
-const { CombatParser } = require( './combat-parser' );
+const { CombatParser, perfSplitAddCombatEvent, perfTimeMatch } = require( './combat-parser' );
 const { nagLog } = require( './nag-console' );
 
 const renderDebugMessages = false;
@@ -38,10 +38,10 @@ const log = ( message, payload, isDebug ) => {
  * @param {RegExp} rgx The combat regular expression to execute.
  * @param {string} logLine The log line to execute the regular expression against.
  */
-const executCombatRgx = ( rgx, logLine ) => {
+const executCombatRgx = perfTimeMatch( ( rgx, logLine ) => {
     rgx.lastIndex = 0;
     return rgx.exec( logLine );
-}
+} );
 
 
 
@@ -286,6 +286,8 @@ class ThjCombatParser extends CombatParser {
     }
     
 }
+
+perfSplitAddCombatEvent( ThjCombatParser );
 
 module.exports = {
     ThjCombatParser,
