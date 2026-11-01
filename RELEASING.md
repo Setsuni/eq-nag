@@ -31,6 +31,8 @@ latest code and adds only the new changes; your edits are kept.
 2. Open the new draft. It already contains the notes of every pre-release
    since the last full release; tidy them up if you like.
 3. Click **Publish release** (it's already labeled Latest).
+4. Update **What's new** in `docs/` from `CHANGELOG.md`, and bump `last_verified`
+   on the pages you re-checked (see `docs/README.md`).
 
 The release is built from the exact code of the latest pre-release, so it
 ships what pre-release users have been running. Every copy of Nag updates to

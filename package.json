@@ -140,6 +140,7 @@
       "!.angular",
       "!.vscode",
       "!e2e",
+      "!docs{,/**/*}",
       "!source-maps",
       "package.json",
       "!tsconfig*",
