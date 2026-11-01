@@ -18,6 +18,7 @@ const { IpcMessage } = require( '../data/models/common' );
 const ArrayUtilities = require( '../utilities/arrays' );
 const FileMonitor = require( '../utilities/file-monitor' );
 const perf = require( '../utilities/perf' );
+const TriggerPrefilter = require( '../utilities/trigger-prefilter' );
 // Triggers are timed on one log line in ten (perf-taps.js scales them up), so
 // the per-trigger timing doesn't slow the log watcher down much.
 let perfTriggerSample = 0;
@@ -53,6 +54,10 @@ var overlays = [];
 var triggers = [];
 /** @type {LogTrigger[]} The triggers that are enabled for this character, rebuilt on each tick. */
 var activeTriggers = [];
+/** @type {{automaton: ReturnType<typeof TriggerPrefilter.build>, marks: Int32Array, alwaysRun: Uint8Array}|null} Which of activeTriggers can match a log line; null runs all of them. */
+var triggerPrefilter = null;
+var triggerPrefilterStamp = 0;
+const triggerPrefilterDisabled = process.env.NAG_NO_TRIGGER_PREFILTER === '1' || process.argv.includes( '--no-trigger-prefilter' );
 /** @type {TriggerFolder[]} */
 var triggerFolders = [];
 /** @type {Record<string, string[]>} */
@@ -714,6 +719,7 @@ function LogWatcher(character, logPosition) {
         applyFolderConditions( triggerFolders );
         generateTriggerFns();
         activeTriggers = triggers.filter( trigger => !!trigger.enabled && !trigger._profileDisabled );
+        buildTriggerPrefilter();
         initCounters();
         perf.enabled && perf.record( 'log-watcher: tick (rebuild triggers)', perfStart );
     } );
@@ -1014,10 +1020,116 @@ function initCounters() {
 
 
 /**
+ * Works out which literals a trigger's phrases need in a log line before the
+ * trigger can match it.  Returns null if the trigger must always run.
+ *
+ * @param {LogTrigger} trigger The trigger.
+ * @returns {{literals: string[], always: boolean, phrases: number, alwaysPhrases: number}|null}
+ */
+function getTriggerPrefilter( trigger ) {
+    try {
+        const sequential = trigger.captureMethod === 'Sequential';
+        if ( !sequential && trigger.captureMethod !== 'Any match' ) {
+            return null;
+        }
+
+        // Variable conditions refresh trigger._conditionResults on every line, so those triggers always run.
+        const conditions = [ ...( trigger.conditions ?? [] ), ...( trigger._folderConditions ?? [] ) ];
+        if ( conditions.some( c => c.conditionType === TriggerConditionTypes.VariableValue ) ) {
+            return null;
+        }
+
+        // A sequential trigger only needs its first phrase while no sequence is in progress.
+        const parsed = trigger.capturePhrases.filter( p => p.phrase?.length > 0 );
+        const phrases = sequential ? parsed.slice( 0, 1 ) : parsed;
+        if ( phrases.length === 0 ) {
+            return null;
+        }
+
+        /** @type {string[]} */
+        const literals = [];
+        let alwaysPhrases = 0;
+
+        phrases.forEach( phrase => {
+            let found = null;
+            if ( phrase.useRegEx ) {
+                found = TriggerPrefilter.extractRegexLiterals( phrase.phrase );
+            } else if ( typeof phrase.phrase === 'string' && !/{L([0-9]*?)}/i.test( phrase.phrase ) ) {
+                const literal = TriggerPrefilter.extractPlainLiteral( phrase.phrase );
+                found = literal ? [ literal ] : null;
+            }
+
+            if ( found ) {
+                literals.push( ...found );
+            } else {
+                alwaysPhrases++;
+            }
+        } );
+
+        return { literals: literals, always: alwaysPhrases > 0, phrases: phrases.length, alwaysPhrases: alwaysPhrases };
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Builds the prefilter for activeTriggers.
+ */
+function buildTriggerPrefilter() {
+    triggerPrefilter = null;
+    if ( triggerPrefilterDisabled ) {
+        return;
+    }
+
+    const alwaysRun = new Uint8Array( activeTriggers.length );
+    const entries = [];
+    let phrases = 0;
+    let alwaysPhrases = 0;
+    let alwaysTriggers = 0;
+
+    activeTriggers.forEach( ( trigger, index ) => {
+        const info = trigger._prefilter;
+        if ( !info || info.always || !trigger._parse ) {
+            alwaysRun[ index ] = 1;
+            alwaysTriggers++;
+        } else {
+            info.literals.forEach( literal => entries.push( { literal: literal, key: index } ) );
+        }
+
+        phrases += info?.phrases ?? 0;
+        alwaysPhrases += info?.alwaysPhrases ?? 0;
+    } );
+
+    triggerPrefilter = {
+        automaton: TriggerPrefilter.build( entries ),
+        marks: new Int32Array( activeTriggers.length ),
+        alwaysRun: alwaysRun,
+    };
+    triggerPrefilterStamp = 0;
+
+    perf.enabled && perf.note?.( 'prefilter', {
+        triggers: activeTriggers.length,
+        alwaysRunTriggers: alwaysTriggers,
+        phrasesWithLiteral: phrases - alwaysPhrases,
+        alwaysRunPhrases: alwaysPhrases,
+        literals: entries.length,
+        automatonNodes: triggerPrefilter.automaton.nodeCount,
+    } );
+}
+
+var perfPrefilterLines = 0;
+var perfPrefilterCandidates = 0;
+var perfPrefilterMisses = 0;
+var perfPrefilterLastWarning = 0;
+
+/**
  * Pre-generate parse functions for each trigger.
  */
 function generateTriggerFns() {
     triggers?.forEach( trigger => {
+
+        trigger._prefilter = null;
+        trigger._hasSequence = undefined;
 
         try {
 
@@ -1258,6 +1370,8 @@ function generateTriggerFns() {
                     }
                 } );
     
+                trigger._prefilter = getTriggerPrefilter( trigger );
+
                 /** @type {Record<string, string[]>} This object stores values converted from user input for condition checks.  Ex: Knowledge|Tranquility => ['Knowledge', 'Tranquility'] */
                 let _conditionValues = {};
                 trigger.conditions?.forEach( condition => {
@@ -1485,6 +1599,8 @@ function generateTriggerFns() {
                         forceReset = forceReset === true ? true : false;
                         _.remove( _sequentialMatchs, m => forceReset || m.captureIndex >= _phraseParsers?.length );
                     };
+
+                    trigger._hasSequence = () => _sequentialMatchs.length > 0;
     
                     /**
                      * Parses the given log entry and executes a callback when a match is found.
@@ -1873,7 +1989,45 @@ function parseLogEntries( raw, simulating, padTime ) {
 
         let entryMatched = false;
         const perfTriggers = perf.enabled && ++perfTriggerSample % 10 === 0;
-        activeTriggers.forEach( trigger => {
+
+        const prefilter = triggerPrefilter;
+        let stamp = 0;
+        if ( prefilter ) {
+            const perfPrefilterStart = perf.enabled ? perf.now() : 0;
+            if ( ++triggerPrefilterStamp >= 2147483647 ) {
+                prefilter.marks.fill( 0 );
+                triggerPrefilterStamp = 1;
+            }
+            stamp = triggerPrefilterStamp;
+            prefilter.automaton.candidates( toLowerCached( log ), prefilter.marks, stamp );
+            perf.enabled && perf.record( 'log-watcher: prefilter', perfPrefilterStart );
+        }
+
+        // Perf builds only: on 1 line in 100, also parse the triggers the prefilter skipped, to count any it wrongly skipped.
+        const perfPrefilterCheck = perf.enabled && prefilter && ++perfPrefilterLines % 100 === 0;
+
+        activeTriggers.forEach( ( trigger, index ) => {
+
+            if ( prefilter && prefilter.marks[ index ] !== stamp && !prefilter.alwaysRun[ index ] && !trigger._hasSequence?.() ) {
+                if ( perfPrefilterCheck && !!trigger.enabled && !trigger._profileDisabled ) {
+                    trigger._parse( log, () => {
+                        perfPrefilterMisses++;
+                        const now = Date.now();
+                        if ( now - perfPrefilterLastWarning >= 60000 ) {
+                            perfPrefilterLastWarning = now;
+                            nagLog( {
+                                label: 'Log Watcher',
+                                message: `Trigger prefilter miss: trigger "${trigger.name}" (${trigger.triggerId}) matched a line it was skipped for.`,
+                            } );
+                        }
+                    } );
+                }
+                return;
+            }
+
+            if ( perf.enabled && prefilter ) {
+                perfPrefilterCandidates++;
+            }
 
             if ( !!trigger.enabled && !trigger._profileDisabled ) {
                 const perfStart = perfTriggers ? perf.now() : 0;
@@ -1920,6 +2074,11 @@ function parseLogEntries( raw, simulating, padTime ) {
             }
             
         } );
+
+        if ( perfPrefilterCheck ) {
+            perf.note?.( 'prefilter misses', perfPrefilterMisses );
+            perf.note?.( 'prefilter average candidates per line', Math.round( perfPrefilterCandidates / perfPrefilterLines * 10 ) / 10 );
+        }
 
         if ( entryMatched ) {
             let t = timestamp.getTime();
