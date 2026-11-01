@@ -806,7 +806,7 @@ ipcMain.on( 'context:get:pseudo-clipboard', ( event, key ) => {
 } );
 
 ipcMain.on( 'window:unfocus', ( event ) => {
-    const win = BrowserWindow.fromId( event.sender.id );
+    const win = BrowserWindow.fromWebContents( event.sender );
     win?.blur();
 } );
 

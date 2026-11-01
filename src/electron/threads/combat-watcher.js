@@ -61,7 +61,7 @@
 // } );
 
 const { CharacterModel } = require( "../data/models/character" );
-const { ipcRenderer, ipcMain } = require( 'electron' );
+const { ipcRenderer } = require( 'electron' );
 const { DpsMeterSettings, LogRecord, EncounterResetEventArgs, EncounterModel, ExternalEncounterModel, PlayerDps } = require( "../data/models/combat-parser" );
 const { OverlayWindow } = require( "../data/models/overlay-window" );
 const { ErrorMessages, TriggerParseHistoryModel, getActionLabel, LogTypes } = require( "../data/models/trigger" );

@@ -1,6 +1,5 @@
 const { contextBridge, ipcRenderer } = require( 'electron' );
 const { sanitizeHtml } = require( '../utilities/html' );
-// const { getCurrentWindow, screen } = require( '@electron/remote' );
 
 const channelPrefixes = [
     'app',
@@ -28,6 +27,6 @@ contextBridge.exposeInMainWorld( 'api', {
         i = +index;
     },
     close: () => {
-        getCurrentWindow().close();
+        window.close();
     },
 } );
