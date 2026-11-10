@@ -2,7 +2,7 @@ import { FlatTreeControl } from '@angular/cdk/tree';
 import { Component, ElementRef, EventEmitter, HostListener, NgZone, OnInit, Output, ViewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';
-import { DeathRecapPreferences, ExternalDataSources, QuickShareFileModel, QuickShareMetaModel, Tag, TriggerAction, TriggerFolder, TriggerModel } from '../core.model';
+import { ActionTypes, DeathRecapPreferences, ExternalDataSources, OperatorTypes, QuickShareFileModel, QuickShareMetaModel, Tag, TriggerAction, TriggerFolder, TriggerModel } from '../core.model';
 import { DialogService } from '../dialogs/dialog.service';
 import { IpcService } from '../ipc.service';
 import * as _ from 'lodash-es';
@@ -19,9 +19,21 @@ import { ShareFileService } from '../core/share-file.service';
 import { FolderConditionsDialogComponent } from './folder-conditions-dialog/folder-conditions-dialog.component';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getErrorReason, getSkippedSounds, remapAudioFileIds, toSkippedSound } from '../utilities/package-file-ids';
-import { TriggerHealthService } from '../trigger-health/trigger-health.service';
+import { HealthFinding, TriggerHealthService } from '../trigger-health/trigger-health.service';
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
+
+interface FolderCounts {
+    total: number;
+    enabled: number;
+}
+
+interface TriggerSummary {
+    /** How the capture phrases are shown: a quoted phrase, a pattern, a count, or nothing yet. */
+    whenKind: 'phrase' | 'pattern' | 'many' | 'none';
+    when: string;
+    then: string;
+}
 
 interface FolderTreeNode {
     expandable: boolean;
@@ -78,6 +90,28 @@ export class TriggersComponent implements OnInit {
         this._tableDataSource = new TableVirtualScrollDataSource( this._filteredRecords.slice( 0, this._indexRecords ) );
 
         this.dataSourceTest.next( this._filteredRecords.slice( 0, this._indexRecords ) );
+        setTimeout( () => this.loadMoreRows(), 50 );
+    }
+
+    /**
+     * Renders more rows while the list is scrolled near its end, or is too short to scroll.
+     */
+    private loadMoreRows(): void {
+        if ( this._indexRecords >= this._maxRecords || !this.triggersTable ) {
+            return;
+        }
+
+        let table = ( this.triggersTable as any )._elementRef as ElementRef<HTMLTableElement>;
+        let viewport = this.triggerScroller.elementRef.nativeElement;
+        if ( viewport.offsetParent === null || table.nativeElement.clientHeight - viewport.scrollTop - viewport.clientHeight > 300 ) {
+            return;
+        }
+
+        this._indexRecords = Math.min( this._indexRecords + 20, this._maxRecords );
+        this._tableDataSource = new TableVirtualScrollDataSource( this._filteredRecords.slice( 0, this._indexRecords ) );
+        this.dataSourceTest.next( this._filteredRecords.slice( 0, this._indexRecords ) );
+        this.triggersTable.renderRows();
+        setTimeout( () => this.loadMoreRows(), 50 );
     }
 
     private _tableDataSource: TableVirtualScrollDataSource<TriggerModel> = new TableVirtualScrollDataSource<TriggerModel>([]);
@@ -101,6 +135,12 @@ export class TriggersComponent implements OnInit {
     public deathRecapPreferences: DeathRecapPreferences = null;
     /** The number of trigger health findings from the latest check. */
     public healthCount: number = 0;
+    private folderCounts: Record<string, FolderCounts> = {};
+    private triggerFindings: Record<string, HealthFinding[]> = {};
+    private folderFindings: Record<string, HealthFinding[]> = {};
+    private summaryCache = new WeakMap<TriggerModel, TriggerSummary>();
+    private folderPathCache: Record<string, string> = {};
+    private findingsTimeoutId: number | undefined;
 
     @Output() public openHealth: EventEmitter<void> = new EventEmitter<void>();
     
@@ -123,22 +163,7 @@ export class TriggersComponent implements OnInit {
     ngOnInit() {
 
         this.triggerScroller.elementScrolled().subscribe( e => {
-            this.ngZone.run( () => {
-                
-                let elRef = ( this.triggersTable as any )._elementRef as ElementRef<HTMLTableElement>;
-                let remainingScroll = elRef.nativeElement.clientHeight - this.triggerScroller.elementRef.nativeElement.scrollTop - this.triggerScroller.elementRef.nativeElement.clientHeight;
-                if ( remainingScroll <= 0 ) {
-                
-                    this._indexRecords += 10;
-                    this._indexRecords = this._indexRecords > this._maxRecords ? this._maxRecords : this._indexRecords;
-                
-                    this._tableDataSource = new TableVirtualScrollDataSource( this._filteredRecords.slice( 0, this._indexRecords ) );
-                    this.dataSourceTest.next( this._filteredRecords.slice( 0, this._indexRecords ) );
-                
-                    this.triggersTable.renderRows();
-
-                }
-            } );
+            this.ngZone.run( () => this.loadMoreRows() );
         } );
 
         this.ipcService.tickReceived().subscribe( tick => {
@@ -153,7 +178,11 @@ export class TriggersComponent implements OnInit {
             
         } );
 
-        this.healthService.summary$.subscribe( summary => this.healthCount = summary?.defaultCount ?? 0 );
+        this.healthService.summary$.subscribe( summary => {
+            this.healthCount = summary?.defaultCount ?? 0;
+            this.refreshFindings( summary?.checkedAt );
+        } );
+        this.healthService.report$.subscribe( report => this.updateFindings( report?.findings ?? [] ) );
         this.ipcService.getDeathRecapPreferences().subscribe( recapPrefs => this.deathRecapPreferences = recapPrefs ?? null );
         this.ipcService.getAppIsDev().subscribe( isDev => this.isDev = isDev );
         this.ipcService.getTriggerFolders().subscribe( folders => {
@@ -744,9 +773,12 @@ export class TriggersComponent implements OnInit {
      */
     public toggleEnabled( trigger: TriggerModel ): void {
         trigger.enabled = !trigger.enabled;
+        this.updateFolderCounts();
 
         this.ipcService.updateTrigger( trigger ).subscribe( updated => {
             if ( !updated ) {
+                trigger.enabled = !trigger.enabled;
+                this.updateFolderCounts();
                 this.snackBar.open( 'Could not update trigger!', 'Dismiss', { duration: 5000 } );
             }
         } );
@@ -889,6 +921,8 @@ export class TriggersComponent implements OnInit {
         this.dataSource.data = folders;
         this.expandFolders( folders );
         this.updateExpandStatus();
+        this.updateFolderCounts();
+        this.folderPathCache = {};
 
     }
 
@@ -1978,7 +2012,16 @@ export class TriggersComponent implements OnInit {
         triggers.forEach( trigger => {
             trigger.enabled = enabled;
         } );
-        this.ipcService.updateTriggers( this.triggers ).subscribe( failed => this.processing = false );
+        this.updateFolderCounts();
+        this.ipcService.updateTriggers( this.triggers ).subscribe( failed => {
+            this.processing = false;
+            if ( failed?.length > 0 ) {
+                let failedIds = new Set( failed.map( f => f.triggerId ) );
+                triggers.filter( trigger => failedIds.has( trigger.triggerId ) ).forEach( trigger => trigger.enabled = !enabled );
+                this.updateFolderCounts();
+                this.snackBar.open( 'Could not update some triggers!', 'Dismiss', { duration: 5000 } );
+            }
+        } );
     }
 
 
@@ -2084,6 +2127,252 @@ export class TriggersComponent implements OnInit {
 
 
     
+    /**
+     * Counts the triggers in each folder, sub-folders included, and how many of them are enabled.
+     */
+    private updateFolderCounts(): void {
+        let own: Record<string, FolderCounts> = {};
+        this.triggers.forEach( trigger => {
+            let counts = own[ trigger.folderId ] ??= { total: 0, enabled: 0 };
+            counts.total++;
+            if ( trigger.enabled ) {
+                counts.enabled++;
+            }
+        } );
+
+        let result: Record<string, FolderCounts> = {};
+        let sum = ( folder: TriggerFolder ): FolderCounts => {
+            let counts = { total: own[ folder.folderId ]?.total ?? 0, enabled: own[ folder.folderId ]?.enabled ?? 0 };
+            folder.children?.forEach( child => {
+                let childCounts = sum( child );
+                counts.total += childCounts.total;
+                counts.enabled += childCounts.enabled;
+            } );
+            result[ folder.folderId ] = counts;
+            return counts;
+        };
+        this.triggerFolders.forEach( folder => sum( folder ) );
+        this.folderCounts = result;
+    }
+
+    /**
+     * Re-reads the health report shortly after the summary changed, so the row chips match the toolbar badge.
+     * 
+     * @param checkedAt The time of the check the latest summary came from.
+     */
+    private refreshFindings( checkedAt: string | undefined ): void {
+        clearTimeout( this.findingsTimeoutId );
+        if ( checkedAt && checkedAt !== this.healthService.report$.value?.summary.checkedAt ) {
+            this.findingsTimeoutId = window.setTimeout( () => this.healthService.check().subscribe(), 400 );
+        }
+    }
+
+    /**
+     * Groups the default health findings by the trigger or folder they are about.
+     *
+     * @param findings The findings of the latest check.
+     */
+    private updateFindings( findings: HealthFinding[] ): void {
+        let triggerFindings: Record<string, HealthFinding[]> = {};
+        let folderFindings: Record<string, HealthFinding[]> = {};
+        findings.filter( finding => finding.level === 'default' ).forEach( finding => {
+            if ( finding.subject.kind === 'folder' ) {
+                ( folderFindings[ finding.subject.id ] ??= [] ).push( finding );
+            } else {
+                _.uniq( [ finding.subject.id, ...( finding.affectedTriggerIds ?? [] ) ] ).forEach( id => ( triggerFindings[ id ] ??= [] ).push( finding ) );
+            }
+        } );
+        this.triggerFindings = triggerFindings;
+        this.folderFindings = folderFindings;
+    }
+
+    /**
+     * Returns the number of triggers in the folder and its sub-folders.
+     *
+     * @param folderId The id of the folder.
+     */
+    public getFolderTriggerCount( folderId: string ): number {
+        return this.folderCounts[ folderId ]?.total ?? 0;
+    }
+
+    /**
+     * Returns true when every trigger in the folder and its sub-folders is enabled.
+     *
+     * @param folderId The id of the folder.
+     */
+    public isFolderOn( folderId: string ): boolean {
+        let counts = this.folderCounts[ folderId ];
+        return counts?.total > 0 && counts.enabled === counts.total;
+    }
+
+    /**
+     * Returns true when the folder holds both enabled and disabled triggers.
+     *
+     * @param folderId The id of the folder.
+     */
+    public isFolderMixed( folderId: string ): boolean {
+        let counts = this.folderCounts[ folderId ];
+        return counts?.enabled > 0 && counts.enabled < counts.total;
+    }
+
+    /**
+     * Disables the folder's triggers when any are enabled, otherwise enables them.
+     *
+     * @param folderId The id of the folder.
+     */
+    public toggleFolderEnabled( folderId: string ): void {
+        if ( this.folderCounts[ folderId ]?.enabled > 0 ) {
+            this.disableFolderTriggers( folderId );
+        } else {
+            this.enableFolderTriggers( folderId );
+        }
+    }
+
+    /**
+     * Returns the health tooltip for a trigger, or null when it has no findings.
+     *
+     * @param trigger The trigger.
+     */
+    public getTriggerHealthTip( trigger: TriggerModel ): string | null {
+        return this.describeFindings( this.triggerFindings[ trigger.triggerId ] );
+    }
+
+    /**
+     * Returns true when a health finding for the trigger asks the player to look at it.
+     *
+     * @param trigger The trigger.
+     */
+    public triggerNeedsLook( trigger: TriggerModel ): boolean {
+        return this.triggerFindings[ trigger.triggerId ]?.some( finding => finding.needsLook ) === true;
+    }
+
+    /**
+     * Returns the health tooltip for a folder, or null when it has no findings.
+     *
+     * @param folderId The id of the folder.
+     */
+    public getFolderHealthTip( folderId: string ): string | null {
+        return this.describeFindings( this.folderFindings[ folderId ] );
+    }
+
+    private describeFindings( findings: HealthFinding[] | undefined ): string | null {
+        return findings?.length > 0 ? findings.map( finding => finding.reason ).join( '\n' ) : null;
+    }
+
+    /**
+     * Returns the one-line description of what the trigger listens for and does.
+     *
+     * @param trigger The trigger.
+     */
+    public getTriggerSummary( trigger: TriggerModel ): TriggerSummary {
+        let summary = this.summaryCache.get( trigger );
+        if ( !summary ) {
+            summary = this.buildTriggerSummary( trigger );
+            this.summaryCache.set( trigger, summary );
+        }
+        return summary;
+    }
+
+    private buildTriggerSummary( trigger: TriggerModel ): TriggerSummary {
+        let phrases = ( trigger.capturePhrases ?? [] ).filter( phrase => phrase.phrase?.trim() );
+        let whenKind: TriggerSummary[ 'whenKind' ] = 'none';
+        let when = '';
+        if ( phrases.length === 1 ) {
+            whenKind = phrases[ 0 ].useRegEx ? 'pattern' : 'phrase';
+            let text = phrases[ 0 ].phrase.trim();
+            when = text.length > 90 ? `${text.substring( 0, 90 )}…` : text;
+        } else if ( phrases.length > 1 ) {
+            whenKind = 'many';
+            when = trigger.captureMethod === 'Sequential' ? `these ${phrases.length} phrases, in order` : `any of ${phrases.length} phrases`;
+        }
+
+        let labels = ( trigger.actions ?? [] ).map( action => this.getActionLabel( action ) );
+        let then = labels.length === 0 ? 'no actions yet' : labels.length > 3 ? `${labels.slice( 0, 3 ).join( ' · ' )} · ${labels.length - 3} more` : labels.join( ' · ' );
+
+        let zone = ( trigger.conditions ?? [] ).find( condition => condition.variableName === 'CurrentZone' && condition.variableValue && ( condition.operatorType === OperatorTypes.Equals || condition.operatorType === OperatorTypes.Contains ) );
+        if ( zone ) {
+            then += ` · only in ${zone.variableValue.split( '|' ).join( ' or ' )}`;
+        }
+        if ( ( trigger.conditions?.length ?? 0 ) > ( zone ? 1 : 0 ) ) {
+            then += ' · with conditions';
+        }
+
+        return { whenKind, when, then };
+    }
+
+    private getActionLabel( action: TriggerAction ): string {
+        switch ( action.actionType ) {
+            case ActionTypes.DisplayText: return action.duration > 0 ? `Show text ${this.formatSeconds( action.duration )}` : 'Show text';
+            case ActionTypes.PlayAudio: return 'Play sound';
+            case ActionTypes.Speak: return 'Speak';
+            case ActionTypes.Timer:
+            case ActionTypes.DotTimer:
+            case ActionTypes.BeneficialTimer: return action.duration > 0 ? `Timer ${this.formatSeconds( action.duration )}` : 'Timer';
+            case ActionTypes.Countdown: return action.duration > 0 ? `Countdown ${this.formatSeconds( action.duration )}` : 'Countdown';
+            case ActionTypes.StoreVariable: return 'Store variable';
+            case ActionTypes.ClearVariable: return 'Clear variable';
+            case ActionTypes.Counter: return 'Counter';
+            case ActionTypes.Clipboard: return 'Copy to clipboard';
+            case ActionTypes.DisplayDeathRecap: return 'Death recap';
+            case ActionTypes.ScreenGlow: return 'Screen glow';
+            case ActionTypes.ClearAll: return 'Clear all';
+            case ActionTypes.Stopwatch: return 'Stopwatch';
+            case ActionTypes.List: return 'List';
+            default: return 'Action';
+        }
+    }
+
+    private formatSeconds( totalSeconds: number ): string {
+        let hours = Math.floor( totalSeconds / 3600 );
+        let minutes = Math.floor( ( totalSeconds % 3600 ) / 60 );
+        let seconds = Math.floor( totalSeconds % 60 );
+        if ( hours > 0 ) {
+            return `${hours}:${String( minutes ).padStart( 2, '0' )}:${String( seconds ).padStart( 2, '0' )}`;
+        }
+        return totalSeconds >= 60 ? `${minutes}:${String( seconds ).padStart( 2, '0' )}` : `${seconds} s`;
+    }
+
+    /**
+     * Returns the full folder path of a search result, so the player can tell where a match lives.
+     * 
+     * @param trigger The trigger.
+     */
+    public getSearchResultPath( trigger: TriggerModel ): string {
+        return this.folderPathCache[ trigger.folderId ] ??= this.getFolderFamilyNames( trigger.folderId, this.triggerFolders, [] ).join( ' › ' );
+    }
+
+    /**
+     * Returns the heading above the trigger list: the selected folder's path, or what is being searched.
+     */
+    public get listTitle(): string {
+        if ( this.searchTerm ) {
+            return 'Search results';
+        }
+        if ( this.selectedFolderId ) {
+            return this.getFolderFamilyNames( this.selectedFolderId, this.triggerFolders, [] ).join( ' › ' );
+        }
+        return 'All triggers';
+    }
+
+    /**
+     * Opens the right-click menu of a trigger row or folder from its more button.
+     *
+     * @param event The click on the button.
+     */
+    public openRowMenu( event: MouseEvent ): void {
+        event.stopPropagation();
+        let button = event.currentTarget as HTMLElement;
+        let rect = button.getBoundingClientRect();
+        button.closest( 'tr, mat-tree-node' )?.dispatchEvent( new MouseEvent( 'contextmenu', { clientX: rect.right, clientY: rect.bottom, bubbles: true, cancelable: true } ) );
+    }
+
+    /**
+     * Returns true when there are no triggers at all, so the list shows its first-run help.
+     */
+    public get hasNoTriggers(): boolean {
+        return this.triggers.length === 0 && !this.searchTerm;
+    }
+
     /**
      * Opens the trigger library window.
      */

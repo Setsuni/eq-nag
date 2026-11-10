@@ -8,11 +8,31 @@
     <button mat-icon-button *ngIf="healthCount > 0" class="health-button" (click)="openHealth.emit()" [matTooltip]="healthCount + ( healthCount === 1 ? ' trigger health finding' : ' trigger health findings' )" matTooltipPosition="below" aria-label="Show trigger health">
         <mat-icon class="material-icons-outlined color-orange" [matBadge]="healthCount" matBadgeSize="small" matBadgeColor="warn">health_and_safety</mat-icon>
     </button>
-    <button mat-button class="color-blue" (click)="openTriggerLibrary()"><mat-icon class="material-icons">local_library</mat-icon> Trigger Library</button>
-    <button mat-button color="accent" (click)="showNewTriggerDialog()">New Trigger</button>
-    <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="Example icon-button with a menu">
+    <button mat-stroked-button [matMenuTriggerFor]="importMenu"><mat-icon class="material-icons-outlined">file_download</mat-icon> Import <mat-icon class="import-caret">arrow_drop_down</mat-icon></button>
+    <button mat-button color="accent" (click)="showNewTriggerDialog()"><mat-icon>add</mat-icon> New trigger</button>
+    <button mat-icon-button [matMenuTriggerFor]="menu" aria-label="More trigger tools" matTooltip="More tools" matTooltipPosition="below">
         <mat-icon>more_vert</mat-icon>
     </button>
+    <mat-menu #importMenu="matMenu" class="trigger-main-menu" xPosition="before">
+        <button mat-menu-item (click)="importFromFile()">
+            <mat-icon class="material-icons-outlined">insert_drive_file</mat-icon>
+            <span>From a file&hellip;</span>
+        </button>
+        <button mat-menu-item (click)="installMultiCode()">
+            <mat-icon class="material-icons-outlined">vpn_key</mat-icon>
+            <span>From a share code&hellip;</span>
+        </button>
+        <button mat-menu-item (click)="ginaImporter()">
+            <mat-icon class="material-icons-outlined">move_to_inbox</mat-icon>
+            <span>From GINA&hellip;</span>
+        </button>
+        <button mat-menu-item (click)="openTriggerLibrary()">
+            <mat-icon class="material-icons-outlined">local_library</mat-icon>
+            <span>From the Trigger Library</span>
+        </button>
+        <hr />
+        <div class="import-hint">Or drop a .nag file anywhere in this window.</div>
+    </mat-menu>
     <mat-menu #autoGenMenu="matMenu" class="trigger-main-menu sub-menu">
         <h3 class="color-blue">Trigger Generators</h3>
         <h2>EQ Spell Resources</h2>
@@ -55,20 +75,6 @@
             <!-- <mat-icon>system_update_alt</mat-icon> -->
             <span>Death Recap</span>
         </button>
-        <hr />
-        <button mat-menu-item (click)="installMultiCode()">
-            <!-- <mat-icon>system_update_alt</mat-icon> -->
-            <span>Enter a share code</span>
-        </button>
-        <hr />
-        <button mat-menu-item (click)="importFromFile()">
-            <span>Import from File&hellip;</span>
-        </button>
-        <hr />
-        <button mat-menu-item (click)="ginaImporter()">
-            <!-- <mat-icon>system_update_alt</mat-icon> -->
-            <span>Import from GINA</span>
-        </button>
         <!-- <button mat-menu-item disabled>
             <mat-icon>voicemail</mat-icon>
             <span>Check voice mail</span>
@@ -99,7 +105,7 @@
 
                 <!-- This is the instructions on how to add folders if the user has no folders. -->
                 <div class="instructions" *ngIf="dataSource.data?.length === 0">
-                    <span>You have no trigger folders. Click on the <mat-icon [inline]="true">create_new_folder</mat-icon> to start adding folders.</span>
+                    <span><b>No folders yet.</b> Triggers live in folders. Click <mat-icon [inline]="true">create_new_folder</mat-icon> above to make one.</span>
                 </div>
                 <cdk-virtual-scroll-viewport tvsItemSize itemSize="27" class="wrapper mat-elevation-z2" style="height: 100%">
                     <mat-tree [dataSource]="dataSource" [treeControl]="treeControl">
@@ -110,9 +116,7 @@
                                 <span style="display:inline-block;width:18px;">&nbsp;</span>
                             </button>
                             <span class="spacer tree-click-target" (click)="toggleSelectedFolder(node.folderId)">{{node.name}}</span>
-                            <!-- <button mat-icon-button color="warn" class="small delete-button"><mat-icon [inline]="true">cancel</mat-icon></button> -->
-                            <!-- class="material-icons-outlined" -->
-                            <button mat-icon-button class="small" (click)="selectParentFolder(node.folderId)"><mat-icon [inline]="true">sort</mat-icon></button>
+                            <ng-container *ngTemplateOutlet="folderTools; context: { node: node }"></ng-container>
                         </mat-tree-node>
 
                         <!-- This is the tree node template for expandable nodes -->
@@ -123,11 +127,22 @@
                                 </mat-icon>
                             </button>
                             <span class="spacer tree-click-target" (click)="toggleSelectedFolder(node.folderId)">{{node.name}}</span>
-                            <!-- <button mat-icon-button color="warn" class="small delete-button"><mat-icon [inline]="true">cancel</mat-icon></button> -->
-                            <button mat-icon-button class="small" (click)="selectParentFolder(node.folderId)"><mat-icon [inline]="true">sort</mat-icon></button>
+                            <ng-container *ngTemplateOutlet="folderTools; context: { node: node }"></ng-container>
                         </mat-tree-node>
                     </mat-tree>
                 </cdk-virtual-scroll-viewport>
+
+                <ng-template #folderTools let-node="node">
+                    <span class="chip warn folder-chip" *ngIf="getFolderHealthTip(node.folderId)" [matTooltip]="getFolderHealthTip(node.folderId)" matTooltipClass="health-tip" (click)="openHealth.emit()">!</span>
+                    <span class="folder-count" *ngIf="getFolderTriggerCount(node.folderId) > 0" [matTooltip]="getFolderTriggerCount(node.folderId) + ' triggers, including sub-folders'">{{getFolderTriggerCount(node.folderId)}}</span>
+                    <button type="button" class="sw" role="switch" *ngIf="getFolderTriggerCount(node.folderId) > 0"
+                        [class.on]="isFolderOn(node.folderId)" [class.mixed]="isFolderMixed(node.folderId)" [attr.aria-checked]="isFolderMixed(node.folderId) ? 'mixed' : isFolderOn(node.folderId)"
+                        [attr.aria-label]="'Turn all triggers in ' + node.name + ' on or off'"
+                        [matTooltip]="isFolderMixed(node.folderId) ? 'Some triggers are off. Click to turn them all off.' : isFolderOn(node.folderId) ? 'On. Click to turn off every trigger in this folder.' : 'Off. Click to turn on every trigger in this folder.'"
+                        (click)="toggleFolderEnabled(node.folderId)"><i></i></button>
+                    <span *ngIf="getFolderTriggerCount(node.folderId) === 0" class="sw-spacer"></span>
+                    <button mat-icon-button class="small more-button" [attr.aria-label]="'Folder menu for ' + node.name" matTooltip="Folder menu" (click)="openRowMenu($event)"><mat-icon [inline]="true">more_vert</mat-icon></button>
+                </ng-template>
             </div>
 
         </div>
@@ -137,51 +152,75 @@
 
         <div class="ft-item" style="margin: 3px; flex: 1 1 0; min-width: 300px;" #triggerPane>
             <div class="ft-content">
-                <cdk-virtual-scroll-viewport tvsItemSize itemSize="27" class="wrapper mat-elevation-z2" style="height: 100%" #triggerScroller>
+                <div class="list-empty" *ngIf="filteredTriggers?.length === 0">
+                    <ng-container *ngIf="hasNoTriggers; else noMatches">
+                        <b>No triggers yet</b>
+                        <span>A trigger watches your log for a line and then shows text, speaks, or starts a timer.</span>
+                        <span class="list-empty-actions">
+                            <button mat-button color="accent" (click)="showNewTriggerDialog()"><mat-icon>add</mat-icon> New trigger</button>
+                            <button mat-stroked-button [matMenuTriggerFor]="importMenu"><mat-icon class="material-icons-outlined">file_download</mat-icon> Import <mat-icon class="import-caret">arrow_drop_down</mat-icon></button>
+                        </span>
+                        <span class="list-empty-tip">Tip: drop a .nag file anywhere in this window.</span>
+                    </ng-container>
+                    <ng-template #noMatches>
+                        <b *ngIf="searchTerm">No triggers match your search</b>
+                        <b *ngIf="!searchTerm">No triggers in this folder yet</b>
+                        <span class="list-empty-actions" *ngIf="!searchTerm">
+                            <button mat-button color="accent" (click)="showNewTriggerDialog()"><mat-icon>add</mat-icon> New trigger</button>
+                        </span>
+                    </ng-template>
+                </div>
+                <cdk-virtual-scroll-viewport tvsItemSize itemSize="52" class="wrapper mat-elevation-z2" style="height: 100%" #triggerScroller [style.display]="filteredTriggers?.length === 0 ? 'none' : null">
                     <table mat-table #triggersTable="matTable" style="width: 100%; min-width: 600px;" 
                         [dataSource]="dataSourceTest"
                         class="capture-phrases">
     
                         <ng-container matColumnDef="enabled">
-                            <th mat-header-cell *matHeaderCellDef style="text-align: center; width: 50px;">  </th>
-                            <td mat-cell *matCellDef="let element; let i = index" style="text-align: center; width: 50px;">
-                                <!-- <mat-slide-toggle color="default" [(ngModel)]="element.enabled"></mat-slide-toggle> -->
-                                <!-- <mat-checkbox color="warn"></mat-checkbox> -->
-                                <button mat-icon-button color="warn" *ngIf="!element.enabled" (click)="toggleEnabled(element)" style="opacity: 0.75;"><mat-icon>disabled_by_default</mat-icon></button>
-                                <button mat-icon-button color="accent" *ngIf="element.enabled" (click)="toggleEnabled(element)" style="opacity: 0.75;"><mat-icon class="material-icons-outlined">check_box</mat-icon></button>
+                            <th mat-header-cell *matHeaderCellDef class="col-switch">On</th>
+                            <td mat-cell *matCellDef="let element; let i = index" class="col-switch">
+                                <button type="button" class="sw" role="switch" [class.on]="element.enabled" [attr.aria-checked]="element.enabled" [attr.aria-label]="'Turn ' + element.name + ' on or off'" (click)="toggleEnabled(element)"><i></i></button>
                             </td>
                         </ng-container>
-    
-                        <ng-container matColumnDef="edit">
-                            <th mat-header-cell *matHeaderCellDef style="text-align: center; width: 50px;">  </th>
-                            <td mat-cell *matCellDef="let element; let i = index" style="text-align: center; width: 50px;">
-                                <button mat-button color="accent" aria-label="Edit this trigger" (click)="showEditTriggerDialog(element.triggerId)">Edit</button>
-                                <!-- <button mat-icon-button><mat-icon>more_vert</mat-icon></button> -->
-                            </td>
-                        </ng-container>
-    
-                        <ng-container matColumnDef="id">
-                            <th mat-header-cell *matHeaderCellDef style="width: 100px; padding-left: 15px;"> Id </th>
-                            <td mat-cell *matCellDef="let element; let i = index" style="width: 100px; padding-left: 15px;"> {{element.triggerId}} </td>
-                        </ng-container>
-    
+
                         <ng-container matColumnDef="name">
-                            <th mat-header-cell *matHeaderCellDef style="padding-left: 15px;"> Name <span style="float:right;" *ngIf="filteredTriggers?.length > 0"><span style="font-weight: 400;">Count:</span> {{filteredTriggers?.length}}</span></th>
-                            <td mat-cell *matCellDef="let element; let i = index" style="padding-left: 15px;">{{element.name}} <span class="text-depress" style="float: right;">{{getTriggerFamily(element)}}</span></td>
-                        </ng-container>
-    
-                        <ng-container matColumnDef="delete">
-                            <th mat-header-cell *matHeaderCellDef style="text-align: center; width: 50px; padding-left: 15px;">  </th>
-                            <td mat-cell *matCellDef="let element; let i = index" style="text-align: center; width: 50px; padding-left: 15px;">
-                                <button mat-icon-button color="warn" aria-label="Delete this trigger" (click)="deleteTrigger(element.triggerId)">
-                                    <mat-icon>clear</mat-icon>
-                                </button>
+                            <th mat-header-cell *matHeaderCellDef class="col-name">{{listTitle}} <span class="text-depress" *ngIf="filteredTriggers?.length > 0">&middot; {{filteredTriggers.length}} {{filteredTriggers.length === 1 ? 'trigger' : 'triggers'}}</span></th>
+                            <td mat-cell *matCellDef="let element; let i = index" class="col-name">
+                                <div class="trig-line">
+                                    <button type="button" class="trig-link" [class.off]="!element.enabled" (click)="showEditTriggerDialog(element.triggerId)" matTooltip="Click to edit" matTooltipShowDelay="600" [attr.aria-label]="'Edit ' + element.name">{{element.name}}</button>
+                                    <button type="button" class="trig-path" *ngIf="searchTerm && element.folderId; else family" (click)="toggleSelectedFolder(element.folderId)" matTooltip="Show this folder" matTooltipShowDelay="600">{{getSearchResultPath(element)}}</button>
+                                    <ng-template #family><span class="text-depress trig-family">{{getTriggerFamily(element)}}</span></ng-template>
+                                </div>
+                                <div class="trig-sum" *ngIf="getTriggerSummary(element) as sum">
+                                    <ng-container [ngSwitch]="sum.whenKind">
+                                        <ng-container *ngSwitchCase="'phrase'">When <b class="when-text">&ldquo;{{sum.when}}&rdquo;</b></ng-container>
+                                        <ng-container *ngSwitchCase="'pattern'">When pattern <span class="mono when-text">{{sum.when}}</span></ng-container>
+                                        <ng-container *ngSwitchCase="'many'">When <b>{{sum.when}}</b></ng-container>
+                                        <ng-container *ngSwitchDefault>No phrase yet</ng-container>
+                                    </ng-container>
+                                    <span class="arrow">&rarr;</span><span class="then-text">{{sum.then}}</span>
+                                </div>
                             </td>
                         </ng-container>
-    
-                        <tr mat-header-row *matHeaderRowDef="['enabled', 'edit', 'name', 'delete']; sticky: true"></tr>
-                        <tr mat-row *matRowDef="let element; let i = index; columns: ['enabled', 'edit', 'name', 'delete'];" [appContextMenu]="getTriggerContextMenu(element, i)"></tr>
-    
+
+                        <ng-container matColumnDef="status">
+                            <th mat-header-cell *matHeaderCellDef class="col-status"></th>
+                            <td mat-cell *matCellDef="let element; let i = index" class="col-status">
+                                <span class="chip off" *ngIf="!element.enabled">off</span>
+                                <span class="chip pkg" *ngIf="element.packageId" matTooltip="Part of an imported package">package</span>
+                                <span class="chip warn" *ngIf="getTriggerHealthTip(element)" [matTooltip]="getTriggerHealthTip(element)" matTooltipClass="health-tip" (click)="openHealth.emit()">{{triggerNeedsLook(element) ? 'needs a look' : 'health note'}}</span>
+                            </td>
+                        </ng-container>
+
+                        <ng-container matColumnDef="more">
+                            <th mat-header-cell *matHeaderCellDef class="col-more"></th>
+                            <td mat-cell *matCellDef="let element; let i = index" class="col-more">
+                                <button mat-icon-button class="more-button" [attr.aria-label]="'Menu for ' + element.name" matTooltip="Edit, copy, share, delete" (click)="openRowMenu($event)"><mat-icon>more_vert</mat-icon></button>
+                            </td>
+                        </ng-container>
+
+                        <tr mat-header-row *matHeaderRowDef="['enabled', 'name', 'status', 'more']; sticky: true"></tr>
+                        <tr mat-row *matRowDef="let element; let i = index; columns: ['enabled', 'name', 'status', 'more'];" [appContextMenu]="getTriggerContextMenu(element, i)"></tr>
+
                     </table>
                 </cdk-virtual-scroll-viewport>
             </div>

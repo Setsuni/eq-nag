@@ -520,12 +520,18 @@ class TriggerDatabaseStore extends Store {
         } );
 
         ipcMain.on( 'trigger:update', ( event, trigger ) => {
+            delete trigger?.score;
+            delete trigger?.refIndex;
             let updated = this.update( trigger );
             event.sender.send( 'trigger:update', updated );
             sendTick();
         } );
 
         ipcMain.on( 'trigger:update:batch', ( event, triggers ) => {
+            triggers?.forEach( trigger => {
+                delete trigger?.score;
+                delete trigger?.refIndex;
+            } );
             let failed = this.updateAll( triggers );
             event.sender.send( 'trigger:update:batch', failed );
             sendTick();
@@ -1247,18 +1253,13 @@ class TriggerDatabaseStore extends Store {
                 scoreLimit = 0.50;
             }
 
-            return _.map( results, fuseResult => {
-                let item = fuseResult.item;
-                item.score = fuseResult.score;
-                item.refIndex = fuseResult.refIndex;
-                return item;
-            } ).filter( item => {
+            return results.filter( fuseResult => {
                 if ( folderIds == null || folderIds.length == 0 ) {
-                    return item.score <= scoreLimit;
+                    return fuseResult.score <= scoreLimit;
                 } else {
-                    return folderIds.indexOf( item.folderId ) > -1 && item.score <= scoreLimit;
+                    return folderIds.indexOf( fuseResult.item.folderId ) > -1 && fuseResult.score <= scoreLimit;
                 }
-            } );
+            } ).map( fuseResult => fuseResult.item );
 
         } else {
             return [];
