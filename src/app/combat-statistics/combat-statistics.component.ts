@@ -228,7 +228,7 @@ export class CombatStatisticsComponent implements OnInit, AfterViewChecked {
             let character = this.characterOptions.find( x => x.characterId === this._combatCharacterId );
             return character ? character.server : 'Unknown';
         } else {
-            return 'Auto';
+            return '';
         }
     }
 
