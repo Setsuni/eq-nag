@@ -106,12 +106,14 @@ const readChunk = ( logFile, fileStats, startPos ) => {
  */
 const writeChunk = ( archive, logArchivePath ) => {
 
-    let p = new Promise( resolve => {
+    let p = new Promise( ( resolve, reject ) => {
 
         archive.writeZip( logArchivePath, error => {
     
             if ( error ) {
                 log.error( error );
+                reject( error );
+                return;
     
             }
         
@@ -172,7 +174,7 @@ const updateProgressLabel = ( label ) => {
  * @param {string} everquestInstallFolder The everquest installation folder.
  * @param {number} backupIndex The index of this backup event in the history.
  */
-const backup = async ( logFilePaths, everquestInstallFolder, backupIndex ) => {
+const runBackup = async ( logFilePaths, everquestInstallFolder, backupIndex ) => {
 
     const logArchivePath = path.join( everquestInstallFolder, 'Logs', 'LogArchive.zip' );
     const archiveExists = fs.existsSync( logArchivePath );
@@ -184,10 +186,14 @@ const backup = async ( logFilePaths, everquestInstallFolder, backupIndex ) => {
     let logFilesMeta = [];
 
     for ( let li = 0; li < logFilePaths.length; li++ ) {
-        logFilesMeta.push( {
-            logFile: logFilePaths[ li ],
-            stats: await fsp.stat( logFilePaths[ li ] )
-        } );
+        // A file that no longer exists was already archived, skip it instead of aborting the batch.
+        const stats = await FsUtilities.statOrNull( logFilePaths[ li ] );
+        if ( stats ) {
+            logFilesMeta.push( {
+                logFile: logFilePaths[ li ],
+                stats: stats
+            } );
+        }
     }
 
     // Count the number of write operations.
@@ -250,10 +256,10 @@ const backup = async ( logFilePaths, everquestInstallFolder, backupIndex ) => {
 
     log.info( 'LogBackup > Backup done, beginning cleanup.' );
 
-    processedFiles.forEach( async logFile => {
-        log.info( `LogBackup > Deleting file ${logFile}` );
-        await fsp.rm( logFile );
-    } );
+    for ( let i = 0; i < processedFiles.length; i++ ) {
+        log.info( `LogBackup > Deleting file ${processedFiles[ i ]}` );
+        await fsp.rm( processedFiles[ i ], { force: true } );
+    }
 
     log.info( 'LogBackup > Clean up done.' );
 
@@ -278,7 +284,7 @@ const backup = async ( logFilePaths, everquestInstallFolder, backupIndex ) => {
  * @param {number[]} daysOfWeek The days of the week for scheduled backups.
  * @param {number} backupIndex The index of this backup event in the history.
  */
-const backupBySchedule = async ( logFilePaths, everquestInstallFolder, daysOfWeek, backupIndex ) => {
+const runBackupBySchedule = async ( logFilePaths, everquestInstallFolder, daysOfWeek, backupIndex, state ) => {
 
     if ( !fs.existsSync( everquestInstallFolder ) ) {
         logCriticalFailure( new Error( `The EverQuest installation folder does not exist: ${everquestInstallFolder}` ), 'A critical error has occured during the archive process. Unable to execute archive.' );
@@ -293,6 +299,7 @@ const backupBySchedule = async ( logFilePaths, everquestInstallFolder, daysOfWee
     if ( !fs.existsSync( logArchiveProcDir ) ) {
         await fsp.mkdir( logArchiveProcDir );
     }
+    state.procDir = logArchiveProcDir;
 
     /** @type {string[]} */
     let archiveFileSources = [];
@@ -301,7 +308,12 @@ const backupBySchedule = async ( logFilePaths, everquestInstallFolder, daysOfWee
 
         const logFile = logFilePaths[ lfi ];
         const fileName = FsUtilities.Path.getFilename( logFile );
-        const stats = await fsp.stat( logFile );
+        const stats = await FsUtilities.statOrNull( logFile );
+
+        // A file that no longer exists was already archived, skip it instead of aborting the batch.
+        if ( !stats ) {
+            continue;
+        }
 
         let max = Math.ceil( stats.size / maxArchiveFileSize );
         let pos = 0;
@@ -444,6 +456,15 @@ const backupBySchedule = async ( logFilePaths, everquestInstallFolder, daysOfWee
                 }
             } // Next line
 
+            // A log without any timestamped lines falls back to the file's date.
+            if ( logDate == null ) {
+                logDate = new Date( stats.mtime );
+                logDate.setHours( 0, 0, 0, 0 );
+                while ( daysOfWeek.indexOf( logDate.getDay() ) === -1 && daysOfWeek.length > 0 ) {
+                    logDate = DateUtilities.addDays( logDate, -1 );
+                }
+            }
+
             // We're done processing this chunk, let's flush what we have
             // before moving on to the next chunk.
             await streamData( FsUtilities.Path.prependFilename( fileName, `${logDate.getTime()}_` ), logLines, stats.size );
@@ -539,12 +560,11 @@ const backupBySchedule = async ( logFilePaths, everquestInstallFolder, daysOfWee
     log.info( 'LogBackup > Deleting archive source folder.' );
     await fsp.rmdir( logArchiveProcDir );
 
-    logFilePaths.forEach( async logFile => {
-        log.info( `LogBackup > Deleting file ${logFile}` );
-        // TODO: Enable file deletion.
-        // await fsp.unlink( logFile );
-        await fsp.rename( logFile, FsUtilities.Path.prependFilename( logFile, '-' + FsUtilities.getFileTimestamp() ) );
-    } );
+    // The data is in the archive now, so the rotated source files can go.
+    for ( let i = 0; i < logFilePaths.length; i++ ) {
+        log.info( `LogBackup > Deleting file ${logFilePaths[ i ]}` );
+        await fsp.rm( logFilePaths[ i ], { force: true } );
+    }
 
     log.info( 'LogBackup > Clean up done.' );
 
@@ -564,6 +584,31 @@ const backupBySchedule = async ( logFilePaths, everquestInstallFolder, daysOfWee
 
 
 
+
+/**
+ * Runs a backup operation, closing the window when it fails. The source files are kept on failure.
+ *
+ * @param {() => Promise<void>} run The backup operation.
+ * @param {{procDir?: string}} state The state shared with the operation, used to clean up the temporary folder.
+ */
+const runGuarded = async ( run, state ) => {
+    try {
+        await run();
+    } catch ( error ) {
+        logError( error );
+        if ( state.procDir ) {
+            await fsp.rm( state.procDir, { recursive: true, force: true } ).catch( () => { } );
+        }
+        ipcRenderer.send( 'window:child:close' );
+    }
+};
+
+const backup = ( logFilePaths, everquestInstallFolder, backupIndex ) => runGuarded( () => runBackup( logFilePaths, everquestInstallFolder, backupIndex ), {} );
+
+const backupBySchedule = ( logFilePaths, everquestInstallFolder, daysOfWeek, backupIndex ) => {
+    const state = {};
+    return runGuarded( () => runBackupBySchedule( logFilePaths, everquestInstallFolder, daysOfWeek, backupIndex, state ), state );
+};
 
 /**
  * Initializes the log watcher.

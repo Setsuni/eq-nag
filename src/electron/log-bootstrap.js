@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, screen } = require( "electron" );
 const fs = require('fs');
 const fsp = fs.promises;
+const path = require( 'path' );
 const CharacterDatabaseStore = require( './data/character-database' );
 const { CharacterModel } = require( './data/models/character' );
 const _ = require( 'lodash' );
@@ -75,6 +76,25 @@ let mainWinRef = undefined;
 
 /** @type {number} The duration to wait between checking for activity on a log file. */
 const checkInterval = 5 * 1000;
+const maxBackupRetryInterval = 5 * 60 * 1000;
+
+/**
+ * Returns true if the given file name is a rotated copy of the given log file name, in the current or the legacy naming.
+ * 
+ * @param {string} fileName The file name to test.
+ * @param {string} logFileName The watched log file name.
+ */
+const isRotatedLogName = ( fileName, logFileName ) => {
+    const match = /^archive_(?:\d+_)?(.+)$/.exec( fileName );
+    return match != null && match[ 1 ] === logFileName;
+};
+
+/**
+ * Returns a unique path for the rotated copy of the given log file, so a rotation never overwrites an archive file that is still waiting to be zipped.
+ * 
+ * @param {string} logFile The log file path.
+ */
+const getArchiveFilePath = logFile => FsUtilities.Path.prependFilename( logFile, `${ArchiveFilePrefix}${Date.now()}_` );
 
 /** @type {number} The duration to wait for no log file updates before closing the log file watcher. */
 const killTime = 5 * 60 * 1000;
@@ -93,6 +113,9 @@ class LogBootstrapper {
 
     /** @type {BrowserWindow} */
     #logBackupWindow = null;
+
+    /** @type {Set<string>} The files being archived by the open backup window. */
+    #archiveInFlight = new Set();
 
     /** @type {boolean} */
     #isDev = false;
@@ -305,10 +328,10 @@ class LogBootstrapper {
                 let _chr = characterDatabase.find( data.characterId );
 
                 if ( _chr && logWatchers[ _chr.characterId ].window == null ) {
-                    let _stats = fs.existsSync( _chr.logFile ) ? fs.statSync( _chr.logFile ) : null;
+                    let _stats = FsUtilities.statOrNullSync( _chr.logFile );
 
                     // If the window has not been engaged, then open it. // TODO: Start up a log watcher when simulating. Even allow a charcter to be selected from a list.
-                    logWatchers[ _chr.characterId ].window = startLogWatcherWindow( _chr.logFile, isDev, sendTick, _chr, logWatchers[ _chr.characterId ].logSize > _stats.size ? 0 : logWatchers[ _chr.characterId ].logSize );
+                    logWatchers[ _chr.characterId ].window = startLogWatcherWindow( _chr.logFile, isDev, sendTick, _chr, logWatchers[ _chr.characterId ].logSize > ( _stats?.size ?? 0 ) ? 0 : logWatchers[ _chr.characterId ].logSize );
             
                     // Notify the main window.
                     mainWindowRef.reference.webContents.send( 'log:character:activated', _chr.characterId );
@@ -344,10 +367,10 @@ class LogBootstrapper {
                 let characters = characterDatabase.getAll();
                 let _chr = characters[ 0 ];
                 if ( logWatchers[ _chr.characterId ].window == null ) {
-                    let _stats = fs.existsSync( _chr.logFile ) ? fs.statSync( _chr.logFile ) : null;
+                    let _stats = FsUtilities.statOrNullSync( _chr.logFile );
 
                     // If the window has not been engaged, then open it. // TODO: Start up a log watcher when simulating. Even allow a charcter to be selected from a list.
-                    logWatchers[ _chr.characterId ].window = startLogWatcherWindow( _chr.logFile, isDev, sendTick, _chr, logWatchers[ _chr.characterId ].logSize > _stats.size ? 0 : logWatchers[ _chr.characterId ].logSize );
+                    logWatchers[ _chr.characterId ].window = startLogWatcherWindow( _chr.logFile, isDev, sendTick, _chr, logWatchers[ _chr.characterId ].logSize > ( _stats?.size ?? 0 ) ? 0 : logWatchers[ _chr.characterId ].logSize );
                 
                     // Notify the main window.
                     mainWindowRef.reference.webContents.send( 'log:character:activated', _chr.characterId );
@@ -474,7 +497,7 @@ class LogBootstrapper {
             async ( event, characterId ) => {
                 const character = characterDatabase.find( characterId );
                 if ( character ) {
-                    let _stats = await FsUtilities.existsAsync( character.logFile ) ? await fsp.stat( character.logFile ) : null;
+                    let _stats = await FsUtilities.statOrNull( character.logFile );
                     if ( _stats == null ) {
                         appLogException( new Error( `Log file not found: ${character.logFile}` ), true );
                         return;
@@ -563,6 +586,48 @@ class LogBootstrapper {
 
 
     /**
+     * Returns true if the given file is waiting for, or being processed by, an archive.
+     *
+     * @param {string} logFile The full path to the log file.
+     */
+    #isQueuedForArchive( logFile ) {
+        return this.#archiveInFlight.has( logFile ) || this.#filesForArchive.some( f => f.logFile === logFile );
+    }
+
+    /**
+     * Queues rotated log files that a previous run left behind before they were archived.
+     * Only files named exactly like a rotation of this character's log file are touched.
+     * 
+     * @param {CharacterModel} chr The character to check.
+     */
+    async #queueLeftoverRotatedLogs( chr ) {
+        try {
+            const rules = this.#userPreferences.logMaintenanceRules;
+            if ( rules?.enableLogFileMaintenance !== true || !( this.#userPreferences.everquestInstallFolder?.length > 0 ) || !chr?.logFile ) {
+                return;
+            }
+
+            const dir = path.dirname( chr.logFile );
+            const logFileName = path.basename( chr.logFile );
+            const names = await fsp.readdir( dir );
+            for ( const name of names ) {
+                const fullPath = path.join( dir, name );
+                if ( isRotatedLogName( name, logFileName ) && !this.#isQueuedForArchive( fullPath ) ) {
+                    const stats = await FsUtilities.statOrNull( fullPath );
+
+                    // Check again right before adding, another watcher may have queued it while waiting for the stats.
+                    if ( stats?.isFile() && !this.#isQueuedForArchive( fullPath ) ) {
+                        log.info( `LogBootstrap > Queueing leftover rotated log for archive: ${fullPath}` );
+                        this.#addToArchive( fullPath, stats.size );
+                    }
+                }
+            }
+        } catch ( error ) {
+            log.error( 'LogBootstrap > Could not check for leftover rotated logs.', error );
+        }
+    }
+
+    /**
      * Adds the given log file to the backup list and checks if backups can start.
      * 
      * @param {string} logFile The full path to the log file.
@@ -599,7 +664,9 @@ class LogBootstrapper {
 
         if ( this.#logBackupWindow == null ) {
 
-            this.#logBackupWindow = startLogBackup( this.#filesForArchive.map( f => f.logFile ), this.#userPreferences.everquestInstallFolder, this.#isDev, null, this.#userPreferences.logMaintenanceHistory?.length ?? 0 );
+            const archiveFiles = this.#filesForArchive.map( f => f.logFile );
+            this.#logBackupWindow = startLogBackup( archiveFiles, this.#userPreferences.everquestInstallFolder, this.#isDev, null, this.#userPreferences.logMaintenanceHistory?.length ?? 0 );
+            archiveFiles.forEach( f => this.#archiveInFlight.add( f ) );
 
             // Reset the archive files.
             this.#filesForArchive = [];
@@ -607,6 +674,7 @@ class LogBootstrapper {
             this.#logBackupWindow.on( 'closed', () => {
                 this.#userPreferences.addLogMaintenanceHistory( new Date(), 'Backup by Size', true );
                 this.#logBackupWindow = null;
+                archiveFiles.forEach( f => this.#archiveInFlight.delete( f ) );
             } );
 
         } else if ( this.#filesForArchive?.length > 0 ) {
@@ -652,7 +720,7 @@ class LogBootstrapper {
                     
                             logWatchers[ characterId ].window?.webContents.send( 'log:backup-started' );
                             // First, let's rename the log file with the archive prefix.
-                            const logFilePath = FsUtilities.Path.prependFilename( logWatchers[ characterId ].logFile, ArchiveFilePrefix );
+                            const logFilePath = getArchiveFilePath( logWatchers[ characterId ].logFile );
                             await fsp.rename( logWatchers[ characterId ].logFile, logFilePath );
                             await fsp.writeFile( logWatchers[ characterId ].logFile, '' );
                 
@@ -687,10 +755,12 @@ class LogBootstrapper {
 
                 // Reset the archive files.
                 this.#filesForArchive = [];
+                logFiles.forEach( f => this.#archiveInFlight.add( f ) );
         
                 this.#logBackupWindow.on( 'closed', () => {
                     ipcMain.removeAllListeners( 'log:backup:critical-failure' );
                     this.#logBackupWindow = null;
+                    logFiles.forEach( f => this.#archiveInFlight.delete( f ) );
                     resolve();
                 } );
         
@@ -737,6 +807,7 @@ class LogBootstrapper {
      */
     async startWatcher( mainWindowRef, chr, isDev, characterDatabase, sendTick ) {
         let characterId = chr.characterId;
+        await this.#queueLeftoverRotatedLogs( chr );
         let startingStats = await FsUtilities.existsAsync( chr.logFile ) ? await fsp.stat( chr.logFile ) : null;
         logWatchers[ characterId ] = {
             /** @type {BrowserWindow} */
@@ -753,8 +824,16 @@ class LogBootstrapper {
             }
         };
 
+        let backupFailures = 0;
+
         const waitForLogFile = async () => {
-            if ( await FsUtilities.existsAsync( chr.logFile ) ) {
+            const current = characterDatabase.find( characterId );
+            if ( !current ) {
+                // The character was removed while waiting.
+                return;
+            }
+
+            if ( await FsUtilities.existsAsync( current.logFile ) ) {
                 // Log file's back, let's start watching again.
                 logWatchers[ characterId ].intervalId = setInterval( () => checkFn().then( () => { } ), checkInterval );
                 
@@ -769,20 +848,44 @@ class LogBootstrapper {
          * @param {number} fileSize The file size.
          */
         const backupFn = async ( fileSize ) => {
-            log.info( `LogBootstrap > Initializing backup for: ${chr.logFile} by size.` );
+            const current = characterDatabase.find( characterId );
+            if ( !current ) {
+                return;
+            }
+
+            log.info( `LogBootstrap > Initializing backup for: ${current.logFile} by size.` );
 
             if ( logWatchers[ characterId ].window ) {
                 logWatchers[ characterId ].window.webContents.send( 'log:backup-started' );
             }
             // First, let's rename the log file with a timestamp.
-            const logFilePath = FsUtilities.Path.prependFilename( chr.logFile, ArchiveFilePrefix );
-            await fsp.rename( chr.logFile, logFilePath );
-            await fsp.writeFile( chr.logFile, '' );
-            
-            log.info( `LogBootstrap > Log file renamed to: ${logFilePath}` );
-            logWatchers[ characterId ].logSize = 0;
+            const logFilePath = getArchiveFilePath( current.logFile );
+            let renamed = false;
+            try {
+                await fsp.rename( current.logFile, logFilePath );
+                renamed = true;
+                log.info( `LogBootstrap > Log file renamed to: ${logFilePath}` );
 
-            this.#addToArchive( logFilePath, fileSize );
+                // Queue the archive as soon as the rename succeeded, whatever happens next.
+                this.#addToArchive( logFilePath, fileSize );
+
+                await fsp.writeFile( current.logFile, '' );
+            } catch ( error ) {
+                // Log the first failure only, and retry less often while it keeps failing.
+                if ( backupFailures === 0 ) {
+                    log.error( `LogBootstrap > Log file backup failed for: ${current.logFile}`, error );
+                }
+                const delay = Math.min( checkInterval * Math.pow( 2, backupFailures ), maxBackupRetryInterval );
+                backupFailures++;
+                if ( renamed ) {
+                    logWatchers[ characterId ].logSize = 0;
+                }
+                setTimeout( () => waitForLogFile().then( () => { } ), delay );
+                return;
+            }
+
+            backupFailures = 0;
+            logWatchers[ characterId ].logSize = 0;
             
             waitForLogFile().then( () => { } );
         }
@@ -791,7 +894,13 @@ class LogBootstrapper {
 
             // Ensure we have the latest information.
             let _chr = characterDatabase.find( characterId );
-            let _stats = await FsUtilities.existsAsync( chr.logFile ) ? await fsp.stat( _chr.logFile ) : null;
+            if ( !_chr ) {
+                // The character was removed, there is nothing left to watch.
+                clearInterval( logWatchers[ characterId ]?.intervalId );
+                return;
+            }
+
+            let _stats = await FsUtilities.statOrNull( _chr.logFile );
             
             if ( _chr.logFile !== logWatchers[ characterId ].logFile ) {
 
@@ -857,6 +966,8 @@ class LogBootstrapper {
                 // Execute the backup function.
                 backupFn( _stats.size );
 
+            } else {
+                backupFailures = 0;
             }
             
             logWatchers[ characterId ].model = _chr;
@@ -1180,6 +1291,13 @@ function startLogBackup( logFiles, everquestInstallFolder, isDev, daysOfWeek, ba
     if ( isDev ) {
         logBackupWindow.webContents.openDevTools( { mode: 'undocked' } );
     }
+    // If the renderer crashes the window never closes by itself, which would block every later archive.
+    logBackupWindow.webContents.on( 'render-process-gone', () => {
+        if ( !logBackupWindow.isDestroyed() ) {
+            logBackupWindow.destroy();
+        }
+    } );
+
     logBackupWindow.loadURL( `file://${__dirname}/threads/log-backup.html?logFiles=${encodeURI(JSON.stringify(logFiles))}&eqFolder=${encodeURI(everquestInstallFolder)}&daysOfWeek=${encodeURI(JSON.stringify(daysOfWeek ?? []))}&i=${backupIndex}` );
 
     return logBackupWindow;

@@ -1,4 +1,5 @@
 const fs = require( 'fs' );
+const nodePath = require( 'path' );
 
 /**
  * Combines the given path segments into a system file path.
@@ -65,20 +66,14 @@ function pathGetFilename( filePath ) {
  * @param {string} filePath The full or filename of the file.
  */
 function pathAppendFilename( filePath, suffix ) {
-
-    // Matches the full path, ex: C:\EverQuest\Logs\filename.ext
-    const matches = /^.*\\(.+\\)*(.+)\.(.+)$/.exec( filePath );
-    if ( matches ) {
-        return filePath.replace( matches[ 2 ], matches[ 2 ] + suffix );
-    }
-    
-    // Matches the filename only, ex: filename.ext
-    const exactFilename = /^(.+)\.(.+)$/.exec( filePath );
-    if ( exactFilename ) {
-        return filePath.replace( exactFilename[ 1 ], exactFilename[ 1 ] + suffix );
+    const fileName = nodePath.basename( filePath );
+    if ( !/^.+\..+$/.test( fileName ) ) {
+        throw 'Invalid file path given';
     }
 
-    throw 'Invalid file path given';
+    const extension = nodePath.extname( fileName );
+    const stem = fileName.slice( 0, fileName.length - extension.length );
+    return nodePath.join( nodePath.dirname( filePath ), stem + suffix + extension );
 }
 
 /**
@@ -87,17 +82,12 @@ function pathAppendFilename( filePath, suffix ) {
  * @param {string} filePath The full or filename of the file.
  */
 function pathPrependFilename( filePath, prefix ) {
-    const matches = /^.*\\(.+\\)*(.+)\.(.+)$/.exec( filePath );
-    if ( matches ) {
-        return filePath.replace( matches[ 2 ], prefix + matches[ 2 ] );
-    }
-    
-    const exactFilename = /^(.+)\.(.+)$/.exec( filePath );
-    if ( exactFilename ) {
-        return filePath.replace( exactFilename[ 1 ], prefix + exactFilename[ 1 ] );
+    const fileName = nodePath.basename( filePath );
+    if ( !/^.+\..+$/.test( fileName ) ) {
+        throw 'Invalid file path given';
     }
 
-    throw 'Invalid file path given';
+    return nodePath.join( nodePath.dirname( filePath ), prefix + fileName );
 }
 
 /**
@@ -142,6 +132,34 @@ function getFileTimestamp( time, version ) {
     }
 }
 
+/**
+ * Returns the stats for the given file, or null if the file does not exist.
+ * 
+ * @param {string} filePath The file path.
+ * @returns {fs.Stats | null}
+ */
+function statOrNullSync( filePath ) {
+    try {
+        return fs.statSync( filePath );
+    } catch ( error ) {
+        return null;
+    }
+}
+
+/**
+ * Returns the stats for the given file, or null if the file does not exist.
+ * 
+ * @param {string} filePath The file path.
+ * @returns {Promise<fs.Stats | null>}
+ */
+async function statOrNull( filePath ) {
+    try {
+        return await fs.promises.stat( filePath );
+    } catch ( error ) {
+        return null;
+    }
+}
+
 const Path = {
     combine: pathCombine,
     appendFilename: pathAppendFilename,
@@ -153,6 +171,8 @@ const FsUtilities = {
     Path: Path,
     getFileTimestamp: getFileTimestamp,
     existsAsync: exists,
+    statOrNull: statOrNull,
+    statOrNullSync: statOrNullSync,
 };
 
 module.exports = FsUtilities;
