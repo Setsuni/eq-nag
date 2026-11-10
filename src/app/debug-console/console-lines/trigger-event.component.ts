@@ -14,6 +14,7 @@ export class ConsoleTriggerEventComponent implements OnInit {
     @Input( 'item' ) public item: TriggerParseHistoryModel;
     @Output( 'showTriggerHistory' ) public showTriggerHistory: EventEmitter<{ triggerId: string, triggerName: string }> = new EventEmitter<{ triggerId: string, triggerName: string }>();
     public logTypes: typeof LogTypes = LogTypes;
+    @Input( 'developer' ) public developer: boolean = true;
     public expanded: boolean = false;
     
     constructor(

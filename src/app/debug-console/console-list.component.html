@@ -5,10 +5,10 @@
             <console-progress [item]="item"></console-progress>
         </ng-template>
         <ng-template [ngSwitchCase]="'trigger'">
-            <console-trigger-event [item]="asTriggerParseHistoryModel(item)" (showTriggerHistory)="showTriggerParseHistory($event.triggerId, $event.triggerName)"></console-trigger-event>
+            <console-trigger-event [item]="asTriggerParseHistoryModel(item)" [developer]="developer" (showTriggerHistory)="showTriggerParseHistory($event.triggerId, $event.triggerName)"></console-trigger-event>
         </ng-template>
         <ng-template [ngSwitchCase]="'message'">
-            <console-message [item]="item"></console-message>
+            <console-message [item]="item" [developer]="developer"></console-message>
         </ng-template>
     </div>
 

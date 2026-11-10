@@ -26,6 +26,7 @@ export class ConsoleMessageComponent implements OnInit {
     public get renderPayload(): boolean {
         return this.item.payload !== null && this.item.payload !== undefined;
     }
+    @Input( 'developer' ) public developer: boolean = true;
     public expanded: boolean = false;
 
     constructor(

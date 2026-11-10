@@ -16,6 +16,8 @@ export class ConsoleListComponent implements OnInit, OnChanges {
     public parseType: 'successful' | 'failed' = 'successful';
     @Input() public searchText: string = null;
     @Input() public characterId: string = null;
+    /** True shows the developer log; false shows only trigger matches and a few status messages. */
+    @Input() public developer: boolean = false;
     @Output() public onListUpdated: EventEmitter<{ scrollBottom: boolean }> = new EventEmitter<{ scrollBottom: boolean }>();
 
     private histories: { successful: TriggerParseHistoryModel[], exceptions: TriggerParseHistoryModel[] } = { successful: [], exceptions: [] };
@@ -90,6 +92,82 @@ export class ConsoleListComponent implements OnInit, OnChanges {
 
     }
 
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns true if the message is something a player wants in the Activity view:
+     * trigger health, the zone trigger count and the catching-up notices.
+     *
+     * @param message The console message.
+     */
+    private static isActivityMessage( message: ConsoleMessageModel ): boolean {
+        if ( message.logType === LogTypes.error ) {
+            return false;
+        }
+
+        return message.label === 'Trigger Health' ||
+            /^Triggers active in this zone: /.test( message.message ?? '' ) ||
+            /^Nag (is catching up|has caught up)/.test( message.message ?? '' );
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns the visible developer log as plain text, for pasting into a support request.
+     */
+    public getCopyText(): string {
+        return this.history.map( item => {
+            let line = `[${new Date( item.timestamp ).toISOString()}] `;
+            if ( item instanceof TriggerParseHistoryModel ) {
+                line += `${item.triggerName} ${item.logType === LogTypes.error ? item.errorDescription : ( Array.isArray( item.rawLogEntry ) ? item.rawLogEntry[ 0 ] : item.rawLogEntry )}`;
+            } else {
+                let message = item as ConsoleMessageModel;
+                line += `${message.label ?? ''} ${message.message ?? ''}`;
+                if ( message.payload !== null && message.payload !== undefined ) {
+                    line += ` ${ConsoleListComponent.payloadText( message.payload )}`;
+                }
+            }
+            return line;
+        } ).join( '\r\n' );
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns the payload as text, including the stack of an error.
+     *
+     * @param payload The message payload.
+     */
+    private static payloadText( payload: any ): string {
+        if ( payload instanceof Error ) {
+            return payload.stack ?? `${payload.name}: ${payload.message}`;
+        }
+
+        try {
+            return typeof payload === 'string' ? payload : JSON.stringify( payload );
+        } catch ( error ) {
+            return String( payload );
+        }
+    }
 
 
 
@@ -236,7 +314,9 @@ export class ConsoleListComponent implements OnInit, OnChanges {
             
         } else {
 
-            this.history = Array.prototype.concat( this.histories.successful, this.histories.exceptions, this.consoleMessages, this.consoleProgress );
+            this.history = this.developer ?
+                Array.prototype.concat( this.histories.successful, this.histories.exceptions, this.consoleMessages, this.consoleProgress ) :
+                Array.prototype.concat( this.histories.successful, this.consoleMessages.filter( x => ConsoleListComponent.isActivityMessage( x ) ) );
             this.history = _.orderBy( this.history, [ 'timestamp' ], [ 'asc' ] );
 
         }
@@ -244,7 +324,7 @@ export class ConsoleListComponent implements OnInit, OnChanges {
         let search = this.searchText?.toLowerCase();
         this.history = this.history.filter( x => {
             if ( x instanceof TriggerParseHistoryModel ) {
-                return ( !search || String( x.rawLogEntry ?? '' ).toLowerCase().indexOf( search ) > -1 ) &&
+                return ( !search || String( x.rawLogEntry ?? '' ).toLowerCase().indexOf( search ) > -1 || String( x.triggerName ?? '' ).toLowerCase().indexOf( search ) > -1 ) &&
                     ( !this.characterId || x.characterId === this.characterId );
             } else {
                 return ( !search || String( x.message ?? '' ).toLowerCase().indexOf( search ) > -1 );
@@ -309,6 +389,8 @@ export class ConsoleListComponent implements OnInit, OnChanges {
     public clear() {
         this.histories = { successful: [], exceptions: [] };
         this.triggerHistories = { successful: [], failed: [] };
+        this.consoleMessages = [];
+        this.consoleProgress = [];
         this.triggerId = null;
         this.triggerName = null;
         this.hideTriggerHistory();

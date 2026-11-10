@@ -2,6 +2,7 @@ import { Component, DoCheck, ElementRef, HostListener, NgZone, OnDestroy, OnInit
 import { IpcService } from '../ipc.service';
 import * as _ from 'lodash-es';
 import { ConsoleListComponent } from './console-list.component';
+import { MatSnackBar } from '@angular/material/snack-bar';
 
 @Component( {
     selector: 'app-debug-console',
@@ -22,7 +23,18 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
         this._show = value;
         DebugConsoleComponent.store( 'nagConsoleOpen', value ? 'true' : 'false' );
     }
-    public showInput: boolean = true;
+    private _developer: boolean = DebugConsoleComponent.loadDeveloper();
+    /** True shows the developer log with the command prompt; false shows the Activity view. */
+    public get developer(): boolean {
+        return this._developer;
+    }
+    public set developer( value: boolean ) {
+        this._developer = value;
+        DebugConsoleComponent.store( 'nagConsoleDeveloper', value ? 'true' : 'false' );
+    }
+    public get showInput(): boolean {
+        return this.developer;
+    }
     public consoleCommand: string | undefined = undefined;
     public showTriggerHistory: boolean = false;
     public characterId: string = null;
@@ -104,6 +116,7 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
     constructor(
         private readonly ipcService: IpcService,
         private readonly ngZone: NgZone,
+        private readonly snackBar: MatSnackBar,
     ) { }
 
     ngOnInit() {
@@ -187,6 +200,25 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
 
 
     /**
+     * Returns true when the developer log was the last view used.
+     */
+    private static loadDeveloper(): boolean {
+        try {
+            return localStorage.getItem( 'nagConsoleDeveloper' ) === 'true';
+        } catch ( error ) {
+            return false;
+        }
+    }
+
+
+
+
+
+
+
+
+
+    /**
      * Returns the persisted console height clamped to the allowed range, or null when none is stored.
      */
     private static loadHeight(): number | null {
@@ -239,6 +271,23 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
             this.ipcService.sendConsoleCommand( this.consoleCommand );
             this.consoleCommand = undefined;
         }
+    }
+
+
+
+
+
+
+
+
+
+    
+    /**
+     * Copies the visible developer log to the clipboard.
+     */
+    public copyLog(): void {
+        this.ipcService.sendTextToClipboard( this.consoleList.getCopyText() );
+        this.snackBar.open( 'Developer log copied to clipboard', 'Dismiss', { duration: 3000 } );
     }
 
 

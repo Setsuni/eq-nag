@@ -45,4 +45,23 @@
     span.log-text {
         flex: 1 1 auto;
     }
+
+    &.activity-line {
+        font-family: 'Open Sans', sans-serif;
+        font-size: 13px;
+
+        span.log-timestamp {
+            min-width: 62px;
+        }
+
+        .activity-action {
+            margin-left: 8px;
+            opacity: 0.6;
+        }
+
+        .activity-line-text {
+            margin-left: 8px;
+            opacity: 0.85;
+        }
+    }
 }

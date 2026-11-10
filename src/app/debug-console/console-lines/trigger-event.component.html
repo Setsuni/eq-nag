@@ -1,3 +1,15 @@
+<p class="activity-line" *ngIf="!developer">
+    <span class="log-timestamp">{{item.timestamp | date:'HH:mm:ss' }}</span>
+    <span class="links">
+        <mat-icon class="color-blue" title="Show every match of this trigger" (click)="showTriggerParseHistory(item.triggerId, item.triggerName)">filter_list</mat-icon>
+    </span>
+    <span class="log-text">
+        <a (click)="showEditTriggerDialog(item.triggerId)" href="javascript:void(0);" title="Open this trigger">{{item.triggerName}}</a>
+        <span class="activity-action" *ngIf="item.actionTypeLabel">{{item.actionTypeLabel}}</span>
+        <span class="activity-line-text">{{getLogText(item)}}</span>
+    </span>
+</p>
+<ng-container *ngIf="developer">
 <p [ngClass]="{'error': item.logType === logTypes.error}">
     <span class="log-timestamp">[{{item.timestamp | date:'HH:mm:ss.SSS' }}]</span>
     <span class="links">
@@ -13,3 +25,4 @@
 <p class="log-details" *ngIf="expanded">
     <span class="log-details-line" [innerHTML]="renderParseToHtml(item)"></span>
 </p>
+</ng-container>
