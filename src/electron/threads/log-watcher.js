@@ -1415,7 +1415,7 @@ function generateTriggerFns() {
                 }
     
                 // Grab condition values and store them
-                trigger.conditions.forEach( condition => {
+                trigger.conditions?.forEach( condition => {
                     if ( !StringUtilities.isNullOrWhitespace( condition.variableValue ) ) {
                         let values = condition.variableValue.split( /\|/gi ) ?? [];
                         usedConditionValues[ condition.variableName ] = usedConditionValues[ condition.variableName ] ? usedConditionValues[ condition.variableName ] : [];
@@ -1872,7 +1872,7 @@ function parseLogEntries( raw, simulating, padTime ) {
         const perfTriggers = perf.enabled && ++perfTriggerSample % 10 === 0;
         activeTriggers.forEach( trigger => {
 
-            if ( !!trigger.enabled && !trigger._profileDisabled ) {
+            if ( !!trigger.enabled && !trigger._profileDisabled && typeof trigger._parse === 'function' ) {
                 const perfStart = perfTriggers ? perf.now() : 0;
                 trigger._parse( log, ( res, deltaTime ) => {
 
@@ -4282,6 +4282,9 @@ async function backfind() {
                 if ( log ) {
                     try {
                         _triggers.forEach( trigger => {
+                            if ( typeof trigger._parse !== 'function' )
+                                return;
+
                             trigger._parse( log, res => {
                                 trigger.actions.forEach( action => {
                                     if ( action.phrases?.indexOf( res.phraseId ) > -1 && action.actionType === ActionTypes.StoreVariable ) {
