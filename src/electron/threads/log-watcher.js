@@ -2271,8 +2271,11 @@ function parseLogEntries( raw, simulating, padTime ) {
             }
             return false;
         };
+
         const runTrigger = trigger => {
             trigger._parse( log, ( res, deltaTime ) => {
+
+            trigger._stats.fired++;
 
             try {
                     
