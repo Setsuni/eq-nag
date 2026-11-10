@@ -221,6 +221,31 @@ export class OverlaysComponent implements OnInit {
 
     
     /**
+     * The plain-English name of an overlay type.
+     * 
+     * @param overlayType The overlay type value.
+     */
+    getOverlayTypeLabel( overlayType: string ): string {
+        switch ( overlayType ) {
+            case 'Log': return 'Debug Log';
+            case 'Alert': return 'Text Notifications';
+            case 'Timer': return 'Timer & Countdown';
+            case 'FCT': return 'Floating Combat Text';
+            case 'Chart': return 'Chart';
+            default: return overlayType ?? '';
+        }
+    }
+
+
+
+
+
+
+
+
+
+    
+    /**
      * Calculates all overlay uses in the given list of triggers.
      * 
      * @param triggers The list of triggers to use in the calculations.

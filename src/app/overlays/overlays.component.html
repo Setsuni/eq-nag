@@ -18,16 +18,11 @@
         [dataSource]="overlays">
 
         <ng-container matColumnDef="edit">
-            <th mat-header-cell *matHeaderCellDef style="text-align: center; width: 90px;">  </th>
-            <td mat-cell *matCellDef="let element; let i = index" style="text-align: center; width: 90px;">
-                <button mat-icon-button color="accent" aria-label="Edit this overlay" (click)="enableOverlayEdit(element.overlayId)" matTooltip="Edit this overlay" matTooltipShowDelay="500" matTooltipPosition="above"><mat-icon>display_settings</mat-icon></button>
-                <button mat-icon-button color="accent" aria-label="Send overlay to the middle of the selected monitor" (click)="sendToOrigin(element.overlayId)" matTooltip="Send overlay to the middle of the selected monitor." matTooltipShowDelay="500" matTooltipPosition="right"><mat-icon>filter_center_focus</mat-icon></button>
+            <th mat-header-cell *matHeaderCellDef style="text-align: center; width: 280px;">  </th>
+            <td mat-cell *matCellDef="let element; let i = index" style="text-align: center; width: 280px; white-space: nowrap;">
+                <button mat-button color="accent" aria-label="Edit this overlay" (click)="enableOverlayEdit(element.overlayId)" matTooltip="Edit this overlay" matTooltipShowDelay="500" matTooltipPosition="above"><mat-icon>display_settings</mat-icon> Edit</button>
+                <button mat-button color="accent" aria-label="Centre this overlay on a monitor" (click)="sendToOrigin(element.overlayId)" matTooltip="Send overlay to the middle of the selected monitor." matTooltipShowDelay="500" matTooltipPosition="right"><mat-icon>filter_center_focus</mat-icon> Centre on monitor</button>
             </td>
-        </ng-container>
-
-        <ng-container matColumnDef="id">
-            <th mat-header-cell *matHeaderCellDef style="width: 100px; padding-left: 15px;"> Id </th>
-            <td mat-cell *matCellDef="let element; let i = index" style="width: 100px; padding-left: 15px;"> {{element.overlayId}} </td>
         </ng-container>
 
         <ng-container matColumnDef="name">
@@ -35,10 +30,15 @@
             <td mat-cell *matCellDef="let element; let i = index" style="padding-left: 15px;"> {{element.name}} </td>
         </ng-container>
 
+        <ng-container matColumnDef="type">
+            <th mat-header-cell *matHeaderCellDef style="padding-left: 15px;"> Type </th>
+            <td mat-cell *matCellDef="let element; let i = index" style="padding-left: 15px;"> {{getOverlayTypeLabel(element.overlayType)}} </td>
+        </ng-container>
+
         <ng-container matColumnDef="assignCount">
             <th mat-header-cell *matHeaderCellDef style="padding-right: 15px; text-align: right;"> Use Count </th>
             <td mat-cell *matCellDef="let element; let i = index" style="padding-right: 15px; text-align: right;">
-                <ng-template [ngIf]="element.overlayId === damageDealtOverlayId || element.overlayId === this.damageTakenOverlayId" [ngIfElse]="normalOverlay">FCT</ng-template>
+                <ng-template [ngIf]="element.overlayId === damageDealtOverlayId || element.overlayId === this.damageTakenOverlayId" [ngIfElse]="normalOverlay">&ndash;</ng-template>
                 <ng-template #normalOverlay>{{overlayAssignCounts[element.overlayId] ?? 0}}</ng-template>
             </td>
         </ng-container>
@@ -52,8 +52,8 @@
             </td>
         </ng-container>
 
-        <tr mat-header-row *matHeaderRowDef="['edit', 'id', 'name', 'assignCount', 'delete']"></tr>
-        <tr mat-row *matRowDef="let element; columns: ['edit', 'id', 'name', 'assignCount', 'delete'];"></tr>
+        <tr mat-header-row *matHeaderRowDef="['edit', 'name', 'type', 'assignCount', 'delete']"></tr>
+        <tr mat-row *matRowDef="let element; columns: ['edit', 'name', 'type', 'assignCount', 'delete'];"></tr>
 
     </table>
 </div>
