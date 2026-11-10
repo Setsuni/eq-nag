@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, screen } = require( "electron" );
 const Store = require( './store' );
+const log = require( 'electron-log' );
 const ForwardRef = require( '../forward-ref' );
 const _ = require( 'lodash' );
 const customAlphabet = require( 'nanoid' ).customAlphabet;
@@ -878,7 +879,17 @@ class OverlayDatabaseStore extends Store {
                         const display = ElectronUtilities.determineContainingDisplay( d );
 
                         if ( !display ) {
-                            throw `Could not locate display for overlay ${d.overlayId}, dims: ${d.x}, ${d.y}, ${d.windowWidth}, ${d.windowHeight}. displayBounds: ${d.displayBounds}`;
+                            // Don't let one offscreen overlay stop the rest from saving; move it to the primary display.
+                            log.warn( `[Overlay:setOverlayDimensions] Could not locate display for overlay ${d.overlayId}, moving it to the primary display.` );
+                            model.displayBounds = null;
+                            model.displayId = null;
+                            model.x = d.x;
+                            model.y = d.y;
+                            model.windowWidth = d.windowWidth;
+                            model.windowHeight = d.windowHeight;
+                            this.#repairDisplayBounds( [ model ] );
+                            this.update( model );
+                            return;
                         }
     
                         model.displayId = display.id;
