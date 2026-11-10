@@ -305,7 +305,7 @@ class LogBootstrapper {
                 let _chr = characterDatabase.find( data.characterId );
 
                 if ( _chr && logWatchers[ _chr.characterId ].window == null ) {
-                    let _stats = fs.existsSync( _chr.logFile ) ? fs.statSync( _chr.logFile ) : null;
+                    let _stats = FsUtilities.statOrNullSync( _chr.logFile );
 
                     // If the window has not been engaged, then open it. // TODO: Start up a log watcher when simulating. Even allow a charcter to be selected from a list.
                     logWatchers[ _chr.characterId ].window = startLogWatcherWindow( _chr.logFile, isDev, sendTick, _chr, logWatchers[ _chr.characterId ].logSize > ( _stats?.size ?? 0 ) ? 0 : logWatchers[ _chr.characterId ].logSize );
@@ -344,7 +344,7 @@ class LogBootstrapper {
                 let characters = characterDatabase.getAll();
                 let _chr = characters[ 0 ];
                 if ( logWatchers[ _chr.characterId ].window == null ) {
-                    let _stats = fs.existsSync( _chr.logFile ) ? fs.statSync( _chr.logFile ) : null;
+                    let _stats = FsUtilities.statOrNullSync( _chr.logFile );
 
                     // If the window has not been engaged, then open it. // TODO: Start up a log watcher when simulating. Even allow a charcter to be selected from a list.
                     logWatchers[ _chr.characterId ].window = startLogWatcherWindow( _chr.logFile, isDev, sendTick, _chr, logWatchers[ _chr.characterId ].logSize > ( _stats?.size ?? 0 ) ? 0 : logWatchers[ _chr.characterId ].logSize );
@@ -474,7 +474,7 @@ class LogBootstrapper {
             async ( event, characterId ) => {
                 const character = characterDatabase.find( characterId );
                 if ( character ) {
-                    let _stats = await FsUtilities.existsAsync( character.logFile ) ? await fsp.stat( character.logFile ) : null;
+                    let _stats = await FsUtilities.statOrNull( character.logFile );
                     if ( _stats == null ) {
                         appLogException( new Error( `Log file not found: ${character.logFile}` ), true );
                         return;
@@ -791,7 +791,7 @@ class LogBootstrapper {
 
             // Ensure we have the latest information.
             let _chr = characterDatabase.find( characterId );
-            let _stats = await FsUtilities.existsAsync( chr.logFile ) ? await fsp.stat( _chr.logFile ) : null;
+            let _stats = await FsUtilities.statOrNull( _chr.logFile );
             
             if ( _chr.logFile !== logWatchers[ characterId ].logFile ) {
 

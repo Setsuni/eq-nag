@@ -142,6 +142,34 @@ function getFileTimestamp( time, version ) {
     }
 }
 
+/**
+ * Returns the stats for the given file, or null if the file does not exist.
+ * 
+ * @param {string} filePath The file path.
+ * @returns {fs.Stats | null}
+ */
+function statOrNullSync( filePath ) {
+    try {
+        return fs.statSync( filePath );
+    } catch ( error ) {
+        return null;
+    }
+}
+
+/**
+ * Returns the stats for the given file, or null if the file does not exist.
+ * 
+ * @param {string} filePath The file path.
+ * @returns {Promise<fs.Stats | null>}
+ */
+async function statOrNull( filePath ) {
+    try {
+        return await fs.promises.stat( filePath );
+    } catch ( error ) {
+        return null;
+    }
+}
+
 const Path = {
     combine: pathCombine,
     appendFilename: pathAppendFilename,
@@ -153,6 +181,8 @@ const FsUtilities = {
     Path: Path,
     getFileTimestamp: getFileTimestamp,
     existsAsync: exists,
+    statOrNull: statOrNull,
+    statOrNullSync: statOrNullSync,
 };
 
 module.exports = FsUtilities;
