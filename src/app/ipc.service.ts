@@ -24,6 +24,13 @@ export class ConsoleData {
 
 }
 
+export interface CharacterLogFileInfo {
+    path: string;
+    exists: boolean;
+    size: number;
+    modified: number;
+}
+
 export class HandshakePayloadModel {
 
     public version: string;
@@ -938,6 +945,24 @@ export class IpcService {
 
     public disconnectChatRoom(): void {
         window.api.ipc.send( 'chat-room:disconnect' );
+    }
+
+    public getCharacterLogFileInfo( characterId: string ): Observable<CharacterLogFileInfo> {
+        return new Observable<CharacterLogFileInfo>( ( observer: Observer<CharacterLogFileInfo> ) => {
+            window.api.ipc.invoke<CharacterLogFileInfo>( 'character:log-file-info', characterId )
+                .then( info => this.ngZone.run( () => {
+                    observer.next( info );
+                    observer.complete();
+                } ) )
+                .catch( () => this.ngZone.run( () => {
+                    observer.next( { path: '', exists: false, size: 0, modified: 0 } );
+                    observer.complete();
+                } ) );
+        } );
+    }
+
+    public showCharacterLogFolder( characterId: string ): void {
+        window.api.ipc.send( 'character:show-log-folder', characterId );
     }
 
     public changeCombatCharacter( characterId: string ): void {

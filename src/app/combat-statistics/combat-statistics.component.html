@@ -1,6 +1,7 @@
 <mat-toolbar>
-    <span>Combat Statistics</span>
+    <span>DPS meter</span>
     <span class="spacer"></span>
+    <mat-slide-toggle [(ngModel)]="meterOn" name="meterOn">Show the DPS meter</mat-slide-toggle>
     <mat-form-field class="toolbar-field">
         <mat-label>Combat character</mat-label>
         <mat-select [(ngModel)]="combatCharacterId" name="combatCharacterId" >
@@ -11,11 +12,7 @@
             <mat-option *ngFor="let option of characterOptions" [value]="option.characterId">{{option.name}}<small style="float: right;">{{option.server}}</small></mat-option>
         </mat-select>
     </mat-form-field>
-    <button mat-icon-button (click)="openCombatStatsSettings()"><mat-icon class="material-icons-outlined" style="opacity: 0.75;">settings</mat-icon></button>
-    <!-- <button mat-button [disabled]="true">Export</button> -->
-    
-    <!-- <button mat-button title="Import settings from another player." class="color-orange"><mat-icon class="material-icons-outlined">cloud_download</mat-icon> Import</button> -->
-    <!-- <button mat-button color="accent"><mat-icon class="material-icons-outlined">add</mat-icon> New</button> -->
+    <button mat-icon-button (click)="openCombatStatsSettings()" matTooltip="Player and pet database" matTooltipPosition="below"><mat-icon class="material-icons-outlined" style="opacity: 0.75;">settings</mat-icon></button>
 </mat-toolbar>
 <div class="tab-content no-scroller">
 
@@ -25,103 +22,35 @@
         <button mat-button color="accent" (click)="turnOnDpsMeter()">Turn on DPS meter</button>
     </div>
 
-    <fieldset>
-        <legend><span class="title">Log Synchronization</span></legend>
-        <div class="fieldset-section">
-            <h3 class="sub-header full-width header-glow">Server</h3>
-            <div class="section-text-content">
-                <div>
-                    <div style="display: flex; flex-flow: row nowrap; justify-content: space-between;">
-                        <div>
-                            <ng-template [ngIf]="!connected">
-                                <h2 style="font-weight: 100; margin-top: 0.55em;">You are not connected to a server.</h2>
-                                <button mat-button class="color-blue" (click)="createChatRoom()"><mat-icon class="material-icons-outlined">public</mat-icon> Start a server</button>
-                                <button mat-button class="color-green" (click)="joinChatRoom()"><mat-icon class="material-icons-outlined">travel_explore</mat-icon> Join a server</button>
-                            </ng-template>
-                            <ng-template [ngIf]="connected">
-                                <h2 style="font-weight: 100; margin-top: 0.55em;">Connected to server.</h2>
-                                <button mat-button class="color-red" (click)="disconnect()"><mat-icon class="material-icons-outlined">public_off</mat-icon> Disconnect from server</button>
-                                <button mat-button class="color-blue" (click)="copyServerLink()" *ngIf="chatRoomId != undefined"><mat-icon class="material-icons-outlined">content_copy</mat-icon> Copy server link</button>
-                            </ng-template>
-                        </div>
-                        <div style="width: 50%;">
-                            <h3 style="font-weight: 100;">Combat Log Sync</h3>
-                            <p>When syncing your combat log, during an encounter you will send and receive overall combat statistics with the group.  This will include, per player, the total damage done, time engaged, dps, heals, and hps.</p>
-                            <p>At the end of an encounter, you will sync with the group by transmitting and receiving the combat logs for the encounter.</p>
-                            <!-- <p>Once an encounter is over, you can then export the combat statistics into a spreadsheet.  You can choose to include shared combat logs at that time.</p> -->
-                        </div>
-                    </div>
-                </div>
-                <div *ngIf="connected">
-                    <h2 style="font-weight: 100;">Connected Peers</h2>
-                    <p *ngIf="connectedPeers.length === 0">You are the only peer connected. Invite some friends!</p>
-                    <div *ngIf="connectedPeers.length > 0" class="connected-peers" [style.maxHeight]="peerHeight + 'px'">
-                        <p *ngFor="let peer of connectedPeers">
-                            {{peer.characterName}}
-                        </p>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <div class="fieldset-section">
-            <h3 class="sub-header full-width header-glow">Server Console</h3>
-            <button mat-button (click)="clearConsole()">Clear</button>
-            <button mat-button (click)="scrollToBottom()">Bottom</button>
-            <div>
-                <div class="server-console">
-                    <div class="server-console-lines show-scrollbar" #consoleElement>
+    <div class="dps-layout">
 
-                        <div class="server-console-line" *ngFor="let line of lines">
-                            <span class="time-stamp">[{{line.timestamp | date:'HH:mm:ss'}}]</span>
-                            <p [class]="line.cssClass">{{line.message}}</p>
-                        </div>
+        <fieldset>
+            <legend><span class="title">When the meter shows</span></legend>
 
-                    </div>
-                </div>
-            </div>
-        </div>
-    </fieldset>
+            <mat-checkbox [(ngModel)]="onlyInCombat" name="onlyInCombat">Only show during a fight</mat-checkbox>
+            <mat-checkbox [(ngModel)]="onlyWhenFocused" name="onlyWhenFocused">Only show when Nag or EverQuest is in front</mat-checkbox>
+            <mat-checkbox [(ngModel)]="highlightMyName" name="highlightMyName">Highlight my name</mat-checkbox>
 
-    <fieldset>
-        <legend><span class="title">Server Trust</span>
-            <sup class="help-sup"
-                matTooltip="Click here for more help."
-                matTooltipPosition="above"
-                matTooltipClass="tooltip-large"
-                (click)="explainServerTrust()">&nbsp;?</sup></legend>
-
-        <div>
-            <mat-form-field>
-                <mat-label>Server</mat-label>
-                <mat-select [(ngModel)]="serverTrustServer" name="serverTrustServer" style="text-transform: capitalize;">
-                    <mat-option *ngFor="let server of serverTrustServerOptions" [value]="server" style="text-transform: capitalize;">{{server}}</mat-option>
-                </mat-select>
+            <mat-form-field class="min-damage">
+                <mat-label>Ignore fights under this much damage</mat-label>
+                <input matInput type="number" min="0" [(ngModel)]="minimumDamage" name="minimumDamage" />
+                <mat-hint>0 shows every fight.</mat-hint>
             </mat-form-field>
-        </div>
+        </fieldset>
 
-        <div class="server-trust-content">
-            <div>
-                <h3 class="sub-header full-width header-glow">Trusted Players</h3>
-                <mat-form-field style="width: 100%;">
-                    <mat-label>Trusted characters</mat-label>
-                    <textarea matInput [(ngModel)]="trustedPlayers" name="trustedPlayers" rows="5" spellcheck="false" ></textarea>
-                    <mat-hint>Add trusted characters to the list, separated by new lines.</mat-hint>
-                </mat-form-field>
-                <p>When any player in this list links to a server, and you are not already connected to one, you will automatically connect to the linked server.</p>
+        <fieldset>
+            <legend><span class="title">Preview</span></legend>
+
+            <div class="meter-preview" [class.is-off]="dpsMeterShow === false">
+                <div class="meter-row" *ngFor="let row of previewRows" [class.mine]="row.mine && highlightMyName">
+                    <div class="meter-bar" [style.width.%]="row.dps / previewMax * 100"></div>
+                    <span class="meter-name">{{row.name}}</span>
+                    <span class="meter-value">{{row.dps}} DPS<small>{{row.total}}</small></span>
+                </div>
             </div>
+            <p class="preview-note">Example numbers only.</p>
+        </fieldset>
 
-            <div>
-                <h3 class="sub-header full-width header-glow">Blocked Players</h3>
-                <mat-form-field style="width: 100%;">
-                    <mat-label>Blocked characters</mat-label>
-                    <textarea matInput [(ngModel)]="blockedPlayers" name="blockedPlayers" rows="5" spellcheck="false" ></textarea>
-                    <mat-hint>Add blocked characters to the list, separated by new lines.</mat-hint>
-                </mat-form-field>
-                <p>Any server linked by a player in the blocked list will be ignored.</p>
-            </div>
-        </div>
-
-    </fieldset>
+    </div>
 
 </div>

@@ -11,6 +11,17 @@ div.tab-content {
     }
 }
 
+:host ::ng-deep .tab-dev-chip {
+    margin-left: 8px;
+    padding: 1px 8px;
+    border: 1px solid #f0c66980;
+    border-radius: 10px;
+    color: #f0c669;
+    font-size: 10px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
 :host ::ng-deep .mat-progress-bar.mat-accent .mat-progress-bar-fill::after {
     background-color: #69f0ae78 !important;
 }

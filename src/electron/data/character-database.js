@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require( "electron" );
+const { app, BrowserWindow, ipcMain, shell } = require( "electron" );
 const Store = require( './store' );
 const ForwardRef = require( '../forward-ref' );
 const _ = require( 'lodash' );
@@ -398,6 +398,26 @@ class CharacterDatabaseStore extends Store {
             let deleted = this.remove( characterId );
             event.sender.send( 'character:delete', deleted );
             sendTick();
+        } );
+
+        ipcMain.handle( 'character:log-file-info', async ( event, characterId ) => {
+            const logFile = typeof characterId === 'string' ? this.find( characterId )?.logFile : undefined;
+            if ( !logFile ) {
+                return { path: '', exists: false, size: 0, modified: 0 };
+            }
+            try {
+                const stats = await fs.promises.stat( logFile );
+                return { path: logFile, exists: true, size: stats.size, modified: stats.mtimeMs };
+            } catch ( error ) {
+                return { path: logFile, exists: false, size: 0, modified: 0 };
+            }
+        } );
+
+        ipcMain.on( 'character:show-log-folder', ( event, characterId ) => {
+            const logFile = typeof characterId === 'string' ? this.find( characterId )?.logFile : undefined;
+            if ( logFile ) {
+                shell.showItemInFolder( logFile );
+            }
         } );
 
         ipcMain.handle( 'character:get:options', async ( event, logsPath ) => {

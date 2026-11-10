@@ -8,17 +8,16 @@
             <ng-template [ngIf]="character.takp">TAKP&nbsp;</ng-template>
             <ng-template [ngIf]="character.thj"></ng-template>
             {{character.server}}
-            <button mat-icon-button 
-                [ngClass]="{'color-orange-dark': isCombatCharacter(character)}" 
+            <button class="status-chip dps"
+                [ngClass]="{'active': isCombatCharacter(character)}"
                 [matTooltip]="getCombatTooltipMessage(character)"
                 matTooltipPosition="left"
-                (click)="toggleCombatTrackingForCharacter($event, character)" 
-                *ngIf="true">
-                <mat-icon class="material-icons-outlined" >whatshot</mat-icon>
+                (click)="toggleCombatTrackingForCharacter($event, character)">
+                <mat-icon class="material-icons-outlined">whatshot</mat-icon>DPS character
             </button>
             
-            <mat-icon *ngIf="activeLogFilesDictionary[character.characterId] === true" color="accent">cast_connected</mat-icon>
-            <mat-icon *ngIf="activeLogFilesDictionary[character.characterId] !== true">cast</mat-icon>
+            <span class="status-chip watching" *ngIf="activeLogFilesDictionary[character.characterId] === true"><mat-icon class="material-icons-outlined">cast_connected</mat-icon>Watching</span>
+            <span class="status-chip" *ngIf="activeLogFilesDictionary[character.characterId] !== true"><mat-icon class="material-icons-outlined">cast</mat-icon>Not watching</span>
         </mat-panel-description>
       </mat-expansion-panel-header>
 
@@ -33,6 +32,25 @@
                         </mat-card-title>
                     </mat-card-header>
                     <mat-card-content>
+                        <div class="log-file-card" *ngIf="logFileInfo[character.characterId] as info">
+                            <div class="log-file-path" [ngClass]="{'missing': !info.exists}">{{info.path || 'No log file chosen yet.'}}</div>
+                            <div class="log-file-meta">
+                                <ng-template [ngIf]="info.exists">
+                                    <span><small>Size</small> {{formatFileSize(info.size)}}</span>
+                                    <span><small>Last line written</small> {{formatAge(info.modified)}}</span>
+                                </ng-template>
+                                <span class="log-file-missing" *ngIf="info.path && !info.exists"><mat-icon class="material-icons-outlined">error_outline</mat-icon>File not found</span>
+                                <span>
+                                    <small>Status</small>
+                                    <ng-template [ngIf]="activeLogFilesDictionary[character.characterId] === true">Watching</ng-template>
+                                    <ng-template [ngIf]="activeLogFilesDictionary[character.characterId] !== true">Not watching</ng-template>
+                                </span>
+                            </div>
+                            <div class="log-file-actions">
+                                <button mat-button (click)="openLogFolder(character)" [disabled]="!info.path"><mat-icon class="material-icons-outlined">folder_open</mat-icon> Open folder</button>
+                                <button mat-button color="accent" (click)="showFileSelector(character.characterId)"><mat-icon class="material-icons-outlined">edit</mat-icon> Change</button>
+                            </div>
+                        </div>
                     </mat-card-content>
                 </mat-card>
 
@@ -66,10 +84,6 @@
                                     </mat-select>
                                 </mat-form-field>
                             </div>
-                            <div>
-                                <button mat-button color="accent" (click)="showFileSelector(character.characterId)">Select Log File</button>
-                                <div><small>Current: {{character.logFile}}</small></div>
-                            </div>
                         </div>
                         <div class="n-layout n-row">
                             <div>
@@ -83,11 +97,13 @@
                 
                 <mat-card>
 
-                    <mat-card-header>
+                    <mat-card-header class="collapsible-header" (click)="focusOpen[character.characterId] = !focusOpen[character.characterId]">
                         <mat-card-title>Focus Effects</mat-card-title>
+                        <span class="collapsible-summary">{{getFocusSummary(character)}}</span>
+                        <mat-icon>{{focusOpen[character.characterId] ? 'expand_less' : 'expand_more'}}</mat-icon>
                     </mat-card-header>
 
-                    <mat-card-content>
+                    <mat-card-content *ngIf="focusOpen[character.characterId]">
                         <table>
                             <tr>
                                 <td class="character-focus-label"><mat-slide-toggle [(ngModel)]="character.hasExtendedDotFocus" (change)="updateCharacter(character)" name="hasExtendedDotFocus_{{i}}"> Extended DOT Focus?</mat-slide-toggle></td>
