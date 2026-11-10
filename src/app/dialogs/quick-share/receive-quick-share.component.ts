@@ -6,12 +6,14 @@ import { MatTreeFlattener, MatTreeFlatDataSource } from '@angular/material/tree'
 import { PackageFolder, PackageTrigger, QuickShareFileModel, QuickShareMetaModel, QuickShareModel, TriggerFolder, TriggerModel } from 'src/app/core.model';
 import * as _ from 'lodash-es';
 import { IpcService } from 'src/app/ipc.service';
-import { combineLatest, forkJoin, Observable, timer } from 'rxjs';
+import { combineLatest, forkJoin, Observable, of, timer } from 'rxjs';
+import { catchError } from 'rxjs/operators';
 import { nagId } from 'src/app/core/nag-id.util';
 import { NotificationDialogModel, NotificationTypes } from '../notification-dialog/notification-dialog.model';
 import { NotificationDialogComponent } from '../notification-dialog/notification-dialog.component';
 import { ColoredString } from '../dialog.model';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getSkippedSounds, remapAudioFileIds, toSkippedSound } from '../../utilities/package-file-ids';
 
 interface QuickShareTreeNode {
     expandable: boolean;
@@ -570,12 +572,20 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
         // Ensure each id exists once.
         fileIds = _.uniq( fileIds );
 
+        let sizeProblem = findSoundTotalProblem( this.data.files?.filter( f => fileIds.indexOf( f.fileId ) > -1 ) );
+        if ( sizeProblem ) {
+            this.snackBar.open( `${sizeProblem} Nothing was installed.`, 'dismiss', { duration: 8000 } );
+            return;
+        }
+
         // Adding a timer makes the following easier (you can't forkjoin an empty array) and I'm being lazy today.
         let importTasks: Observable<any>[] = [ timer( 1 ) ];
+        let importedFiles: { fileId: string }[] = [];
 
         this.data.files?.forEach( file => {
             if ( fileIds.indexOf( file.fileId ) > -1 ) {
-                importTasks.push( this.ipcService.importPackageFile( file ) );
+                importedFiles.push( file );
+                importTasks.push( this.ipcService.importPackageFile( file ).pipe( catchError( error => of( toSkippedSound( file, error ) ) ) ) );
             }
         } );
         
@@ -585,6 +595,10 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
         forkJoin( importTasks ).subscribe( results => {
 
             let installTasks: Observable<any>[] = [ timer( 1 ) ];
+
+            // Files that collided with a different local file were stored under new ids.  Skipped files are removed from the actions that use them.
+            let fileIdMap = buildFileIdMap( importedFiles, results.slice( 1 ) );
+            let skippedSounds = getSkippedSounds( results.slice( 1 ) );
             
             this.data.quickShares?.forEach( quickShare => {
 
@@ -593,6 +607,8 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
                 // Remove from the model triggers and folders that are left un-selected.
                 quickShare.model.triggers = quickShare.model.triggers.filter( f => importTriggerIds.indexOf( f.triggerId ) > -1 );
                 quickShare.model.folders = quickShare.model.folders.filter( f => importFolderIds.indexOf( f.folderId ) > -1 );
+
+                remapAudioFileIds( quickShare.model.triggers, fileIdMap );
 
                 // If the user opts to not overwrite existing triggers, then triggers that already exist in the database will be duplicated.
                 if ( !this.overwriteExistingTriggers ) {
@@ -636,12 +652,15 @@ export class ReceiveQuickShareDialogComponent implements OnInit {
             } );
 
             forkJoin( installTasks ).subscribe( results => {
-                this.snackBar.open( 'Quick Share(s) installed!', 'dismiss', { duration: 2500 } );
+                this.snackBar.open( skippedSounds.length > 0 ? `Quick Share(s) installed.  ${describeSkippedSounds( skippedSounds )}` : 'Quick Share(s) installed!', 'dismiss', { duration: skippedSounds.length > 0 ? 15000 : 2500 } );
                 this.ipcService.requestTick();
                 
                 this.dialogRef.close( true );
             } );
 
+        }, error => {
+            console.error( 'Could not save a sound from a quick share.', error );
+            this.snackBar.open( 'A sound from this quick share could not be saved, so it was not installed.', 'dismiss', { duration: 5000 } );
         } );
 
     }

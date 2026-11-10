@@ -715,6 +715,15 @@ class FileModel extends BaseFileModel {
     /** @type {string} */
     physicalName = null;
 
+    /** @type {string} The sha256 of the file contents, when known. */
+    hash = null;
+
+    /** @type {number} The size in bytes of the file when the hash was taken. */
+    size = null;
+
+    /** @type {boolean|null} True when a package import created the file, false when a package import reused a file that already existed.  Uninstalling a package never deletes a file marked false. */
+    packageImport = null;
+
 }
 
 class PackageFileModel extends BaseFileModel {
