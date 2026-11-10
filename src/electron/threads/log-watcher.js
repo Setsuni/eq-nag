@@ -21,10 +21,9 @@ const perf = require( '../utilities/perf' );
 // Triggers are timed on one log line in ten (perf-taps.js scales them up), so
 // the per-trigger timing doesn't slow the log watcher down much.
 let perfTriggerSample = 0;
-const { TriggerMetrics } = require( '../utilities/trigger-metrics' );
+const { TriggerMetrics, measureDurationMs: triggerMeasureDuration } = require( '../utilities/trigger-metrics' );
 const TriggerPerfAnalysis = require( '../utilities/trigger-perf-analysis' );
 const triggerMetrics = new TriggerMetrics();
-const triggerMeasureDuration = 10 * 60 * 1000;
 var triggerMeasureTimer = null;
 const clockMs = perf.enabled ? perf.now : () => performance.now();
 const { LogHistoryManager } = require( '../utilities/log-console' );

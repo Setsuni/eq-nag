@@ -2,9 +2,12 @@
 //
 // Every trigger has a { checked, fired } pair that is always counted (two
 // integer increments).  Timing only runs during a measurement, on one log line
-// in ten, and is scaled up like the perf taps (see perf-taps.js).
+// in fifty, and is scaled up like the perf taps (see perf-taps.js).
 
-const sampleEvery = 10;
+const sampleEvery = 50;
+
+/** How long a measurement runs before it ends by itself. */
+const measureDurationMs = 10 * 60 * 1000;
 
 class TriggerMetrics {
 
@@ -117,4 +120,4 @@ class TriggerMetrics {
     }
 }
 
-module.exports = { TriggerMetrics, sampleEvery };
+module.exports = { TriggerMetrics, sampleEvery, measureDurationMs };

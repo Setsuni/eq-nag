@@ -10,7 +10,8 @@
 //       Use copies; only counts are printed, never trigger names, phrases or log lines.
 
 import { createRequire } from 'module';
-import { readFileSync } from 'fs';
+import { readFileSync, mkdtempSync, rmSync, existsSync } from 'fs';
+import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import Module from 'module';
@@ -213,7 +214,7 @@ function argument( name ) {
     return index > -1 ? process.argv[ index + 1 ] : null;
 }
 
-const { TriggerMetrics } = require( path.join( root, 'src/electron/utilities/trigger-metrics.js' ) );
+const { TriggerMetrics, sampleEvery } = require( path.join( root, 'src/electron/utilities/trigger-metrics.js' ) );
 const Analysis = require( path.join( root, 'src/electron/utilities/trigger-perf-analysis.js' ) );
 
 // ---- Unit cases ----
@@ -362,13 +363,28 @@ const counterReply = w => {
     check( metrics.sampleLine() === false, 'metrics: no sampling while idle' );
     metrics.begin( 0 );
     let sampled = 0;
-    for ( let i = 0; i < 100; i++ ) {
+    for ( let i = 0; i < sampleEvery * 10; i++ ) {
         metrics.sampleLine() && sampled++;
     }
-    check( sampled === 10 && metrics.lines === 100, 'metrics: one line in ten is sampled' );
+    check( sampled === 10 && metrics.lines === sampleEvery * 10, 'metrics: one line in N is sampled' );
     const stats = metrics.statsFor( 't' );
     metrics.record( stats, 2 );
-    check( stats.totalMs === 20 && stats.maxMs === 2, 'metrics: sampled time is scaled by ten' );
+    check( stats.totalMs === 2 * sampleEvery && stats.maxMs === 2, 'metrics: sampled time is scaled up' );
+}
+
+// The last report is kept per character in a file.
+{
+    const TriggerPerfStore = require( path.join( root, 'src/electron/data/trigger-perf-store.js' ) );
+    const folder = mkdtempSync( path.join( process.env.NAG_TEST_TMP ?? tmpdir(), 'nag-perf-' ) );
+    const report = { startedAt: 1, endedAt: 2, lineCount: 5, totalMs: 3, rows: [ { triggerId: 'a', name: 'Slow', checked: 1, fired: 0, totalMs: 3, maxMs: 1, sharePercent: 100, avgMsPerCheck: 3, skipped: false, hints: [ { code: 'no-literal', text: 'x' } ] } ] };
+    const store = new TriggerPerfStore( folder );
+    check( store.get( 'char1' ) === null, 'store: nothing before the first measurement' );
+    store.set( 'char1', report );
+    const again = new TriggerPerfStore( folder ).get( 'char1' );
+    check( again?.lineCount === 5 && again.rows[ 0 ].name === 'Slow' && again.rows[ 0 ].hints[ 0 ].code === 'no-literal' && again.rows[ 0 ].hints[ 0 ].text.length > 1, 'store: the report survives a restart, with fresh hint text' );
+    check( new TriggerPerfStore( folder ).get( 'char2' ) === null, 'store: reports are per character' );
+    check( !existsSync( path.join( folder, 'trigger-perf.json.tmp' ) ), 'store: no temp file left behind' );
+    rmSync( folder, { recursive: true, force: true } );
 }
 
 console.log( `${checks - failures} of ${checks} checks passed.` );

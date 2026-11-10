@@ -11,6 +11,8 @@ const ForwardRef = require( './forward-ref' );
 const { LogMaintenancePlanTypes, LogMaintenanceRules, ArchiveFilePrefix, SimulationProgress } = require( "./data/models/common" );
 const { nagLog } = require( "./utilities/nag-console" );
 const CombatDatabase = require( "./data/combat-database" );
+const TriggerPerfStore = require( "./data/trigger-perf-store" );
+const { measureDurationMs: triggerPerfDuration } = require( "./utilities/trigger-metrics" );
 const customAlphabet = require( 'nanoid' ).customAlphabet;
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
@@ -69,14 +71,11 @@ var combatWatcher = {
 /** @type {Record<string, {startedAt: number, endsAt: number}>} Trigger measurements in progress, by character id. */
 var triggerPerfActive = {};
 
-/** @type {Record<string, any>} The last finished trigger measurement report, by character id. */
-var triggerPerfLast = {};
+/** @type {TriggerPerfStore|null} The last finished trigger measurement report of each character. */
+var triggerPerfStore = null;
 
 /** @type {Record<string, (counters: any) => void>} Pending requests for a log watcher's trigger counters. */
 var triggerCounterRequests = {};
-
-/** @type {number} How long a trigger measurement runs; matches the log watcher. */
-const triggerPerfDuration = 10 * 60 * 1000;
 
 let cwReady = false;
 /** @type {(() => void) | undefined} */
@@ -181,7 +180,7 @@ class LogBootstrapper {
         const active = triggerPerfActive[ id ];
         // A watcher that closed mid-measurement never reports; stop showing it as running shortly after it should have ended.
         const measuring = active != null && Date.now() < active.endsAt + 30 * 1000;
-        return { characterId: id, measuring: measuring, startedAt: active?.startedAt, endsAt: active?.endsAt, last: triggerPerfLast[ id ] ?? null };
+        return { characterId: id, measuring: measuring, startedAt: active?.startedAt, endsAt: active?.endsAt, last: triggerPerfStore?.get( id ) ?? null };
     }
 
     /**
@@ -245,6 +244,8 @@ class LogBootstrapper {
             combatWatcher.window?.webContents.send( 'tick', tickData );
         } );
 
+        triggerPerfStore = new TriggerPerfStore( app.getPath( 'userData' ) );
+
         // Trigger performance: the main window starts a ten minute measurement per character and reads the last report.
         ipcMain.handle( 'trigger-perf:start', ( event, characterId ) => $this.startTriggerPerf( characterId ) );
         ipcMain.handle( 'trigger-perf:stop', ( event, characterId ) => $this.stopTriggerPerf( characterId ) );
@@ -252,7 +253,7 @@ class LogBootstrapper {
         ipcMain.handle( 'trigger-perf:counters', ( event, characterId ) => $this.getTriggerCounters( characterId ) );
 
         ipcMain.on( 'trigger-perf:result', ( event, data ) => {
-            triggerPerfLast[ data.characterId ] = data.report;
+            triggerPerfStore.set( data.characterId, data.report );
             delete triggerPerfActive[ data.characterId ];
             mainWinRef?.reference?.webContents.send( 'trigger-perf:finished', data.characterId );
         } );
