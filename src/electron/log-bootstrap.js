@@ -77,6 +77,13 @@ let mainWinRef = undefined;
 const checkInterval = 5 * 1000;
 const maxBackupRetryInterval = 5 * 60 * 1000;
 
+/**
+ * Returns a unique path for the rotated copy of the given log file, so a rotation never overwrites an archive file that is still waiting to be zipped.
+ * 
+ * @param {string} logFile The log file path.
+ */
+const getArchiveFilePath = logFile => FsUtilities.Path.prependFilename( logFile, `${ArchiveFilePrefix}${Date.now()}_` );
+
 /** @type {number} The duration to wait for no log file updates before closing the log file watcher. */
 const killTime = 5 * 60 * 1000;
 
@@ -653,7 +660,7 @@ class LogBootstrapper {
                     
                             logWatchers[ characterId ].window?.webContents.send( 'log:backup-started' );
                             // First, let's rename the log file with the archive prefix.
-                            const logFilePath = FsUtilities.Path.prependFilename( logWatchers[ characterId ].logFile, ArchiveFilePrefix );
+                            const logFilePath = getArchiveFilePath( logWatchers[ characterId ].logFile );
                             await fsp.rename( logWatchers[ characterId ].logFile, logFilePath );
                             await fsp.writeFile( logWatchers[ characterId ].logFile, '' );
                 
@@ -789,7 +796,7 @@ class LogBootstrapper {
                 logWatchers[ characterId ].window.webContents.send( 'log:backup-started' );
             }
             // First, let's rename the log file with a timestamp.
-            const logFilePath = FsUtilities.Path.prependFilename( current.logFile, ArchiveFilePrefix );
+            const logFilePath = getArchiveFilePath( current.logFile );
             let renamed = false;
             try {
                 await fsp.rename( current.logFile, logFilePath );
@@ -896,6 +903,8 @@ class LogBootstrapper {
                 // Execute the backup function.
                 backupFn( _stats.size );
 
+            } else {
+                backupFailures = 0;
             }
             
             logWatchers[ characterId ].model = _chr;
