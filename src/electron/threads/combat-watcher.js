@@ -75,6 +75,7 @@ const fs = require( 'fs' );
 const { LogSync, createChatRoomLink, parseChatRoomLink, PeerDataPackageModel, CombatStatisticsPayloadModel, CombatEncounterPayloadModel, HandshakePayloadModel } = require( "../utilities/peer-to-peer" );
 const { nagException, nagLog } = require( "../utilities/nag-console" );
 const FileMonitor = require( "../utilities/file-monitor" );
+const { StaleLineTracker } = require( "../utilities/stale-lines" );
 const perf = require( "../utilities/perf" );
 const { FctModel } = require( "../data/models/fct" );
 
@@ -564,6 +565,11 @@ const stopDpsTracking = () => {
 
 /** @type {string | undefined} */
 var lastCombatLogEntry = undefined;
+/** Floating combat text is not sent for stale lines, so a log backlog does not replay all at once. */
+const staleTracker = new StaleLineTracker();
+const rgxLineTimestamp = /^\[(.*?)\]/;
+/** The log file the stale line tracker has learned its clock offset for. */
+let staleTrackerLogPath = null;
 /**
  * Starts parsing and watching log file changes for the specified file.
  * 
@@ -571,6 +577,11 @@ var lastCombatLogEntry = undefined;
  * @param {number} startLogPosition If a value is provided, will start parsing the log file at the given position.
  */
 async function startParsingLogFile( logPath, startLogPosition ) {
+
+    if ( logPath !== staleTrackerLogPath ) {
+        staleTracker.reset();
+        staleTrackerLogPath = logPath;
+    }
 
     fileMonitor.monitorLines( ( lines ) => {
         // let start = performance.now();
@@ -581,7 +592,11 @@ async function startParsingLogFile( logPath, startLogPosition ) {
                 let prevLog = index === 0 ? lastCombatLogEntry : lines[ index - 1 ];
                 let nextLog = index < lines.length - 1 ? lines[ index + 1 ] : undefined;
                 let fct = parseLogEntries( line, false, 0, prevLog, nextLog );
-                if ( fct ) {
+
+                const timestamp = rgxLineTimestamp.exec( line );
+                timestamp && staleTracker.update( new Date( timestamp[ 1 ] ) );
+
+                if ( fct && !staleTracker.stale ) {
                     fcts = fcts.concat( fct );
                 }
             }

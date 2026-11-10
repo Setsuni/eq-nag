@@ -1,6 +1,7 @@
 // TODO: This can be accomplished using web workers.  Buckle up and do it.
 const { ipcRenderer } = require( 'electron' );
 const fs = require( 'fs' );
+const { StaleLineTracker, staleLineMs } = require( '../utilities/stale-lines' );
 const { Trigger, TriggerAction, ActionTypes, TriggerConditionTypes, OperatorTypes, CharacterClassLevel, TriggerSubAction, TriggerFolder, TriggerCondition, CapturePhrase, Phrase, TriggerParseHistoryModel, getActionLabel, LogTypes, ErrorMessages } = require( '../data/models/trigger' );
 const { QuickShareAuthorListTypes, SimulationProgress, NConditionalModel, VConditionalOperationModel, SConditionalModel, LConditionalOperationModel, SConditionalOperationModel } = require( '../data/models/common' );
 const { PhraseParse, LogTrigger, LogList } = require( './log.model' );
@@ -150,24 +151,16 @@ let triggerGenComplete = false;
     
 let rgxTimestamp = /^\[(.*?)\]\s*/i;
 
-/** Log lines older than this (in milliseconds) are catch-up lines: their attention actions are muted. */
-const staleLineMs = 15000;
 /** True while a line read from the live log file is being parsed. */
 let parsingLiveLine = false;
-/** True while the live line being parsed is stale. */
+/** True while the live line being parsed is stale (older than staleLineMs): its attention actions are muted. */
 let parsingStaleLine = false;
-/** True between the first stale live line and the first fresh one. */
-let catchingUp = false;
-/** The constant difference, in whole hours, between the wall clock and the parsed log time (a time zone or DST mismatch). */
-let clockOffsetMs = 0;
-/** The lag of the stale lines being watched for a constant offset, and when and how many lines were seen at it. */
-let steadyLagMs = null;
-let steadySinceMs = 0;
-let steadyLineCount = 0;
-/** A stale lag that holds within this many milliseconds, for steadyWindowMs and steadyMinLines, is a constant clock offset. */
-const steadyToleranceMs = 3000;
-const steadyWindowMs = 30000;
-const steadyMinLines = 5;
+const staleTracker = new StaleLineTracker( {
+    onCatchingUp: () => log( `Nag is catching up: alerts for lines older than ${staleLineMs / 1000} s are muted.` ),
+    onCaughtUp: () => log( 'Nag has caught up: alerts are no longer muted.' ),
+} );
+/** The log file the stale line tracker has learned its clock offset for. */
+let staleTrackerLogPath = null;
 const rgxRandomRoll = /^\*\*A Magic Die is rolled by (?<player>.+?)\. It could have been any number from (?<min>\d+) to (?<max>\d+), but this time it turned up a (?<roll>\d+)\./;
 
 /** @type {LogList[]} */
@@ -223,9 +216,10 @@ function toLowerCached( value ) {
  */
 function startParsingLogFile( logPath, startLogPosition ) {
     
-    clockOffsetMs = 0;
-    steadyLagMs = null;
-    catchingUp = false;
+    if ( logPath !== staleTrackerLogPath ) {
+        staleTracker.reset();
+        staleTrackerLogPath = logPath;
+    }
 
     fileMonitor.monitorLines( ( lines ) => {
         // let start = performance.now();
@@ -1674,52 +1668,17 @@ function generateTriggerFns() {
  * @param {Date} timestamp The log timestamp of the live line being parsed.
  */
 function updateCatchUp( timestamp ) {
-    let lag = Date.now() - timestamp.getTime() - clockOffsetMs;
+    staleTracker.update( timestamp );
+    parsingStaleLine = staleTracker.stale;
+}
 
-    if ( Number.isNaN( lag ) ) {
-        parsingStaleLine = false;
-        return;
-    }
-
-    if ( Math.abs( lag ) > staleLineMs ) {
-        // A lag that is a whole number of hours (to within the stale limit) is a clock offset such as a time zone or
-        // DST mismatch, not a backlog, so it is learned instead of muting alerts.
-        const hours = Math.round( lag / 3600000 ) * 3600000;
-        if ( hours !== 0 && Math.abs( lag - hours ) <= staleLineMs ) {
-            clockOffsetMs += hours;
-            lag -= hours;
-        }
-    }
-
-    if ( Math.abs( lag ) > staleLineMs ) {
-        // A backlog's lag shrinks as Nag catches up.  A lag that stays constant while lines keep arriving is a clock
-        // offset (for example a half-hour time zone), so it is learned instead of muting every alert.
-        const now = Date.now();
-        if ( steadyLagMs === null || Math.abs( lag - steadyLagMs ) > steadyToleranceMs ) {
-            steadyLagMs = lag;
-            steadySinceMs = now;
-            steadyLineCount = 1;
-        } else {
-            steadyLineCount++;
-            if ( now - steadySinceMs >= steadyWindowMs && steadyLineCount >= steadyMinLines ) {
-                clockOffsetMs += lag;
-                lag = 0;
-                steadyLagMs = null;
-            }
-        }
-    } else {
-        steadyLagMs = null;
-    }
-
-    parsingStaleLine = lag > staleLineMs;
-
-    if ( parsingStaleLine && !catchingUp ) {
-        catchingUp = true;
-        log( `Nag is catching up: alerts for lines older than ${staleLineMs / 1000} s are muted.` );
-    } else if ( !parsingStaleLine && catchingUp ) {
-        catchingUp = false;
-        log( 'Nag has caught up: alerts are no longer muted.' );
-    }
+/**
+ * Returns true if a timer started by the stale live line being parsed has already run out, so it is not created.
+ *
+ * @param {TriggerAction} action The timer action, with its final duration in seconds.
+ */
+function timerExpiredOnArrival( action ) {
+    return parsingStaleLine && action.actionType !== ActionTypes.Stopwatch && !action.repeatTimer && action.duration > 0 && staleTracker.lagMs / 1000 >= action.duration;
 }
 
 /** The actions that get the user's attention, which are not run for stale log lines. */
@@ -3053,6 +3012,10 @@ function displayBeneficialTimerComponent( res, timestamp, action, trigger, spell
     // reset the trigger.
     trigger._reset();
 
+    if ( timerExpiredOnArrival( comp.action ) ) {
+        return comp.instanceId;
+    }
+
     ipcRenderer.send( 'overlay:send:component', comp );
 
     if ( comp.action.endEarlyPhrases?.length > 0 ) {
@@ -3223,6 +3186,10 @@ function displayDotTimerComponent( res, timestamp, action, deltaTime, trigger ) 
 
     // reset the trigger.
     trigger._reset();
+
+    if ( timerExpiredOnArrival( comp.action ) ) {
+        return comp.instanceId;
+    }
 
     ipcRenderer.send( 'overlay:send:component', comp );
 
@@ -3518,7 +3485,7 @@ function displayTimerCountdownComponent(res, timestamp, action, deltaTime, trigg
     // reset the trigger.
     trigger._reset();
 
-    if ( comp.action.duration > 0 || comp.action.actionType === ActionTypes.Stopwatch ) {
+    if ( ( comp.action.duration > 0 || comp.action.actionType === ActionTypes.Stopwatch ) && !timerExpiredOnArrival( comp.action ) ) {
         // Timers with zero duration are non-sensical, or "undefined" if you like.
         ipcRenderer.send( 'overlay:send:component', comp );
 

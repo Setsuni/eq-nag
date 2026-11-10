@@ -11,6 +11,9 @@ const maxReadErrors = 5;
 const lineReadLengthLimit = 22000;
 const averageLineLength = 100;
 const maxReadSize = lineReadLengthLimit * averageLineLength;
+// The number of bytes at the start of the log used to tell whether the file was replaced.
+const headPrintSize = 128;
+const tooSmallLogIntervalMs = 30000;
 
 let readDelayMs = 200;
 let readErrorDelayMs = 1000;
@@ -378,6 +381,41 @@ class FileMonitor {
 
             let checkFirstLine = true;
             let backlogLogged = false;
+            let tooSmallLoggedAt = 0;
+            /** @type {Buffer | null} */
+            let headPrint = null;
+
+            /**
+             * Returns true if the log was replaced by another file (a new file at the same path, or the same file
+             * overwritten from the start), which a smaller size alone does not reveal.
+             */
+            const logWasReplaced = async () => {
+                try {
+                    const opened = await file.stat();
+                    if ( opened.ino !== stats.ino ) {
+                        return true;
+                    }
+
+                    const head = Buffer.alloc( headPrintSize );
+                    const headRead = await file.read( head, 0, headPrintSize, 0 );
+                    const current = head.subarray( 0, headRead.bytesRead );
+
+                    if ( headPrint === null ) {
+                        headPrint = current;
+                        return false;
+                    }
+
+                    const shared = Math.min( headPrint.length, current.length );
+                    if ( current.length < headPrint.length || !current.subarray( 0, shared ).equals( headPrint.subarray( 0, shared ) ) ) {
+                        return true;
+                    }
+
+                    headPrint = current;
+                } catch ( error ) {
+                    // The next pass checks again.
+                }
+                return false;
+            };
 
             const parse = async () => {
 
@@ -392,11 +430,23 @@ class FileMonitor {
 
                 stats = await this.checkFile();
 
+                if ( stats.size >= position && position > 0 && await logWasReplaced() ) {
+                    sendLog( `File Monitor > ${this.filePath} was replaced, reading it from the start.` );
+
+                    headPrint = null;
+                    position = 0;
+
+                    file?.close();
+                    file = await fsp.open( this.filePath, 'r' );
+                    stats = await this.checkFile();
+                }
+
                 if ( stats.size < position ) {
                     sendLog( `File Monitor > ${this.filePath} exists, resetting read position.` );
 
                     this.#readErrorCount++;
                     position = 0;
+                    headPrint = null;
 
                     stats = await this.waitForLogFile();
                     file?.close();
@@ -408,11 +458,14 @@ class FileMonitor {
 
                 const readSize = stats.size - position;
                 if ( readSize > 0 && readSize < 26 ) {
-                    sendLog( {
-                        label: 'File Monitor',
-                        message: `File size is too small: ${readSize} bytes.`,
-                        payload: { readSize, position, stats },
-                    } );
+                    if ( Date.now() - tooSmallLoggedAt >= tooSmallLogIntervalMs ) {
+                        tooSmallLoggedAt = Date.now();
+                        sendLog( {
+                            label: 'File Monitor',
+                            message: `File size is too small: ${readSize} bytes.`,
+                            payload: { readSize, position, stats },
+                        } );
+                    }
                     setTimeout( () => parse(), readDelayMs );
                     return;
                 }
