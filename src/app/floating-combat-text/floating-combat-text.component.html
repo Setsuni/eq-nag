@@ -11,6 +11,12 @@
     <!-- TODO: This checkbox doesn't work immediately -->
     <div style="text-align: right; padding: 0 25px 20px;"><mat-checkbox [(ngModel)]="enableFct" (change)="onEnableFctChange()">Enable FCT</mat-checkbox></div>
 
+    <div class="empty-state" *ngIf="combatGroupsLoaded && combatGroups.length === 0">
+        <h2>No combat text groups yet</h2>
+        <p>Floating combat text shows your hits and heals as numbers on screen. A group picks which ones appear and how they look.</p>
+        <button mat-button color="accent" (click)="newCombatGroup()"><mat-icon class="material-icons-outlined">add</mat-icon> New</button>
+    </div>
+
     <mat-accordion class="example-headers-align">
         <mat-expansion-panel hideToggle [@.disabled]="true" *ngFor="let group of combatGroups; let i = index" [expanded]="selectedPanelIndex === i" (expandedChange)="selectedPanelIndex = $event ? i : selectedPanelIndex">
             <mat-expansion-panel-header>

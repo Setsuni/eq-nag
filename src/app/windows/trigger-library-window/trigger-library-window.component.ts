@@ -118,16 +118,31 @@ export class TriggerLibraryWindowComponent implements OnInit {
             this.sortDirection = 'asc';
         }
 
-        let sortDir: ( 'asc' | 'desc' )[] = [];
-        if ( column === 'name' ) {
-            this.sortColumns = [ column ];
-            sortDir = [ this.sortDirection ];
-        } else {
-            this.sortColumns = [ column, 'name' ];
-            sortDir = [ this.sortDirection, 'asc' ];
-        }
+        this.sortColumns = column === 'name' ? [ column ] : [ column, 'name' ];
+        this.packages = this.sortPackages( this.packages );
+    }
 
-        this.packages = _.orderBy( this.packages, this.sortColumns, sortDir );
+    /**
+     * Sorts packages by the current sort column, comparing numbers inside names 
+     * by value (Package 2 comes before Package 10).
+     * 
+     * @param packages The packages to sort.
+     */
+    private sortPackages( packages: TriggerPackageListModel[] ): TriggerPackageListModel[] {
+        let compare = ( a: string, b: string ) => ( a ?? '' ).localeCompare( b ?? '', undefined, { numeric: true, sensitivity: 'base' } );
+        let direction = this.sortDirection === 'asc' ? 1 : -1;
+        let byAuthor = this.sortColumns[ 0 ] === 'author';
+
+        return packages?.slice().sort( ( a, b ) => {
+            if ( byAuthor ) {
+                let result = compare( a.author, b.author );
+                if ( result !== 0 ) {
+                    return result * direction;
+                }
+                return compare( a.name, b.name );
+            }
+            return compare( a.name, b.name ) * direction;
+        } );
     }
 
 
@@ -347,7 +362,7 @@ export class TriggerLibraryWindowComponent implements OnInit {
         this.loadingLibrary = true;
         this.ipcService.getInstalledPackages().subscribe( installed => {
             this.libraryService.getPackagesList( this.author?.authorId, installed.map( f => f.packageId ) ).subscribe( packages => {
-                this.packages = _.orderBy( packages.filter(f => f.name?.length > 0), [ 'name' ] );
+                this.packages = this.sortPackages( packages.filter(f => f.name?.length > 0) );
                 packages.forEach( pkg => {
                     this.ipcService.isPackageInstalled( pkg.triggerPackageId ).subscribe( installed => this.installedTriggers[ pkg.triggerPackageId ] = installed );
                 } );
