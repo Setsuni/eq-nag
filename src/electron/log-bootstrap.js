@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, screen } = require( "electron" );
 const fs = require('fs');
 const fsp = fs.promises;
+const path = require( 'path' );
 const CharacterDatabaseStore = require( './data/character-database' );
 const { CharacterModel } = require( './data/models/character' );
 const _ = require( 'lodash' );
@@ -76,6 +77,17 @@ let mainWinRef = undefined;
 /** @type {number} The duration to wait between checking for activity on a log file. */
 const checkInterval = 5 * 1000;
 const maxBackupRetryInterval = 5 * 60 * 1000;
+
+/**
+ * Returns true if the given file name is a rotated copy of the given log file name, in the current or the legacy naming.
+ * 
+ * @param {string} fileName The file name to test.
+ * @param {string} logFileName The watched log file name.
+ */
+const isRotatedLogName = ( fileName, logFileName ) => {
+    const match = /^archive_(?:\d+_)?(.+)$/.exec( fileName );
+    return match != null && match[ 1 ] === logFileName;
+};
 
 /**
  * Returns a unique path for the rotated copy of the given log file, so a rotation never overwrites an archive file that is still waiting to be zipped.
@@ -571,6 +583,37 @@ class LogBootstrapper {
 
 
     /**
+     * Queues rotated log files that a previous run left behind before they were archived.
+     * Only files named exactly like a rotation of this character's log file are touched.
+     * 
+     * @param {CharacterModel} chr The character to check.
+     */
+    async #queueLeftoverRotatedLogs( chr ) {
+        try {
+            const rules = this.#userPreferences.logMaintenanceRules;
+            if ( rules?.enableLogFileMaintenance !== true || !( this.#userPreferences.everquestInstallFolder?.length > 0 ) || !chr?.logFile ) {
+                return;
+            }
+
+            const dir = path.dirname( chr.logFile );
+            const logFileName = path.basename( chr.logFile );
+            const names = await fsp.readdir( dir );
+            for ( const name of names ) {
+                const fullPath = path.join( dir, name );
+                if ( isRotatedLogName( name, logFileName ) && !this.#filesForArchive.some( f => f.logFile === fullPath ) ) {
+                    const stats = await FsUtilities.statOrNull( fullPath );
+                    if ( stats?.isFile() ) {
+                        log.info( `LogBootstrap > Queueing leftover rotated log for archive: ${fullPath}` );
+                        this.#addToArchive( fullPath, stats.size );
+                    }
+                }
+            }
+        } catch ( error ) {
+            log.error( 'LogBootstrap > Could not check for leftover rotated logs.', error );
+        }
+    }
+
+    /**
      * Adds the given log file to the backup list and checks if backups can start.
      * 
      * @param {string} logFile The full path to the log file.
@@ -745,6 +788,7 @@ class LogBootstrapper {
      */
     async startWatcher( mainWindowRef, chr, isDev, characterDatabase, sendTick ) {
         let characterId = chr.characterId;
+        await this.#queueLeftoverRotatedLogs( chr );
         let startingStats = await FsUtilities.existsAsync( chr.logFile ) ? await fsp.stat( chr.logFile ) : null;
         logWatchers[ characterId ] = {
             /** @type {BrowserWindow} */

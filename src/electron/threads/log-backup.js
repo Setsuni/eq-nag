@@ -444,6 +444,15 @@ const backupBySchedule = async ( logFilePaths, everquestInstallFolder, daysOfWee
                 }
             } // Next line
 
+            // A log without any timestamped lines falls back to the file's date.
+            if ( logDate == null ) {
+                logDate = new Date( stats.mtime );
+                logDate.setHours( 0, 0, 0, 0 );
+                while ( daysOfWeek.indexOf( logDate.getDay() ) === -1 && daysOfWeek.length > 0 ) {
+                    logDate = DateUtilities.addDays( logDate, -1 );
+                }
+            }
+
             // We're done processing this chunk, let's flush what we have
             // before moving on to the next chunk.
             await streamData( FsUtilities.Path.prependFilename( fileName, `${logDate.getTime()}_` ), logLines, stats.size );
@@ -539,12 +548,15 @@ const backupBySchedule = async ( logFilePaths, everquestInstallFolder, daysOfWee
     log.info( 'LogBackup > Deleting archive source folder.' );
     await fsp.rmdir( logArchiveProcDir );
 
-    logFilePaths.forEach( async logFile => {
-        log.info( `LogBackup > Deleting file ${logFile}` );
-        // TODO: Enable file deletion.
-        // await fsp.unlink( logFile );
-        await fsp.rename( logFile, FsUtilities.Path.prependFilename( logFile, '-' + FsUtilities.getFileTimestamp() ) );
-    } );
+    // The data is in the archive now, so the rotated source files can go.
+    for ( let i = 0; i < logFilePaths.length; i++ ) {
+        log.info( `LogBackup > Deleting file ${logFilePaths[ i ]}` );
+        try {
+            await fsp.unlink( logFilePaths[ i ] );
+        } catch ( error ) {
+            logError( error );
+        }
+    }
 
     log.info( 'LogBackup > Clean up done.' );
 
