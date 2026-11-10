@@ -6,6 +6,7 @@ import { ImageUtility, StringUtility } from 'src/app/utilities';
 import { IpcService } from 'src/app/ipc.service';
 import { DialogService } from 'src/app/dialogs/dialog.service';
 import * as _ from 'lodash-es';
+import { usesAdvancedTimerOptions } from '../timer-quick/timer-quick.component';
 
 @Component( {
     selector: 'app-trigger-action-timer',
@@ -15,6 +16,7 @@ import * as _ from 'lodash-es';
 export class TriggerActionTimerComponent implements OnInit {
     
     public Math: typeof Math = Math;
+    public showAdvanced: boolean = false;
     public audioFiles: FileModel[] = [];
     public actionTypes: typeof ActionTypes = ActionTypes;
     public timerRestartBehaviors: typeof TimerRestartBehaviors = TimerRestartBehaviors;
@@ -36,7 +38,12 @@ export class TriggerActionTimerComponent implements OnInit {
 
     constructor( public dialogService: DialogService, private contextService: ContextService, private ipcService: IpcService ) { }
 
+    public get usesAdvanced(): boolean {
+        return usesAdvancedTimerOptions( this.action );
+    }
+
     ngOnInit() {
+        this.showAdvanced = this.usesAdvanced;
         this.ipcService.getAudioFiles().subscribe( files => this.audioFiles = files );
     }
 

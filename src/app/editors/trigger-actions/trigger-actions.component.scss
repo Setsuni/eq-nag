@@ -42,25 +42,25 @@ mat-form-field {
     &.collapsed {
         padding-bottom: 0;
     }
+}
 
-    ::ng-deep mat-card-header {
-        padding: 6px 8px;
-        align-items: center;
+:host ::ng-deep .action-card mat-card-header {
+    padding: 6px 8px;
+    align-items: center;
 
-        .mat-card-title {
-            margin: 0;
-            font-size: 15px;
-            font-weight: 500;
-        }
+    mat-card-title.mat-card-title {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 500;
+    }
 
-        .mat-card-subtitle {
-            margin: 2px 0 0;
-            font-size: 12px;
-        }
+    mat-card-subtitle.mat-card-subtitle {
+        margin: 2px 0 0;
+        font-size: 12px;
+    }
 
-        .mat-card-header-text {
-            margin: 0 12px;
-        }
+    .mat-card-header-text {
+        margin: 0 12px;
     }
 }
 

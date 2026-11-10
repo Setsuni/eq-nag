@@ -2,6 +2,7 @@ import { Component, ElementRef, Input, OnInit, ViewChild } from '@angular/core';
 import { CapturePhrase, FileModel, OverlayWindowModel, TimerRestartBehaviors, TriggerAction } from 'src/app/core.model';
 import { ImageUtility } from 'src/app/utilities';
 import * as _ from 'lodash-es';
+import { usesAdvancedTimerOptions } from '../timer-quick/timer-quick.component';
 import { ContextMenuModel } from 'src/app/context-menu/context-menu.model';
 import { ContextService } from 'src/app/context-menu/context.service';
 import { IpcService } from 'src/app/ipc.service';
@@ -15,6 +16,7 @@ import { DialogService } from 'src/app/dialogs/dialog.service';
 export class TriggerActionDotTimerComponent implements OnInit {
 
     public Math: typeof Math = Math;
+    public showAdvanced: boolean = false;
     public audioFiles: FileModel[] = [];
     public timerRestartBehaviors: typeof TimerRestartBehaviors = TimerRestartBehaviors;
     @Input( 'action' ) public action: TriggerAction;
@@ -31,7 +33,12 @@ export class TriggerActionDotTimerComponent implements OnInit {
 
     constructor( public dialogService: DialogService, private contextService: ContextService, private ipcService: IpcService ) { }
 
+    public get usesAdvanced(): boolean {
+        return usesAdvancedTimerOptions( this.action );
+    }
+
     ngOnInit() {
+        this.showAdvanced = this.usesAdvanced;
         this.ipcService.getAudioFiles().subscribe( files => this.audioFiles = files );
     }
 

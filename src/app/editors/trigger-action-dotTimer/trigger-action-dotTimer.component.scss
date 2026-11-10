@@ -2,3 +2,27 @@
 mat-form-field {
     font-size: 12px;
 }
+
+.timer-advanced-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    padding: 8px 0;
+    border: 0;
+    border-top: 1px solid #ffffff1f;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+
+    .advanced-note {
+        margin-left: 8px;
+        padding: 0 8px;
+        border-radius: 10px;
+        background: #ffffff1f;
+        font-size: 11px;
+    }
+}

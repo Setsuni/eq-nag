@@ -1,28 +1,17 @@
+<app-timer-quick [action]="action" [timerOverlays]="timerOverlays" [alertOverlays]="alertOverlays" [capturePhrases]="phrases"></app-timer-quick>
+<button type="button" class="timer-advanced-toggle" (click)="showAdvanced = !showAdvanced" [attr.aria-expanded]="showAdvanced">
+    <mat-icon>{{ showAdvanced ? 'expand_more' : 'chevron_right' }}</mat-icon>Advanced
+    <span class="advanced-note" *ngIf="!showAdvanced && usesAdvanced">in use</span>
+</button>
+<div *ngIf="showAdvanced">
 <mat-tab-group animationDuration="0ms" [selectedIndex]="0">
-    <mat-tab label="Timer">
+    <mat-tab label="Options">
 
         <div class="card-tab-content">
 
             <div class="card-property">
-                <div>
-                    <mat-form-field style="width: 100%;" floatLabel="always">
-                        <mat-label>Overlay window</mat-label>
-                        <mat-select [(ngModel)]="action.overlayId" name="ddlDotTimerOverlay">
-                            <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
-                        </mat-select>
-                    </mat-form-field>
-                </div>
-                <div>
-                    <mat-form-field style="width: 100%;" floatLabel="always">
-                        <mat-label>Timer name</mat-label>
-                        <input matInput [(ngModel)]="action.displayText" name="txtDisplayText" />
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <div class="card-property">
-                <div class="content-middle">Timer duration<a (click)="enterStorageDurationFormula()" href="javascript:void(0);" class="color-blue" style="float: right;">Storage Formula</a></div>
-                <div class="content-right"><app-duration [(ngModel)]="action.duration" name="durActionDuration" style="display: inline-block;" ></app-duration></div>
+                <div class="content-middle">Duration from a stored value</div>
+                <div class="content-right"><a (click)="enterStorageDurationFormula()" href="javascript:void(0);" class="color-blue">Storage Formula</a></div>
             </div>
 
             <div class="card-property" *ngIf="action.actionType === actionTypes.BeneficialTimer">
@@ -32,21 +21,6 @@
             <div class="card-property">
                 <div class="content-middle"><mat-checkbox [(ngModel)]="action.hideTimer" name="cbxHideTimer" title="Use this option if you want to keep track of a duration but don't need to see the progress.">Hide Timer?</mat-checkbox></div>
                 <div class="content-middle"><a *ngIf="action.hideTimer" (click)="editHideTimerConditions()" href="javascript:void(0);" class="color-blue">Conditions</a></div>
-            </div>
-
-            <div class="card-property">
-                <div class="content-middle">When triggered again, how do you want the timer to behave?</div>
-                <div>
-                    <mat-form-field style="width: 100%;" floatLabel="always">
-                        <mat-label>Restart behavior</mat-label>
-                        <mat-select [(ngModel)]="action.restartBehavior" name="rdoRestartBehavior_{{action.actionId}}">
-                            <mat-option [value]="timerRestartBehaviors.StartNewTimer">Always start new timer</mat-option>
-                            <mat-option [value]="timerRestartBehaviors.RestartOnDuplicate">Restart only if the name matches</mat-option>
-                            <mat-option [value]="timerRestartBehaviors.RestartTimer">Restart timer regardless of the name</mat-option>
-                            <mat-option [value]="timerRestartBehaviors.DoNothing">Do nothing and ignore trigger</mat-option>
-                        </mat-select>
-                    </mat-form-field>
-                </div>
             </div>
 
             <div class="card-property">
@@ -67,17 +41,6 @@
             <div class="card-property">
                 <div class="content-middle"><mat-checkbox [(ngModel)]="action.useCustomColor" name="cbxUseCustomColor">Use color</mat-checkbox></div>
                 <div class="content-middle content-right"><app-color-picker [(ngModel)]="action.overrideTimerColor" name="acpOverrideTimerColor" *ngIf="action.useCustomColor" [inline]="true"></app-color-picker></div>
-            </div>
-
-            <div class="card-property" *ngIf="action.actionType === actionTypes.BeneficialTimer">
-                <div class="content-middle">Cast time</div>
-                <div class="content-middle">
-                    <mat-form-field style="width: 100%;" floatLabel="always">
-                        <mat-label>Cast time</mat-label>
-                        <input matInput type="number" [(ngModel)]="action.castTime" name="txtCastTime" required />
-                        <mat-hint>Base casting time in milliseconds. (ex: 2.5 is 2500)</mat-hint>
-                    </mat-form-field>
-                </div>
             </div>
 
             <div class="card-property" *ngIf="action.actionType === actionTypes.BeneficialTimer">
@@ -394,5 +357,6 @@
         </div>
     </mat-tab>
 </mat-tab-group>
+</div>
 <input type="file" #iconFileSelector style="display:none;" accept="image/png, image/jpeg, image/gif, image/webp, image/svg+xml, .png, .jpg, .jpeg, .gif, .webp, .svg" (change)="iconFileSelected($event)" />
 <input type="file" #audioFileSelector style="display:none;" accept="audio/mpeg, audio/ogg, audio/mp4, audio/x-m4a, audio/opus, audio/webm, audio/aac, .mp3, .ogg, .m4a, .opus, .webm, .aac" (change)="onAudioFileSelected($event)" />
