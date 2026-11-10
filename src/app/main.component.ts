@@ -541,6 +541,29 @@ export class MainComponent implements OnInit {
 
 
     /**
+     * Runs the callback once the setup wizard and any other dialog are closed.
+     * 
+     * @param callback The function to run.
+     * @param attempts The number of checks left before giving up.
+     */
+    private whenNoStartupDialog( callback: () => void, attempts: number = 200 ): void {
+        if ( this.setupCompleted && this.dialog.openDialogs.length === 0 && !this.showingUpdateConfirmation ) {
+            callback();
+        } else if ( attempts > 0 ) {
+            timer( 3000 ).subscribe( () => this.whenNoStartupDialog( callback, attempts - 1 ) );
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
      * Checks the triggers a little after start, and offers a review when something was found and the pop-up was not dismissed for this version.
      */
     private startTriggerHealthCheck(): void {
@@ -563,16 +586,16 @@ export class MainComponent implements OnInit {
                     }
 
                     const data: TriggerHealthDialogData = { version: version, summary: report.summary };
-                    this.dialog
-                        .open<TriggerHealthDialogComponent, TriggerHealthDialogData, TriggerHealthDialogResult>( TriggerHealthDialogComponent, { width: '520px', data: data, panelClass: 'app-dialog' } )
-                        .afterClosed().subscribe( result => {
-                            if ( result?.dontShowAgain || result?.review ) {
+                    this.whenNoStartupDialog( () => {
+                        this.dialog
+                            .open<TriggerHealthDialogComponent, TriggerHealthDialogData, TriggerHealthDialogResult>( TriggerHealthDialogComponent, { width: '520px', data: data, panelClass: 'app-dialog' } )
+                            .afterClosed().subscribe( result => {
                                 this.healthService.setSeenVersion( version );
-                            }
-                            if ( result?.review ) {
-                                this.openTriggerHealth();
-                            }
-                        } );
+                                if ( result?.review ) {
+                                    this.openTriggerHealth();
+                                }
+                            } );
+                    } );
                 } );
         } );
     }

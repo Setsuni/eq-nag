@@ -1678,7 +1678,7 @@ export class TriggersComponent implements OnInit {
 
     /**
      * Allows the user to add/edit/delete folder conditions.
-     *
+     * 
      * @param folderId The id of the desired folder.
      */
     private editFolderConditions( folderId: string ): void {

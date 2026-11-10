@@ -29,23 +29,27 @@
             <span class="group-path">{{group.path}}</span>
             <span class="package-badge" *ngIf="group.installedPackage">installed package</span>
             <span class="spacer"></span>
-            <span class="group-count">{{group.findings.length}}</span>
+            <span class="group-count">{{group.count}}</span>
         </div>
         <div class="group-body" *ngIf="isOpen(group)">
-            <div class="finding" *ngFor="let finding of group.findings; trackBy: trackFinding">
+            <div class="finding" *ngFor="let row of group.rows; trackBy: trackRow">
                 <div class="finding-top">
-                    <span class="finding-name">{{finding.subject.kind === 'folder' ? 'Folder: ' : ''}}{{finding.subject.name}}</span>
-                    <span class="severity {{finding.severity}}">{{severityLabels[finding.severity]}}</span>
-                    <span class="severity-note" *ngIf="finding.subject.disabled">turned off</span>
-                    <span class="severity-note look" *ngIf="finding.needsLook">needs a look</span>
+                    <span class="finding-name">{{row.subject.kind === 'folder' ? 'Folder: ' : ''}}{{row.subject.name}}</span>
+                    <span class="severity-note" *ngIf="row.subject.disabled">turned off</span>
                 </div>
-                <div class="finding-reason">{{finding.reason}}</div>
-                <div class="finding-detail" *ngIf="advanced && finding.detail">{{finding.detail}}</div>
-                <div class="finding-warning" *ngIf="finding.package && finding.fix">This belongs to an installed package. The next package update puts the old value back.</div>
+                <div class="finding-item" *ngFor="let finding of row.findings; trackBy: trackFinding">
+                    <div class="finding-top">
+                        <span class="severity {{finding.severity}}">{{severityLabels[finding.severity]}}</span>
+                        <span class="severity-note look" *ngIf="finding.needsLook">needs a look</span>
+                    </div>
+                    <div class="finding-reason">{{finding.reason}}</div>
+                    <div class="finding-detail" *ngIf="advanced && finding.detail">{{finding.detail}}</div>
+                </div>
+                <div class="finding-warning" *ngIf="row.package && fixable(row).length > 0">This belongs to an installed package. The next package update puts the old value back.</div>
                 <div class="finding-actions">
-                    <button mat-stroked-button color="accent" *ngIf="finding.fix" (click)="fix(finding)" [disabled]="busy">{{finding.package ? 'Fix anyway: ' : ''}}{{finding.fix.label}}</button>
-                    <button mat-button (click)="open(finding)">{{finding.subject.kind === 'folder' ? 'Open folder' : 'Open trigger'}}</button>
-                    <button mat-button *ngIf="finding.package" (click)="messageAuthor(finding)">Message author</button>
+                    <button mat-stroked-button color="accent" *ngFor="let finding of fixable(row)" (click)="fix(finding)" [disabled]="busy">{{row.package ? 'Fix anyway: ' : ''}}{{finding.fix.label}}</button>
+                    <button mat-button (click)="open(row.findings[0])">{{row.subject.kind === 'folder' ? 'Open folder' : 'Open trigger'}}</button>
+                    <button mat-button *ngIf="row.package" (click)="messageAuthor(row)">Message author</button>
                 </div>
             </div>
         </div>

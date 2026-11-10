@@ -43,6 +43,9 @@ export interface HealthReport {
 }
 
 export interface HealthChangeResult {
+    /** The number of fixes applied. */
+    fixes: number;
+    /** The number of triggers and folders those fixes touched. */
     changed: number;
     skipped?: number;
     undoId?: string | null;
@@ -115,8 +118,8 @@ export class TriggerHealthService {
      *
      * @param undoId The change to revert; null reverts all.
      */
-    public undo( undoId: string | null = null ): Observable<{ changed: number; report: HealthReport }> {
-        return this.request<{ changed: number; report: HealthReport }>( 'health:undo', { undoId } ).pipe( tap( result => this.report$.next( result.report ) ) );
+    public undo( undoId: string | null = null ): Observable<{ fixes: number; changed: number; report: HealthReport }> {
+        return this.request<{ fixes: number; changed: number; report: HealthReport }>( 'health:undo', { undoId } ).pipe( tap( result => this.report$.next( result.report ) ) );
     }
 
     /**

@@ -3,9 +3,17 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { IpcService } from '../ipc.service';
 import { HealthChangeResult, HealthFinding, HealthReport, HealthSeverity, TriggerHealthService } from './trigger-health.service';
 
+interface HealthRow {
+    subject: HealthFinding['subject'];
+    findings: HealthFinding[];
+    package: HealthFinding['package'];
+    severity: HealthSeverity;
+}
+
 interface HealthGroup {
     path: string;
-    findings: HealthFinding[];
+    rows: HealthRow[];
+    count: number;
     installedPackage: boolean;
 }
 
@@ -79,7 +87,7 @@ export class TriggerHealthComponent implements OnInit {
         this.busy = true;
         this.healthService.undo( null ).subscribe( result => {
             this.busy = false;
-            this.snackBar.open( `${this.countLabel( result.changed )} restored.`, 'Close', { duration: 4000 } );
+            this.snackBar.open( `${this.fixLabel( result.fixes, result.changed )} undone.`, 'Close', { duration: 4000 } );
         } );
     }
 
@@ -99,16 +107,15 @@ export class TriggerHealthComponent implements OnInit {
     /**
      * Copies a ready-made note for the author of an installed package.
      *
-     * @param finding The finding in a package trigger.
+     * @param row The row of a package trigger.
      */
-    public messageAuthor( finding: HealthFinding ): void {
-        const pkg = finding.package;
+    public messageAuthor( row: HealthRow ): void {
+        const pkg = row.package;
         const note = [
             `Hi! Nag's trigger health check found a problem in your package "${pkg.name}".`,
             '',
-            `${finding.subject.kind === 'folder' ? 'Folder' : 'Trigger'}: ${finding.subject.name}`,
-            finding.reason,
-            ...( finding.fix ? [ `Suggested change: ${finding.fix.label}.` ] : [] ),
+            `${row.subject.kind === 'folder' ? 'Folder' : 'Trigger'}: ${row.subject.name}`,
+            ...row.findings.flatMap( f => [ f.reason, ...( f.fix ? [ `Suggested change: ${f.fix.label}.` ] : [] ) ] ),
         ].join( '\n' );
 
         this.ipcService.sendTextToClipboard( note );
@@ -140,8 +147,19 @@ export class TriggerHealthComponent implements OnInit {
         return group.path;
     }
 
+    public trackRow( index: number, row: HealthRow ): string {
+        return `${row.subject.kind}:${row.subject.id}`;
+    }
+
     public trackFinding( index: number, finding: HealthFinding ): string {
         return finding.id;
+    }
+
+    /**
+     * Returns the fixes of a row that the user may apply.
+     */
+    public fixable( row: HealthRow ): HealthFinding[] {
+        return row.findings.filter( f => f.fix );
     }
 
     /**
@@ -155,7 +173,7 @@ export class TriggerHealthComponent implements OnInit {
         } else if ( result.changed === 0 ) {
             this.snackBar.open( 'Nothing was changed; the trigger was edited since the last check. Checked again.', 'Close', { duration: 6000 } );
         } else {
-            const ref = this.snackBar.open( `${this.countLabel( result.changed )} changed.`, 'Undo', { duration: 10000 } );
+            const ref = this.snackBar.open( `${this.fixLabel( result.fixes, result.changed )} applied.`, 'Undo', { duration: 10000 } );
             ref.onAction().subscribe( () => {
                 this.busy = true;
                 this.healthService.undo( result.undoId ).subscribe( () => this.busy = false );
@@ -163,8 +181,8 @@ export class TriggerHealthComponent implements OnInit {
         }
     }
 
-    private countLabel( count: number ): string {
-        return `${count} ${count === 1 ? 'trigger or folder' : 'triggers or folders'}`;
+    private fixLabel( fixes: number, changed: number ): string {
+        return `${fixes} ${fixes === 1 ? 'fix' : 'fixes'} (${changed} ${changed === 1 ? 'trigger or folder' : 'triggers or folders'})`;
     }
 
     private setReport( report: HealthReport ): void {
@@ -178,12 +196,20 @@ export class TriggerHealthComponent implements OnInit {
         findings.forEach( finding => {
             let group = groups.find( g => g.path === finding.subject.folderPath );
             if ( !group ) {
-                group = { path: finding.subject.folderPath, findings: [], installedPackage: false };
+                group = { path: finding.subject.folderPath, rows: [], count: 0, installedPackage: false };
                 groups.push( group );
             }
-            group.findings.push( finding );
+
+            let row = group.rows.find( r => r.subject.kind === finding.subject.kind && r.subject.id === finding.subject.id );
+            if ( !row ) {
+                row = { subject: finding.subject, findings: [], package: finding.package, severity: finding.severity };
+                group.rows.push( row );
+            }
+
+            row.findings.push( finding );
+            group.count++;
         } );
-        groups.forEach( g => g.installedPackage = g.findings.every( f => f.package != null ) );
+        groups.forEach( g => g.installedPackage = g.rows.every( r => r.package != null ) );
         return groups;
     }
 
