@@ -430,11 +430,30 @@ const counterAction = ( name, resetSeconds, resetPhrases ) => ( { actionType: Ac
     check( w.matched( 'Fine' ) === 1, 'no parse function: later triggers still run' );
 }
 
+// An own condition and an inherited folder condition on the same variable both count, and values are trimmed.
+{
+    const folder = { folderId: 'folderE', name: 'Mode folder', folderConditions: [ variableIs( 'Mode', 'a' ) ], children: [] };
+    const w = createWatcher( {
+        triggers: [
+            makeTrigger( 'Both', [ '^Go now$' ], { folderId: 'folderE', conditions: [ variableIs( 'Mode', ' b | c ' ) ] } ),
+            makeTrigger( 'Setter', [ '^Set mode (\\w+)$' ], { actions: [ storeAction( 'Mode' ) ] } ),
+        ],
+        folders: [ folder ],
+    } );
+    w.tick();
+    const both = () => w.internals.triggerGate.open[ w.internals.activeTriggers.findIndex( t => t.name === 'Both' ) ] === 1;
+    w.batch( [ 'Set mode a' ] );
+    check( !both(), 'same variable: the folder condition alone is not enough' );
+    w.batch( [ 'Set mode c' ] );
+    check( both(), 'same variable: both conditions met, alternatives trimmed' );
+    w.batch( [ 'Go now' ] );
+    check( w.matched( 'Both' ) === 1, 'same variable: matches' );
+}
+
 // The gate decides like the trigger's own condition check, for random states.
 {
     const names = [ 'VarA', 'VarB', 'VarC' ];
-    const values = [ 'one', 'two', 'three', 'one|two' ];
-    let seed = 12345;
+        let seed = 12345;
     const random = n => { seed = ( seed * 1103515245 + 12345 ) & 0x7fffffff; return seed % n; };
     const operators = [ OperatorTypes.Equals, OperatorTypes.IsNull, OperatorTypes.DoesNotEqual, OperatorTypes.Contains ];
     const counterOperators = [ OperatorTypes.Equals, OperatorTypes.GreaterThan, OperatorTypes.LessThan, OperatorTypes.DoesNotEqual ];
@@ -443,7 +462,7 @@ const counterAction = ( name, resetSeconds, resetPhrases ) => ( { actionType: Ac
         if ( random( 3 ) === 0 ) {
             return counterIs( `Count${random( 2 )}`, [ '', '0', '1', '3', null ][ random( 5 ) ], counterOperators[ random( 4 ) ] );
         }
-        return variableIs( names[ random( 3 ) ], [ '', 'one', 'two', 'o', 'one|two', null ][ random( 6 ) ], operators[ random( 4 ) ] );
+        return variableIs( names[ random( 3 ) ], [ '', 'one', 'two', 'o', 'one|two', null, ' one | two ', 'one|', '|', ' ' ][ random( 10 ) ], operators[ random( 4 ) ] );
     };
 
     const triggers = [];
@@ -477,7 +496,7 @@ const counterAction = ( name, resetSeconds, resetPhrases ) => ( { actionType: Ac
     mismatches = 0;
     for ( let round = 0; round < 300; round++ ) {
         const name = names[ random( 3 ) ];
-        t.storedVariables[ name ] = Array.from( { length: random( 3 ) }, () => [ 'one', 'two', 'three' ][ random( 3 ) ] );
+        t.storedVariables[ name ] = Array.from( { length: random( 3 ) }, () => [ 'one', 'two', 'three', 'one two' ][ random( 4 ) ] );
         t.triggerGate.variableChanged( name );
         t.activeTriggers.forEach( ( trigger, index ) => {
             if ( ( t.triggerGate.open[ index ] === 1 ) !== ( trigger._checkConditions() === true ) ) {

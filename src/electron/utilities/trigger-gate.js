@@ -65,6 +65,22 @@ function storeContainsValue( stored, key, value ) {
 }
 
 /**
+ * Splits a condition value into its trimmed, non-empty alternatives.  Returns null when there are none.
+ * 
+ * @returns {string[]|null}
+ * 
+ * @param {string} variableValue The value as typed by the user.  Ex: Knowledge | Tranquility
+ */
+function parseConditionValues( variableValue ) {
+    if ( !variableValue ) {
+        return null;
+    }
+
+    let values = variableValue.split( /\|/gi ).map( v => v.trim() ).filter( v => v.length > 0 );
+    return values.length > 0 ? values : null;
+}
+
+/**
  * Stage 1 of trigger matching: decides which triggers can fire at all right
  * now, from what only changes between log lines (class, stored variables and
  * counters).  The log watcher only runs the open triggers.
@@ -116,13 +132,6 @@ class TriggerGate {
         triggers.forEach( ( trigger, index ) => {
             const all = [ ...( trigger.conditions ?? [] ), ...( trigger._folderConditions ?? [] ) ];
 
-            // Like the trigger's own condition check, the last condition of a variable decides its values.
-            /** @type {Record<string, string[]|null>} */
-            const values = {};
-            all.forEach( condition => {
-                values[ condition.variableName ] = condition.variableValue ? condition.variableValue.split( /\|/gi ) : null;
-            } );
-
             const gated = [];
             all.forEach( condition => {
                 const isVariable = condition.conditionType === TriggerConditionTypes.VariableValue;
@@ -131,7 +140,7 @@ class TriggerGate {
                     return;
                 }
 
-                gated.push( { condition: condition, values: values[ condition.variableName ] } );
+                gated.push( { condition: condition, values: parseConditionValues( condition.variableValue ) } );
 
                 const map = isVariable ? this.#variableIndex : this.#counterIndex;
                 const list = map.get( condition.variableName ) ?? [];
@@ -294,4 +303,4 @@ class TriggerGate {
 
 }
 
-module.exports = { TriggerGate, storeHasValue, storeContainsValue };
+module.exports = { TriggerGate, storeHasValue, storeContainsValue, parseConditionValues };
