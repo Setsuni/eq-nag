@@ -15,6 +15,7 @@ import { nagId } from 'src/app/core/nag-id.util';
 import { DateUtilities } from 'src/app/utilities/date.utilities';
 import { MathUtilities } from 'src/app/utilities/math.utilities';
 import { RollTrackerSettings } from 'src/app/rolls/rolls.component';
+import { TriggerHealthComponent } from 'src/app/trigger-health/trigger-health.component';
 
 interface IPhoneticTransform {
     id: string;
@@ -79,6 +80,8 @@ export class SettingsComponent implements OnInit {
 
     @Input() public characterList: CharactersListComponent;
     @ViewChild( 'combatStatisticsGroup', { static: true } ) public combatStatisticsGroup: ElementRef<HTMLFieldSetElement>;
+    @ViewChild( 'triggerHealthSection', { static: true } ) public triggerHealthSection: ElementRef<HTMLFieldSetElement>;
+    @ViewChild( 'triggerHealth', { static: true } ) public triggerHealth: TriggerHealthComponent;
 
     constructor(
         private readonly ipcService: IpcService,
@@ -473,6 +476,38 @@ export class SettingsComponent implements OnInit {
 
 
     
+    /**
+     * Checks the triggers again, so the Trigger Health section is current.
+     */
+    refreshTriggerHealth(): void {
+        this.triggerHealth.check();
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Brings the Trigger Health section to the top of the view.
+     */
+    scrollToTriggerHealth(): void {
+        this.triggerHealthSection.nativeElement.scrollIntoView( { block: 'start' } );
+    }
+
+
+
+
+
+
+
+
+
+
     /**
      * Allows the user to save a copy of their current log file, in zip form.
      */
