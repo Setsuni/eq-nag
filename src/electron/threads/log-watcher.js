@@ -25,7 +25,6 @@ const { TriggerMetrics, measureDurationMs: triggerMeasureDuration } = require( '
 const TriggerPerfAnalysis = require( '../utilities/trigger-perf-analysis' );
 const triggerMetrics = new TriggerMetrics();
 var triggerMeasureTimer = null;
-const clockMs = perf.enabled ? perf.now : () => performance.now();
 const { LogHistoryManager } = require( '../utilities/log-console' );
 const { createChatRoomLink } = require( '../utilities/peer-to-peer' );
 const { nagException, nagLog } = require( '../utilities/nag-console' );
@@ -1919,13 +1918,13 @@ function parseLogEntries( raw, simulating, padTime ) {
 
         let entryMatched = false;
         const perfTriggers = perf.enabled && ++perfTriggerSample % 10 === 0;
-        const measureTriggers = triggerMetrics.sampleLine();
-        const timeTriggers = perfTriggers || measureTriggers;
-        // Each timed trigger starts where the previous one ended, so a sampled line costs one clock read per trigger.
-        let timerStart = timeTriggers ? clockMs() : 0;
-        activeTriggers.forEach( trigger => {
+        const measureStart = triggerMetrics.sampleWindow( activeTriggers.length );
+        activeTriggers.forEach( ( trigger, index ) => {
 
             if ( !!trigger.enabled && !trigger._profileDisabled ) {
+                const perfStart = perfTriggers ? perf.now() : 0;
+                const timed = measureStart >= 0 && triggerMetrics.isTimed( measureStart, index );
+                const timerStart = timed ? process.hrtime.bigint() : 0n;
                 trigger._parse( log, ( res, deltaTime ) => {
 
                     trigger._stats.fired++;
@@ -1967,12 +1966,8 @@ function parseLogEntries( raw, simulating, padTime ) {
                     }
                     
                 } );
-                if ( timeTriggers ) {
-                    const timerEnd = clockMs();
-                    measureTriggers && triggerMetrics.record( trigger._stats, timerEnd - timerStart );
-                    perfTriggers && perf.record( trigger._perfName ??= `trigger: ${trigger.name}`, timerStart, 10 );
-                    timerStart = timerEnd;
-                }
+                timed && triggerMetrics.record( trigger._stats, process.hrtime.bigint() - timerStart );
+                perfTriggers && perf.record( trigger._perfName ??= `trigger: ${trigger.name}`, perfStart, 10 );
             }
             
         } );

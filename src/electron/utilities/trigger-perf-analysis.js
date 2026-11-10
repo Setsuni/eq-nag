@@ -118,9 +118,12 @@ function phraseHints( capturePhrase ) {
  * @param {{triggerId: string, name: string, capturePhrases?: {phrase: string, useRegEx?: boolean}[]}[]} triggers The triggers that were measured.
  */
 function buildReport( measurement, triggers ) {
+    // Triggers that were never checked have no time and stay out of the share base.
     let totalMs = 0;
     for ( const id in measurement.triggers ) {
-        totalMs += measurement.triggers[ id ].totalMs;
+        if ( measurement.triggers[ id ].checked > 0 ) {
+            totalMs += measurement.triggers[ id ].totalMs;
+        }
     }
 
     const rows = triggers.filter( t => measurement.triggers[ t.triggerId ] ).map( trigger => {
@@ -141,13 +144,14 @@ function buildReport( measurement, triggers ) {
             fired: m.fired,
             totalMs: m.totalMs,
             maxMs: m.maxMs,
-            sharePercent: totalMs > 0 ? m.totalMs / totalMs * 100 : 0,
+            samples: m.samples ?? 0,
+            sharePercent: totalMs > 0 && m.checked > 0 ? m.totalMs / totalMs * 100 : 0,
             avgMsPerCheck: m.checked > 0 ? m.totalMs / m.checked : 0,
             skipped: m.checked === 0,
             hints: [ ...codes ].map( code => ( { code: code, text: hintTexts[ code ] } ) ),
         };
     } );
-    rows.sort( ( a, b ) => b.totalMs - a.totalMs );
+    rows.sort( ( a, b ) => ( a.skipped ? 1 : 0 ) - ( b.skipped ? 1 : 0 ) || b.totalMs - a.totalMs || b.checked - a.checked );
 
     return {
         startedAt: measurement.startedAt,

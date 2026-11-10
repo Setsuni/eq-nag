@@ -12,6 +12,7 @@ const { LogMaintenancePlanTypes, LogMaintenanceRules, ArchiveFilePrefix, Simulat
 const { nagLog } = require( "./utilities/nag-console" );
 const CombatDatabase = require( "./data/combat-database" );
 const TriggerPerfStore = require( "./data/trigger-perf-store" );
+const { sanitizeReport, sanitizeCounters } = TriggerPerfStore;
 const { measureDurationMs: triggerPerfDuration } = require( "./utilities/trigger-metrics" );
 const customAlphabet = require( 'nanoid' ).customAlphabet;
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
@@ -74,7 +75,7 @@ var triggerPerfActive = {};
 /** @type {TriggerPerfStore|null} The last finished trigger measurement report of each character. */
 var triggerPerfStore = null;
 
-/** @type {Record<string, (counters: any) => void>} Pending requests for a log watcher's trigger counters. */
+/** @type {Record<string, {characterId: string, done: (counters: any) => void}>} Pending requests for a log watcher's trigger counters. */
 var triggerCounterRequests = {};
 
 let cwReady = false;
@@ -141,6 +142,36 @@ class LogBootstrapper {
     }
 
     /**
+     * Finds the character a log watcher window belongs to.
+     *
+     * @param {Electron.WebContents} sender The sender of an IPC message.
+     * @returns {string|null} The character id, or null when the sender is not a log watcher.
+     */
+    #watcherCharacterId( sender ) {
+        return Object.keys( logWatchers ).find( key => {
+            const window = logWatchers[ key ].window;
+            return window != null && !window.isDestroyed() && window.webContents === sender;
+        } ) ?? null;
+    }
+
+    /**
+     * Lists the characters that have a log watcher or a stored trigger report, watched ones first.
+     *
+     * @param {(characterId: string) => string|undefined} nameOf Finds a character's name.
+     * @returns {{characterId: string, name: string, watching: boolean, hasReport: boolean}[]}
+     */
+    getTriggerPerfCharacters( nameOf ) {
+        const watching = Object.keys( logWatchers ).filter( key => logWatchers[ key ].window != null );
+        const stored = triggerPerfStore?.characterIds() ?? [];
+        return [ ...new Set( [ ...watching, ...stored ] ) ].map( id => ( {
+            characterId: id,
+            name: nameOf( id ) ?? id,
+            watching: watching.includes( id ),
+            hasReport: stored.includes( id ),
+        } ) );
+    }
+
+    /**
      * Starts a ten minute trigger measurement.
      *
      * @param {string|undefined} characterId The character id; the first running log watcher if omitted.
@@ -176,7 +207,7 @@ class LogBootstrapper {
      * @returns {{characterId?: string, measuring: boolean, startedAt?: number, endsAt?: number, last: any}}
      */
     getTriggerPerf( characterId ) {
-        const id = this.#findLogWatcher( characterId )?.characterId ?? characterId;
+        const id = characterId ?? this.#findLogWatcher( undefined )?.characterId ?? triggerPerfStore?.latestCharacterId() ?? undefined;
         const active = triggerPerfActive[ id ];
         // A watcher that closed mid-measurement never reports; stop showing it as running shortly after it should have ended.
         const measuring = active != null && Date.now() < active.endsAt + 30 * 1000;
@@ -202,7 +233,7 @@ class LogBootstrapper {
                 resolve( counters );
             };
             const timeoutId = setTimeout( () => done( null ), 5000 );
-            triggerCounterRequests[ requestId ] = done;
+            triggerCounterRequests[ requestId ] = { characterId: watcher.characterId, done: done };
             watcher.window.webContents.send( 'trigger-perf:counters-request', requestId );
         } );
     }
@@ -247,19 +278,35 @@ class LogBootstrapper {
         triggerPerfStore = new TriggerPerfStore( app.getPath( 'userData' ) );
 
         // Trigger performance: the main window starts a ten minute measurement per character and reads the last report.
-        ipcMain.handle( 'trigger-perf:start', ( event, characterId ) => $this.startTriggerPerf( characterId ) );
-        ipcMain.handle( 'trigger-perf:stop', ( event, characterId ) => $this.stopTriggerPerf( characterId ) );
-        ipcMain.handle( 'trigger-perf:get', ( event, characterId ) => $this.getTriggerPerf( characterId ) );
-        ipcMain.handle( 'trigger-perf:counters', ( event, characterId ) => $this.getTriggerCounters( characterId ) );
+        const idArg = value => typeof value === 'string' ? value : undefined;
+        ipcMain.handle( 'trigger-perf:start', ( event, characterId ) => $this.startTriggerPerf( idArg( characterId ) ) );
+        ipcMain.handle( 'trigger-perf:stop', ( event, characterId ) => $this.stopTriggerPerf( idArg( characterId ) ) );
+        ipcMain.handle( 'trigger-perf:get', ( event, characterId ) => $this.getTriggerPerf( idArg( characterId ) ) );
+        ipcMain.handle( 'trigger-perf:counters', ( event, characterId ) => $this.getTriggerCounters( idArg( characterId ) ) );
+        ipcMain.handle( 'trigger-perf:characters', () => $this.getTriggerPerfCharacters( id => characterDatabase.find( id )?.name ) );
 
+        // Only a log watcher window may report; the character is the one that watcher belongs to.
         ipcMain.on( 'trigger-perf:result', ( event, data ) => {
-            triggerPerfStore.set( data.characterId, data.report );
-            delete triggerPerfActive[ data.characterId ];
-            mainWinRef?.reference?.webContents.send( 'trigger-perf:finished', data.characterId );
+            const characterId = $this.#watcherCharacterId( event.sender );
+            if ( characterId == null ) {
+                return;
+            }
+            delete triggerPerfActive[ characterId ];
+            const report = sanitizeReport( data?.report );
+            // A window without log lines says nothing, so the previous report stays.
+            const saved = report != null && report.lineCount > 0;
+            if ( saved ) {
+                triggerPerfStore.set( characterId, report );
+            }
+            mainWinRef?.reference?.webContents.send( 'trigger-perf:finished', { characterId: characterId, saved: saved } );
         } );
 
         ipcMain.on( 'trigger-perf:counters-response', ( event, data ) => {
-            triggerCounterRequests[ data.requestId ]?.( data.counters );
+            const characterId = $this.#watcherCharacterId( event.sender );
+            const pending = typeof data?.requestId === 'string' ? triggerCounterRequests[ data.requestId ] : null;
+            if ( characterId != null && pending?.characterId === characterId ) {
+                pending.done( sanitizeCounters( data.counters ) );
+            }
         } );
 
         ipcMain.on( 'log:send:raw', function ( event, data ) {

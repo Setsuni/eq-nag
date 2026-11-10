@@ -10,7 +10,7 @@
 //       Use copies; only counts are printed, never trigger names, phrases or log lines.
 
 import { createRequire } from 'module';
-import { readFileSync, mkdtempSync, rmSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync, existsSync } from 'fs';
 import { tmpdir } from 'os';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -214,7 +214,7 @@ function argument( name ) {
     return index > -1 ? process.argv[ index + 1 ] : null;
 }
 
-const { TriggerMetrics, sampleEvery } = require( path.join( root, 'src/electron/utilities/trigger-metrics.js' ) );
+const { TriggerMetrics, timedPerLine } = require( path.join( root, 'src/electron/utilities/trigger-metrics.js' ) );
 const Analysis = require( path.join( root, 'src/electron/utilities/trigger-perf-analysis.js' ) );
 
 // ---- Unit cases ----
@@ -281,6 +281,7 @@ const counterReply = w => {
     check( report?.endedAt >= report?.startedAt, 'measurement: has a time window' );
     const row = report?.rows.find( r => r.triggerId === hit.triggerId );
     check( row?.checked === 200 && row?.fired === 100, 'measurement: checked and fired cover the window only' );
+    check( row?.samples === 200, 'measurement: with fewer triggers than the timed batch, every trigger is timed on every line' );
     check( row?.totalMs > 0 && row?.maxMs > 0 && row?.maxMs <= row?.totalMs, 'measurement: times the sampled lines' );
     check( report?.rows.length === 2, 'measurement: lists every active trigger' );
     check( Math.abs( report?.rows.reduce( ( sum, r ) => sum + r.sharePercent, 0 ) - 100 ) < 1e-6, 'measurement: shares add up to 100' );
@@ -357,19 +358,54 @@ const counterReply = w => {
     check( report.totalMs === 400 && report.lineCount === 1000, 'report: totals' );
 }
 
-// Sampling scales the time up and counts every line.
+// Round-robin sampling times every trigger equally often, scales the time up and counts every line.
 {
     const metrics = new TriggerMetrics();
-    check( metrics.sampleLine() === false, 'metrics: no sampling while idle' );
+    check( metrics.sampleWindow( 10 ) === -1, 'metrics: nothing is timed while idle' );
     metrics.begin( 0 );
-    let sampled = 0;
-    for ( let i = 0; i < sampleEvery * 10; i++ ) {
-        metrics.sampleLine() && sampled++;
+    const lines = 5 * 10;
+    const timesTimed = new Array( 10 ).fill( 0 );
+    for ( let line = 0; line < lines; line++ ) {
+        const start = metrics.sampleWindow( 10 );
+        for ( let i = 0; i < 10; i++ ) {
+            metrics.isTimed( start, i ) && timesTimed[ i ]++;
+        }
     }
-    check( sampled === 10 && metrics.lines === sampleEvery * 10, 'metrics: one line in N is sampled' );
+    check( timesTimed.every( n => n === lines * timedPerLine / 10 ) && metrics.lines === lines, 'metrics: every trigger is timed equally often' );
+    check( metrics.sampleWindow( 0 ) === -1, 'metrics: no triggers, nothing to time' );
+    metrics.sampleWindow( 10 );
     const stats = metrics.statsFor( 't' );
-    metrics.record( stats, 2 );
-    check( stats.totalMs === 2 * sampleEvery && stats.maxMs === 2, 'metrics: sampled time is scaled up' );
+    metrics.record( stats, 2000000n );
+    check( stats.totalMs === 2 * 10 / timedPerLine && stats.maxMs === 2 && stats.samples === 1, 'metrics: a sample stands for the triggers that were not timed' );
+    metrics.sampleWindow( 2 );
+    const small = metrics.statsFor( 'u' );
+    metrics.record( small, 1000000n );
+    check( small.totalMs === 1, 'metrics: with fewer triggers than the batch the sample is not scaled' );
+}
+
+// The store and the checks on what a log watcher sends.
+{
+    const store = require( path.join( root, 'src/electron/data/trigger-perf-store.js' ) );
+    const good = { startedAt: 1, endedAt: 2, lineCount: 3, totalMs: 1, rows: [ { triggerId: 'a', name: 'Slow', checked: 1, fired: 0, totalMs: 1, maxMs: 1, sharePercent: 100, avgMsPerCheck: 1, skipped: false, hints: [ { code: 'no-literal' }, 'bogus' ] } ] };
+    check( store.sanitizeReport( good )?.rows[ 0 ].hints.length === 1, 'sanitize: keeps known hints only' );
+    check( store.sanitizeReport( { ...good, rows: [ { ...good.rows[ 0 ], hints: undefined } ] } )?.rows[ 0 ].hints.length === 0, 'sanitize: a row without hints gets none' );
+    check( [ null, 5, 'x', [], {}, { ...good, lineCount: 'x' }, { ...good, rows: 'x' } ].every( r => store.sanitizeReport( r ) === null ), 'sanitize: junk is not a report' );
+    check( store.sanitizeReport( { ...good, rows: [ null, { triggerId: 1 }, { ...good.rows[ 0 ], checked: NaN }, good.rows[ 0 ] ] } ).rows.length === 1, 'sanitize: bad rows are dropped' );
+    check( store.sanitizeCounters( { a: { name: 'x', checked: 1, fired: 2 }, b: { name: 5 }, c: null } ).a.fired === 2 && Object.keys( store.sanitizeCounters( { b: { name: 5 } } ) ).length === 0 && store.sanitizeCounters( 'x' ) === null, 'sanitize: counters' );
+
+    const folder = mkdtempSync( path.join( process.env.NAG_TEST_TMP ?? tmpdir(), 'nag-perf-junk-' ) );
+    writeFileSync( path.join( folder, 'trigger-perf.json' ), 'null' );
+    const fromNull = new store( folder );
+    check( fromNull.get( 'c' ) === null && fromNull.characterIds().length === 0, 'store: a file holding null is empty' );
+    fromNull.set( 'c', store.sanitizeReport( good ) );
+    check( new store( folder ).get( 'c' )?.lineCount === 3, 'store: saves over a bad file' );
+    writeFileSync( path.join( folder, 'trigger-perf.json' ), JSON.stringify( { a: { ...good, rows: [ { ...good.rows[ 0 ], hints: undefined }, 5 ] }, b: 7, c: { rows: 1 } } ) );
+    const mixed = new store( folder );
+    check( mixed.characterIds().join() === 'a' && mixed.get( 'a' ).rows.length === 1, 'store: bad entries and rows without hints are skipped on load' );
+    const later = store.sanitizeReport( { ...good, endedAt: 99 } );
+    mixed.set( 'b', later );
+    check( mixed.latestCharacterId() === 'b', 'store: latest character is the one whose report ended last' );
+    rmSync( folder, { recursive: true, force: true } );
 }
 
 // The last report is kept per character in a file.
@@ -441,6 +477,9 @@ if ( triggersFile && logFile && failures === 0 ) {
     const firedTotal = measured.report?.rows.reduce( ( sum, r ) => sum + r.fired, 0 );
     check( firedTotal === measured.matches.length, 'library: fired counts equal the matches' );
     const checkedTotal = measured.report?.rows.reduce( ( sum, r ) => sum + r.checked, 0 );
+    const sampleCounts = measured.report?.rows.filter( r => !r.skipped ).map( r => r.samples ).sort( ( a, b ) => a - b ) ?? [];
+    const perLineSamples = n => ( sampleCounts[ Math.floor( ( sampleCounts.length - 1 ) * n ) ] ?? 0 ) / lines.length;
+    console.log( `Samples per checked trigger over ${lines.length} lines: min ${sampleCounts[ 0 ]}, median ${sampleCounts[ Math.floor( sampleCounts.length / 2 ) ]}, max ${sampleCounts[ sampleCounts.length - 1 ]} (median is ${( perLineSamples( 0.5 ) * 1e6 ).toFixed( 0 )} per million lines).` );
     console.log( `Library: ${counters.matches.length} matches, ${measured.active} enabled, ${( counters.runs / lines.length ).toFixed( 1 )} runs per line, ${( checkedTotal / lines.length ).toFixed( 1 )} checked per line, ${measured.report?.rows.filter( r => r.skipped ).length} never checked.` );
 
     // Cost per line; rounds are interleaved so a slow moment hits every variant.
