@@ -95,5 +95,6 @@
     <button mat-button class="color-orange" (click)="cancelCharacter()" *ngIf="model != null"><mat-icon>chevron_left</mat-icon>&nbsp;Back</button>
     <button mat-button mat-dialog-close class="t-confirm-no" color="warn">Cancel</button>
     <button mat-button (click)="create()" class="t-confirm-yes" color="accent" [disabled]="model == null || panel === 'manualInput'">Create</button>
+    <span class="create-hint" *ngIf="model == null">Choose a log file first</span>
 
 </mat-dialog-actions>
