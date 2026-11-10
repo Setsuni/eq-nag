@@ -384,6 +384,7 @@ class FileMonitor {
 
             let emptyReadCount = 0;
             let readCount = 0;
+            let backlogLogged = false;
 
             const parse = async () => {
 
@@ -421,20 +422,30 @@ class FileMonitor {
                     } );
                     setTimeout( () => parse(), readDelayMs );
                     return;
-                } else if ( readSize > maxReadSize ) {
-                    sendLog( {
-                        label: 'File Monitor',
-                        message: `Read size is too large: ${readSize} bytes.`,
-                        payload: { readSize, position, stats },
-                    } );
-                    position = stats.size;
-                    setTimeout( () => parse(), readDelayMs );
-                    return;
                 }
 
+                const backlog = readSize > maxReadSize;
+                if ( backlog && !backlogLogged ) {
+                    sendLog( {
+                        label: 'File Monitor',
+                        message: `Read size is too large: ${readSize} bytes, reading it in chunks.`,
+                        payload: { readSize, position, stats },
+                    } );
+                }
+                backlogLogged = backlog;
+
                 try {
-                    let data = await file.read( Buffer.alloc( readSize ), 0, readSize, position );
+                    const requestSize = backlog ? maxReadSize : readSize;
+                    let data = await file.read( Buffer.alloc( requestSize ), 0, requestSize, position );
                     let bytesRead = data.bytesRead;
+
+                    if ( backlog && bytesRead > 0 ) {
+                        // End the chunk on a line break so no line or multibyte character is split between chunks.
+                        const lastBreak = data.buffer.lastIndexOf( 0x0A, bytesRead - 1 );
+                        if ( lastBreak >= 0 && lastBreak < bytesRead ) {
+                            bytesRead = lastBreak + 1;
+                        }
+                    }
 
                     if ( bytesRead === 0 && readSize > 0 ) {
                         // No data read, try again.
