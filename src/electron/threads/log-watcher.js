@@ -18,6 +18,8 @@ const { IpcMessage } = require( '../data/models/common' );
 const ArrayUtilities = require( '../utilities/arrays' );
 const FileMonitor = require( '../utilities/file-monitor' );
 const perf = require( '../utilities/perf' );
+const TriggerPrefilter = require( '../utilities/trigger-prefilter' );
+const { TriggerGate, storeHasValue: storeHasValueIn, storeContainsValue: storeContainsValueIn } = require( '../utilities/trigger-gate' );
 // Triggers are timed on one log line in ten (perf-taps.js scales them up), so
 // the per-trigger timing doesn't slow the log watcher down much.
 let perfTriggerSample = 0;
@@ -53,6 +55,17 @@ var overlays = [];
 var triggers = [];
 /** @type {LogTrigger[]} The triggers that are enabled for this character, rebuilt on each tick. */
 var activeTriggers = [];
+/** @type {{automaton: ReturnType<typeof TriggerPrefilter.build>, marks: Int32Array, alwaysRun: Uint8Array}|null} Which of activeTriggers can match a log line; null runs all of them. */
+var triggerPrefilter = null;
+var triggerPrefilterStamp = 0;
+const triggerPrefilterDisabled = process.env.NAG_NO_TRIGGER_PREFILTER === '1' || process.argv.includes( '--no-trigger-prefilter' );
+/** @type {TriggerGate|null} Which of activeTriggers can fire with the current zone, variables, counters and class; null runs all of them. */
+var triggerGate = null;
+var triggerGateTimer = null;
+var triggerGateLoggedCount = -1;
+var triggerGateZoneChanged = false;
+const triggerGateDisabled = process.env.NAG_NO_TRIGGER_GATE === '1' || process.argv.includes( '--no-trigger-gate' );
+const rgxEnteredZone = /^You have entered ([A-Z].*)\.$/;
 /** @type {TriggerFolder[]} */
 var triggerFolders = [];
 /** @type {Record<string, string[]>} */
@@ -215,6 +228,8 @@ function startParsingLogFile( logPath, startLogPosition ) {
             }
         } );
         
+        flushTriggerGate();
+
         // console.log( 'done processing lines, total time', performance.now() - start, 'line count', lines.length );
     }, startLogPosition )
         .then( () => {
@@ -302,6 +317,7 @@ function simulateLogEntries( lines, timestamp, lastBlock, padTime ) {
         
         parseLogEntries( lines[ i ], false, padTime );
     }
+    flushTriggerGate();
     if ( lastBlock ) {
         speakPhrase( 'Simulation ended', false, false, {}, false, {}, 0, 0, 100, 1, () => ipcRenderer.send( 'log:simulate:done', characterId ) );
     }
@@ -438,6 +454,8 @@ function LogWatcher(character, logPosition) {
                 storedVariables = simulationCache[ 'storedVariables' ];
                 counters = simulationCache[ 'counters' ];
                 usedConditionValues = simulationCache[ 'usedConditionValues' ];
+                allVariablesChanged();
+                flushTriggerGate();
                 
                 if ( simTimerId ) {
                     ipcRenderer.send( 'overlay:destroy:component', simTimerId );
@@ -715,6 +733,9 @@ function LogWatcher(character, logPosition) {
         generateTriggerFns();
         activeTriggers = triggers.filter( trigger => !!trigger.enabled && !trigger._profileDisabled );
         initCounters();
+        buildTriggerGate();
+        buildTriggerPrefilter();
+        logTriggerGate();
         perf.enabled && perf.record( 'log-watcher: tick (rebuild triggers)', perfStart );
     } );
 
@@ -1014,10 +1035,210 @@ function initCounters() {
 
 
 /**
+ * Works out which literals a trigger's phrases need in a log line before the
+ * trigger can match it.  Returns null if the trigger must always run.
+ *
+ * @param {LogTrigger} trigger The trigger.
+ * @returns {{literals: string[], always: boolean, phrases: number, alwaysPhrases: number}|null}
+ */
+function getTriggerPrefilter( trigger ) {
+    try {
+        const sequential = trigger.captureMethod === 'Sequential';
+        if ( !sequential && trigger.captureMethod !== 'Any match' ) {
+            return null;
+        }
+
+        // Without the trigger gate, variable conditions are only checked when the trigger runs, so those triggers always run.
+        if ( triggerGateDisabled ) {
+            const conditions = [ ...( trigger.conditions ?? [] ), ...( trigger._folderConditions ?? [] ) ];
+            if ( conditions.some( c => c.conditionType === TriggerConditionTypes.VariableValue ) ) {
+                return null;
+            }
+        }
+
+        // A sequential trigger only needs its first phrase while no sequence is in progress.
+        const parsed = trigger.capturePhrases.filter( p => p.phrase?.length > 0 );
+        const phrases = sequential ? parsed.slice( 0, 1 ) : parsed;
+        if ( phrases.length === 0 ) {
+            return null;
+        }
+
+        /** @type {string[]} */
+        const literals = [];
+        let alwaysPhrases = 0;
+
+        phrases.forEach( phrase => {
+            let found = null;
+            if ( phrase.useRegEx ) {
+                found = TriggerPrefilter.extractRegexLiterals( phrase.phrase );
+            } else if ( typeof phrase.phrase === 'string' && !/{L([0-9]*?)}/i.test( phrase.phrase ) ) {
+                const literal = TriggerPrefilter.extractPlainLiteral( phrase.phrase );
+                found = literal ? [ literal ] : null;
+            }
+
+            if ( found ) {
+                literals.push( ...found );
+            } else {
+                alwaysPhrases++;
+            }
+        } );
+
+        return { literals: literals, always: alwaysPhrases > 0, phrases: phrases.length, alwaysPhrases: alwaysPhrases };
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * Builds the prefilter for activeTriggers.
+ */
+function buildTriggerPrefilter() {
+    triggerPrefilter = null;
+    if ( triggerPrefilterDisabled ) {
+        return;
+    }
+
+    const alwaysRun = new Uint8Array( activeTriggers.length );
+    const entries = [];
+    let phrases = 0;
+    let alwaysPhrases = 0;
+    let alwaysTriggers = 0;
+
+    activeTriggers.forEach( ( trigger, index ) => {
+        if ( triggerGate && !triggerGate.open[ index ] ) {
+            return;
+        }
+
+        const info = trigger._prefilter;
+        if ( !info || info.always || !trigger._parse ) {
+            alwaysRun[ index ] = 1;
+            alwaysTriggers++;
+        } else {
+            info.literals.forEach( literal => entries.push( { literal: literal, key: index } ) );
+        }
+
+        phrases += info?.phrases ?? 0;
+        alwaysPhrases += info?.alwaysPhrases ?? 0;
+    } );
+
+    triggerPrefilter = {
+        automaton: TriggerPrefilter.build( entries ),
+        marks: new Int32Array( activeTriggers.length ),
+        alwaysRun: alwaysRun,
+    };
+    triggerPrefilterStamp = 0;
+
+    perf.enabled && perf.note?.( 'prefilter', {
+        triggers: activeTriggers.length,
+        alwaysRunTriggers: alwaysTriggers,
+        phrasesWithLiteral: phrases - alwaysPhrases,
+        alwaysRunPhrases: alwaysPhrases,
+        literals: entries.length,
+        automatonNodes: triggerPrefilter.automaton.nodeCount,
+    } );
+}
+
+/**
+ * Builds the trigger gate for activeTriggers.
+ */
+function buildTriggerGate() {
+    triggerGate = null;
+    if ( triggerGateDisabled ) {
+        return;
+    }
+
+    triggerGate = new TriggerGate(
+        () => ( { storedVariables: storedVariables, counters: counters, characterClass: charModel?.class } ),
+        index => {
+            // The prefilter doesn't know about a trigger that just opened, so it runs on every line until the next rebuild.
+            if ( triggerPrefilter ) {
+                triggerPrefilter.alwaysRun[ index ] = 1;
+            }
+        } );
+    triggerGate.build( activeTriggers );
+    triggerGate.acknowledge();
+}
+
+/**
+ * Writes the number of triggers that can fire to the console, when it changed.
+ */
+function logTriggerGate() {
+    if ( triggerGate && ( triggerGate.openCount !== triggerGateLoggedCount || triggerGateZoneChanged ) ) {
+        triggerGateLoggedCount = triggerGate.openCount;
+        triggerGateZoneChanged = false;
+        log( `Triggers active in this zone: ${triggerGate.openCount} of ${activeTriggers.length}` );
+    }
+}
+
+/**
+ * Rebuilds the prefilter for the triggers that are open now.  Does nothing if
+ * the gate didn't change.
+ */
+function flushTriggerGate() {
+    if ( triggerGateTimer !== null ) {
+        clearTimeout( triggerGateTimer );
+        triggerGateTimer = null;
+    }
+
+    if ( triggerGate?.changed ) {
+        triggerGate.acknowledge();
+        buildTriggerPrefilter();
+    }
+
+    logTriggerGate();
+}
+
+/**
+ * Called after a stored variable or counter changed; the prefilter is rebuilt
+ * at the end of the current batch of log lines.
+ */
+function triggerGateChanged() {
+    if ( ( triggerGate?.changed || triggerGateZoneChanged ) && triggerGateTimer === null ) {
+        triggerGateTimer = setTimeout( flushTriggerGate, 0 );
+    }
+}
+
+/**
+ * @param {string} key The name of the stored variable that changed.
+ */
+function variableChanged( key ) {
+    if ( triggerGate ) {
+        triggerGate.variableChanged( key );
+        triggerGateZoneChanged = triggerGateZoneChanged || key === 'CurrentZone';
+        triggerGateChanged();
+    }
+}
+
+/**
+ * @param {string} key The name of the counter that changed.
+ */
+function counterChanged( key ) {
+    if ( triggerGate ) {
+        triggerGate.counterChanged( key );
+        triggerGateChanged();
+    }
+}
+
+function allVariablesChanged() {
+    if ( triggerGate ) {
+        triggerGate.allChanged();
+        triggerGateChanged();
+    }
+}
+
+var perfPrefilterLines = 0;
+var perfPrefilterCandidates = 0;
+var perfPrefilterMisses = 0;
+var perfPrefilterLastWarning = 0;
+
+/**
  * Pre-generate parse functions for each trigger.
  */
 function generateTriggerFns() {
     triggers?.forEach( trigger => {
+
+        trigger._prefilter = null;
+        trigger._hasSequence = undefined;
 
         try {
 
@@ -1258,6 +1479,8 @@ function generateTriggerFns() {
                     }
                 } );
     
+                trigger._prefilter = getTriggerPrefilter( trigger );
+
                 /** @type {Record<string, string[]>} This object stores values converted from user input for condition checks.  Ex: Knowledge|Tranquility => ['Knowledge', 'Tranquility'] */
                 let _conditionValues = {};
                 trigger.conditions?.forEach( condition => {
@@ -1485,6 +1708,8 @@ function generateTriggerFns() {
                         forceReset = forceReset === true ? true : false;
                         _.remove( _sequentialMatchs, m => forceReset || m.captureIndex >= _phraseParsers?.length );
                     };
+
+                    trigger._hasSequence = () => _sequentialMatchs.length > 0;
     
                     /**
                      * Parses the given log entry and executes a callback when a match is found.
@@ -1850,6 +2075,7 @@ function parseLogEntries( raw, simulating, padTime ) {
                         let timeSinceLastUpdate = Math.abs( ( new Date() ) - counters[ key ].lastUpdate ) / 1000;
                         if ( timeSinceLastUpdate >= counters[ key ].resetDelay ) {
                             counters[ key ].value = 0;
+                            counterChanged( key );
                             // If the timer is reset, no need to check the reset 
                             // phrases.
                             continue;
@@ -1858,6 +2084,7 @@ function parseLogEntries( raw, simulating, padTime ) {
                         // Parse the current log entry for any reset phrase matches.
                         if ( counters[ key ]._parse( log ) ) {
                             counters[ key ].value = 0;
+                            counterChanged( key );
                         }
                     }
 
@@ -1870,7 +2097,47 @@ function parseLogEntries( raw, simulating, padTime ) {
 
         let entryMatched = false;
         const perfTriggers = perf.enabled && ++perfTriggerSample % 10 === 0;
-        activeTriggers.forEach( trigger => {
+
+        const prefilter = triggerPrefilter;
+        const gate = triggerGate;
+        let stamp = 0;
+        if ( prefilter ) {
+            const perfPrefilterStart = perf.enabled ? perf.now() : 0;
+            if ( ++triggerPrefilterStamp >= 2147483647 ) {
+                prefilter.marks.fill( 0 );
+                triggerPrefilterStamp = 1;
+            }
+            stamp = triggerPrefilterStamp;
+            prefilter.automaton.candidates( toLowerCached( log ), prefilter.marks, stamp );
+            perf.enabled && perf.record( 'log-watcher: prefilter', perfPrefilterStart );
+        }
+
+        // Perf builds only: on 1 line in 100, also parse the triggers the prefilter skipped, to count any it wrongly skipped.
+        const perfPrefilterCheck = perf.enabled && ( prefilter || gate ) && ++perfPrefilterLines % 100 === 0;
+
+        activeTriggers.forEach( ( trigger, index ) => {
+
+            const gateClosed = gate && !gate.open[ index ] && !trigger._hasSequence?.();
+            if ( gateClosed || ( prefilter && prefilter.marks[ index ] !== stamp && !prefilter.alwaysRun[ index ] && !trigger._hasSequence?.() ) ) {
+                if ( perfPrefilterCheck && !!trigger.enabled && !trigger._profileDisabled && typeof trigger._parse === 'function' ) {
+                    trigger._parse( log, () => {
+                        perfPrefilterMisses++;
+                        const now = Date.now();
+                        if ( now - perfPrefilterLastWarning >= 60000 ) {
+                            perfPrefilterLastWarning = now;
+                            nagLog( {
+                                label: 'Log Watcher',
+                                message: `Trigger ${gateClosed ? 'gate' : 'prefilter'} miss: trigger "${trigger.name}" (${trigger.triggerId}) matched a line it was skipped for.`,
+                            } );
+                        }
+                    } );
+                }
+                return;
+            }
+
+            if ( perf.enabled && prefilter ) {
+                perfPrefilterCandidates++;
+            }
 
             if ( !!trigger.enabled && !trigger._profileDisabled ) {
                 const perfStart = perfTriggers ? perf.now() : 0;
@@ -1917,6 +2184,22 @@ function parseLogEntries( raw, simulating, padTime ) {
             }
             
         } );
+
+        if ( !triggerGateDisabled && log.charCodeAt( 0 ) === 89 ) {
+            const enteredZone = rgxEnteredZone.exec( log );
+            if ( enteredZone ) {
+                const current = storedVariables[ 'CurrentZone' ];
+                // The Capture Zone trigger stores the zone too; don't store it twice.
+                if ( !( current?.length === 1 && current[ 0 ] === enteredZone[ 1 ] ) ) {
+                    saveScalarVariable( 'CurrentZone', enteredZone[ 1 ] );
+                }
+            }
+        }
+
+        if ( perfPrefilterCheck ) {
+            perf.note?.( 'prefilter and gate misses', perfPrefilterMisses );
+            perf.note?.( 'prefilter average candidates per line', Math.round( perfPrefilterCandidates / perfPrefilterLines * 10 ) / 10 );
+        }
 
         if ( entryMatched ) {
             let t = timestamp.getTime();
@@ -2817,11 +3100,13 @@ function clearAll() {
 
     for ( const key of Object.keys( counters ) ) {
         counters[ key ].value = 0;
+        counterChanged( key );
     }
 
     // storedVariableHash = {};
     for ( const key of Object.keys( storedVariables ) ) {
         storedVariables[ key ] = [];
+        variableChanged( key );
     }
 
     let len = audioPlayers?.length ?? 0;
@@ -3669,6 +3954,8 @@ function loadCachedStoredVariables( callback ) {
             storedVariables = {};
         }
 
+        allVariablesChanged();
+
         if ( callback ) {
             callback();
         }
@@ -3704,6 +3991,7 @@ function saveVariable( key, value, restricted ) {
     if ( storeValue ) {
         storedVariables[ key ] = storedVariables[ key ]?.length > 0 ? storedVariables[ key ] : [];
         storedVariables[ key ].push( value );
+        variableChanged( key );
 
         enableLogging && sendInformationToLog( `Storing value [${value}] into [${key}]`, 12 );
         enableLogging && sendInformationToLog( `Current values are: ${storedVariables[ key ].join( '|' )}` );
@@ -3734,6 +4022,7 @@ function incrementCounter( key ) {
     } else {
         counters[ key ].value += 1;
         counters[ key ].lastUpdate = new Date();
+        counterChanged( key );
     }
 }
 
@@ -3754,6 +4043,7 @@ function incrementCounter( key ) {
  */
 function saveScalarVariable( key, value ) {
     storedVariables[ key ] = [ value ];
+    variableChanged( key );
 
     enableLogging && sendInformationToLog( `Storing scalar value [${value}] into [${key}]`, 12 );
     enableLogging && sendInformationToLog( `Current values are: ${storedVariables[ key ].join( '|' )}` );
@@ -3799,23 +4089,7 @@ function getScalarValue( key, defaultValue ) {
  * @param {any|any[]} value The value to check.
  */
 function storeHasValue( key, value ) {
-    
-    if ( storedVariables[ key ]?.length > 0 ) {
-        if ( value instanceof Array ) {
-            for ( let i = 0; i < value.length; i++ ) {
-                let index = storedVariables[ key ].indexOf( value[ i ] );
-                if ( index > -1 ) {
-                    return { exists: true, value: value[ i ] };
-                }
-            }
-        } else {
-            let index = storedVariables[ key ].indexOf( value );
-            return index > -1 ? { exists: true, value: value } : { exists: false };
-        }
-    }
-
-    return { exists: false };
-    
+    return storeHasValueIn( storedVariables, key, value );
 }
 
 
@@ -3836,28 +4110,7 @@ function storeHasValue( key, value ) {
  * @param {any|any[]} value The value to check.
  */
 function storeContainsValue( key, value ) {
-    
-    if ( storedVariables[ key ]?.length > 0 && value?.length > 0 ) {
-        if ( value instanceof Array ) {
-            let values = value.map( v => v.toLowerCase() );
-            for ( let i = 0; i < storedVariables[ key ].length; i++ ) {
-                for ( let v = 0; v < values.length; v++ ) {
-                    if ( storedVariables[ key ][ i ].toLowerCase().indexOf( values[ v ] ) > -1 ) {
-                        return { exists: true, value: storedVariables[ key ][ i ] };
-                    }
-                }
-            }
-        } else {
-            let v = value.toLowerCase();
-            for ( let i = 0; i < storedVariables[ key ].length; i++ ) {
-                if ( storedVariables[ key ][ i ].toLowerCase().indexOf( v ) > -1 ) {
-                    return { exists: true, value: storedVariables[ key ][ i ] };
-                }
-            }
-        }
-    }
-
-    return { exists: false };
+    return storeContainsValueIn( storedVariables, key, value );
 }
 
 
@@ -3893,6 +4146,7 @@ function clearStoredVariable( key, value ) {
         }
     }
 
+    variableChanged( key );
     clearCachedStoredVariables();
 
 }
@@ -3913,6 +4167,7 @@ function clearStoredVariable( key, value ) {
  */
 function clearAllStoredValuesInVariable( key ) {
     storedVariables[ key ] = [];
+    variableChanged( key );
     cacheStoredVariables();
 }
 
@@ -4318,6 +4573,8 @@ async function backfind() {
 
         return valuesMissing();
     } );
+
+    flushTriggerGate();
 }
 
 
