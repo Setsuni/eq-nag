@@ -591,13 +591,14 @@ async function startParsingLogFile( logPath, startLogPosition ) {
             if ( line && line.length > 0 ) {
                 let prevLog = index === 0 ? lastCombatLogEntry : lines[ index - 1 ];
                 let nextLog = index < lines.length - 1 ? lines[ index + 1 ] : undefined;
-                let fct = parseLogEntries( line, false, 0, prevLog, nextLog );
-
                 const timestamp = rgxLineTimestamp.exec( line );
                 timestamp && staleTracker.update( new Date( timestamp[ 1 ] ) );
 
-                if ( fct && !staleTracker.stale ) {
-                    fcts = fcts.concat( fct );
+                let fct = parseLogEntries( line, false, 0, prevLog, nextLog );
+
+                if ( fct ) {
+                    // Cached older lines can come back with this line's models, so each is judged by its own time.
+                    fcts = fcts.concat( fct.filter( m => !( m.timestamp ? staleTracker.isStale( m.timestamp ) : staleTracker.stale ) ) );
                 }
             }
         } );

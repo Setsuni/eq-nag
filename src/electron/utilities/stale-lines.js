@@ -33,6 +33,26 @@ class StaleLineTracker {
         this.#onCaughtUp = options?.onCaughtUp;
     }
 
+    /**
+     * Returns true if a line with the given timestamp is stale, without changing what the tracker has learned.
+     *
+     * @param {Date} timestamp The log timestamp of the line.
+     */
+    isStale( timestamp ) {
+        let lag = Date.now() - timestamp.getTime() - this.#clockOffsetMs;
+
+        if ( Number.isNaN( lag ) ) {
+            return false;
+        }
+
+        const hours = Math.round( lag / hourMs ) * hourMs;
+        if ( Math.abs( lag ) > staleLineMs && hours !== 0 && Math.abs( lag - hours ) <= staleLineMs ) {
+            lag -= hours;
+        }
+
+        return lag > staleLineMs;
+    }
+
     /** Forgets the learned clock offset and the catching-up state. */
     reset() {
         this.stale = false;
