@@ -10,7 +10,7 @@
         <p>If you would like to reassign all references to this overlay to another overlay, you can select that here.</p>
 
         <mat-form-field style="width: 100%">
-            <mat-label>Full Replacement Overlay</mat-label>
+            <mat-label>Full replacement overlay</mat-label>
             <mat-select [(ngModel)]="fullReassignmentOverlayId" name="fullReassignmentOverlayId">
                 <mat-option *ngFor="let option of getOverlaysOfType(data.overlay.overlayType)" [value]="option.overlayId">{{option.name}}</mat-option>
             </mat-select>
@@ -39,7 +39,7 @@
     <!-- <form #authorForm="ngForm">
         <div>
             <mat-form-field style="width: 100%;">
-                <mat-label>Author Name</mat-label>
+                <mat-label>Author name</mat-label>
                 <input matInput type="text" [(ngModel)]="model.name" name="authorName" required />
                 <mat-hint>Enter whatever name you would like to have attached to any shared triggers.</mat-hint>
             </mat-form-field>

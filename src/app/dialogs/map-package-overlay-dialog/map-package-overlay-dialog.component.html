@@ -25,7 +25,7 @@
     <ng-template [ngIf]="useExisting">
         <p>To use an existing overlay, select the overlay you would like to use instead.</p>
         <mat-form-field>
-            <mat-label>Existing Overlay</mat-label>
+            <mat-label>Existing overlay</mat-label>
             <mat-select [(ngModel)]="mappedOverlay" name="mappedOverlay">
                 <mat-option *ngFor="let overlay of matchingOverlays" [value]="overlay">{{overlay.name}}</mat-option>
             </mat-select>

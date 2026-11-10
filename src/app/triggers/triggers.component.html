@@ -1,9 +1,8 @@
 <mat-toolbar>
     <span>Triggers</span>
     <span class="spacer"></span>
-    <mat-form-field style="width: 275px; color: #7b1fa2;">
-        <mat-label>Search by name, description or phrase</mat-label>
-        <input matInput [(ngModel)]="searchTerm" (ngModelChange)="searchTriggers()" />
+    <mat-form-field style="width: 275px;">
+        <input matInput placeholder="Search by name, description or phrase" [(ngModel)]="searchTerm" (ngModelChange)="searchTriggers()" />
     </mat-form-field>
     <!-- <button mat-button (click)="getAllTriggerfiles()">Download All Files</button> TODO: Remove button -->
     <button mat-button class="color-blue" (click)="openTriggerLibrary()"><mat-icon class="material-icons">local_library</mat-icon> Trigger Library</button>
