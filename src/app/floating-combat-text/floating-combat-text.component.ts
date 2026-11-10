@@ -32,6 +32,7 @@ const animateGrowShrinkDuration = 500;
 export class FloatingCombatTextComponent implements OnInit, DoCheck {
 
     public combatGroups: FctCombatGroup[] = [];
+    public combatGroupsLoaded: boolean = false;
     private changes: Record<string, boolean> = {};
     private changeTracking: Record<string, string> = {};
     public overlays: OverlayWindowModel[] = [];
@@ -63,6 +64,7 @@ export class FloatingCombatTextComponent implements OnInit, DoCheck {
         this.ipcService.getAppIsDev().subscribe( isDev => this.isDev = isDev );
         this.ipcService.getFctCombatGroups().subscribe( data => {
             this.combatGroups = data;
+            this.combatGroupsLoaded = true;
             this.combatGroups.forEach( ( group, i ) => this.changeTracking[ group.combatGroupId ] = FctCombatGroup.getHashValue( group ) );
         } );
         this.ipcService.getOverlayWindows().subscribe( data => this.overlays = data );

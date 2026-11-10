@@ -14,7 +14,7 @@
 </mat-toolbar>
 <div class="tab-content">
 
-    <div class="empty-state" *ngIf="overlays?.length === 0">
+    <div class="empty-state" *ngIf="overlaysLoaded && overlays?.length === 0">
         <h2>No overlays yet</h2>
         <p>Overlays are the windows on your screen where trigger text, timers and bars show up.</p>
         <button mat-button color="accent" (click)="showNewOverlayDialog()"><mat-icon class="material-icons-outlined">layers</mat-icon> New Overlay</button>

@@ -22,6 +22,7 @@ export class OverlaysComponent implements OnInit {
     @Input() public isDev: boolean = false;
     public overlayAssignCounts: Record<string, number> = {};
     public overlays: OverlayWindowModel[] = [];
+    public overlaysLoaded: boolean = false;
 
     /** The open "Your resolution has changed!" dialog, if any. */
     private resolutionDialog: MatDialogRef<NotificationDialogComponent> = null;
@@ -38,6 +39,7 @@ export class OverlaysComponent implements OnInit {
         this.ipcService.tickReceived().subscribe( data => {
             
             this.overlays = data.overlays;
+            this.overlaysLoaded = true;
             
             this.calculateOverlayUseCounts( data.triggers );
             

@@ -191,12 +191,14 @@ export class DialogService {
         cancelText: string | null = null,
         size: 'narrow' | 'normal' | 'wide' = 'normal',
         moreInfo: () => void | null = null,
-        buttonTexts: { 'Yes'?: string, 'No'?: string, 'Cancel'?: string } = null
+        buttonTexts: { 'Yes'?: string, 'No'?: string, 'Cancel'?: string } = null,
+        title: string | null = null
     ): Observable<boolean | null> {
         size = size ? size : 'normal';
         let dialogRef: MatDialogRef<ConfirmDialogComponent, boolean | null> = this.dialog.open<ConfirmDialogComponent, any, boolean | null>( ConfirmDialogComponent, {
             width: size === 'narrow' ? '450px' : size === 'wide' ? '650px' : '550px',
             data: {
+                title: title,
                 message: message,
                 yesMessage: yesText,
                 noMessage: noText,

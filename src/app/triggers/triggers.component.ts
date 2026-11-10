@@ -196,7 +196,7 @@ export class TriggersComponent implements OnInit {
         let obs = new Observable<void>( sub => {
             
             if ( !this.selectedFolderId && !( this.triggerFolders?.length > 0 ) ) {
-                this.dialogService.showConfirmationDialog( 'Triggers live in folders. Create a folder first.', null, null, null, 'narrow', null, { 'Yes': 'Create a folder', 'No': 'Cancel' } ).subscribe( confirmed => {
+                this.dialogService.showConfirmationDialog( 'Triggers live in folders. Create a folder first.', null, null, null, 'narrow', null, { 'Yes': 'Create a folder', 'No': 'Cancel' }, 'No folders yet' ).subscribe( confirmed => {
                     if ( confirmed ) {
                         this.addTriggerFolderDialog();
                     }
