@@ -102,14 +102,6 @@ export class TriggerActionsComponent implements OnInit {
         return this.capturePhrases?.length === 1 && action.phrases?.includes( this.capturePhrases[ 0 ].phraseId ) === true;
     }
 
-
-
-
-
-
-
-
-
     /**
      * Adds a new action that runs for every current capture phrase.
      */

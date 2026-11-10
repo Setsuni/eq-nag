@@ -32,7 +32,7 @@ export class TriggerDialogComponent implements OnInit {
     public tabIndex: number = 0;
     private _baseline: string = null;
     private _docsUrl: string = 'https://guildantix.github.io/eq-nag/triggers/';
-    private _docsPages: string[] = [ 'capture-phrases/', 'actions/', 'triggers-101/' ];
+    private _docsPages: string[] = [ 'capture-phrases/', 'actions/', 'conditions/' ];
     public get helpUrl(): string {
         return this._docsUrl + this._docsPages[ this.tabIndex ];
     }
@@ -149,11 +149,10 @@ export class TriggerDialogComponent implements OnInit {
     /** Actions that ran for every previous phrase also run for the new one. */
     public onCapturePhraseAdded( added: CapturePhrase ): void {
         const previousIds = this.model.capturePhrases.filter( f => f.phraseId !== added.phraseId ).map( f => f.phraseId );
-        if ( previousIds.length === 0 ) {
-            return;
-        }
         this.model.actions?.forEach( action => {
-            if ( previousIds.every( id => action.phrases?.includes( id ) ) ) {
+            const ranForEveryPhrase = previousIds.length === 0 ? !( action.phrases?.length > 0 ) : previousIds.every( id => action.phrases?.includes( id ) );
+            if ( ranForEveryPhrase ) {
+                action.phrases = action.phrases ?? [];
                 action.phrases.push( added.phraseId );
             }
         } );

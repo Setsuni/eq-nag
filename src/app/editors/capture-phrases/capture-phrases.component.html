@@ -6,7 +6,7 @@
         <div>
             <mat-form-field style="width: 200px;" floatLabel="always">
                 <mat-label>Match mode</mat-label>
-                <mat-select [(ngModel)]="captureMethod" name="ddlCaptureMethod" (ngModelChange)="captureMethodChange.emit(captureMethod)">
+                <mat-select [ngModel]="captureMethod === 'Sequential' ? 'Sequential' : 'Any match'" name="ddlCaptureMethod" (ngModelChange)="captureMethod = $event; captureMethodChange.emit(captureMethod)">
                     <mat-option value="Any match" matTooltip="Execute this trigger if any phrase matches a single log entry" matTooltipPosition="right">Any match</mat-option>
                     <mat-option value="Sequential" matTooltip="Execute this trigger if all phrases match sequentially across multiple log entries" matTooltipPosition="right">Sequential</mat-option>
                 </mat-select>

@@ -395,14 +395,6 @@ export class OverlayEditorDialogComponent implements OnInit {
             } );
     }
 
-
-
-
-
-
-
-
-
     /**
      * Cancels the overlay editor, reverting any changes made.
      */

@@ -17,7 +17,7 @@
                     <mat-form-field style="width: 100%;" floatLabel="always">
                         <mat-label>Start phrase</mat-label>
                         <mat-select [(ngModel)]="action.createListPhrases" name="ddlCreateListPhrase" (ngModelChange)="onListCapturePhraseChange(action.createListPhrases)" multiple>
-                            <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                            <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                         </mat-select>
                         <mat-hint>Select the capture phrase that will initialize the list.</mat-hint>
                     </mat-form-field>
@@ -61,7 +61,7 @@
                         <mat-form-field style="width: 100%;" floatLabel="always">
                             <mat-label>Next phrase</mat-label>
                             <mat-select [(ngModel)]="action.listManualEnumeratePhrase" name="listManualEnumeratePhrase">
-                                <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                                <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                             </mat-select>
                             <mat-hint>Select the capture phrase that will move the list value to the next item.</mat-hint>
                         </mat-form-field>
@@ -73,7 +73,7 @@
                         <mat-form-field style="width: 100%;" floatLabel="always">
                             <mat-label>Clear phrase</mat-label>
                             <mat-select [(ngModel)]="action.listEnumerateEndPhrase" name="listEnumerateEndPhrase">
-                                <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                                <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                             </mat-select>
                             <mat-hint>Select the capture phrase that will clear the list.</mat-hint>
                         </mat-form-field>
@@ -87,7 +87,7 @@
                         <mat-form-field style="width: 100%;" floatLabel="always">
                             <mat-label>Begin phrase</mat-label>
                             <mat-select [(ngModel)]="action.listEnumerateBeginPhrase" name="listEnumerateBeginPhrase">
-                                <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                                <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                             </mat-select>
                             <mat-hint>Select the capture phrase that will begin enumeration.</mat-hint>
                         </mat-form-field>
@@ -99,7 +99,7 @@
                         <mat-form-field style="width: 100%;" floatLabel="always">
                             <mat-label>End phrase</mat-label>
                             <mat-select [(ngModel)]="action.listEnumerateEndPhrase" name="listEnumerateEndPhrase">
-                                <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                                <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                             </mat-select>
                             <mat-hint>Select the capture phrase that will end enumeration.</mat-hint>
                         </mat-form-field>
@@ -189,7 +189,7 @@
                                 <mat-label>Skip phrase</mat-label>
                                 <mat-select [(ngModel)]="action.listEnrollmentSkipPhrase" name="listEnrollmentSkipPhrase" (ngModelChange)="onSkipCapturePhraseChange(action.listEnrollmentSkipPhrase)">
                                     <mat-option [value]="null">None</mat-option>
-                                    <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                                    <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                                 </mat-select>
                                 <mat-hint>Select the capture phrase that will skip a name.</mat-hint>
                             </mat-form-field>
@@ -224,7 +224,7 @@
                                 <mat-label>Deactivate phrase</mat-label>
                                 <mat-select [(ngModel)]="action.listEnrollmentDeactivatePhrase" name="listEnrollmentDeactivatePhrase">
                                     <mat-option [value]="null">None</mat-option>
-                                    <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                                    <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                                 </mat-select>
                                 <mat-hint>Select the capture phrase that will deactivate a name.</mat-hint>
                             </mat-form-field>
@@ -248,7 +248,7 @@
                                 <mat-label>Activate phrase</mat-label>
                                 <mat-select [(ngModel)]="action.listEnrollmentActivatePhrase" name="listEnrollmentActivatePhrase">
                                     <mat-option [value]="null">None</mat-option>
-                                    <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                                    <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                                 </mat-select>
                                 <mat-hint>Select the capture phrase that will activate a name.</mat-hint>
                             </mat-form-field>
@@ -271,7 +271,7 @@
                             <mat-label>Remove phrase</mat-label>
                             <mat-select [(ngModel)]="action.listEnrollmentRemovePhrase" name="listEnrollmentRemovePhrase" (ngModelChange)="onRemoveCapturePhraseChange(action.listEnrollmentRemovePhrase)">
                                 <mat-option [value]="null">None</mat-option>
-                                <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                                <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                             </mat-select>
                             <mat-hint>Select the capture phrase that will remove a name.</mat-hint>
                         </mat-form-field>
@@ -302,7 +302,7 @@
                             <mat-label>Add phrase</mat-label>
                             <mat-select [(ngModel)]="action.listEnrollmentAddPhrase" name="listEnrollmentAddPhrase" (ngModelChange)="onAddCapturePhraseChange(action.listEnrollmentAddPhrase)">
                                 <mat-option [value]="null">None</mat-option>
-                                <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                                <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                             </mat-select>
                             <mat-hint>Select the capture phrase that will add a name.</mat-hint>
                         </mat-form-field>
@@ -338,7 +338,7 @@
                         <mat-label>Satisfy phrase</mat-label>
                         <mat-select [(ngModel)]="action.listActionTrackingPhrase" name="listActionTrackingPhrase" multiple (ngModelChange)="onActionTrackingPhraseChange(action.listActionTrackingPhrase)">
                             <mat-option [value]="null">None</mat-option>
-                            <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                            <mat-option *ngFor="let phrase of phrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                         </mat-select>
                         <mat-hint>Select the capture phrase that satisfy the list timer.</mat-hint>
                     </mat-form-field>
@@ -440,7 +440,7 @@
                         <mat-label>Timer phrase</mat-label>
                         <mat-select [(ngModel)]="action.listTopTimerPhrase" name="listTopTimerPhrase" multiple>
                             <mat-option [value]="null">None</mat-option>
-                            <mat-option *ngFor="let phrase of listPhrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                            <mat-option *ngFor="let phrase of listPhrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                         </mat-select>
                         <mat-hint>Select the capture phrase(s) that trigger the timer. Must have the {{'{LN}'}} snippet.</mat-hint>
                     </mat-form-field>
@@ -489,7 +489,7 @@
                         <mat-label>Timer phrase</mat-label>
                         <mat-select [(ngModel)]="action.listBottomTimerPhrase" name="listBottomTimerPhrase" multiple>
                             <mat-option [value]="null">None</mat-option>
-                            <mat-option *ngFor="let phrase of listPhrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                            <mat-option *ngFor="let phrase of listPhrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                         </mat-select>
                         <mat-hint>Select the capture phrase(s) that trigger the timer. Must have the {{'{LN}'}} snippet.</mat-hint>
                     </mat-form-field>

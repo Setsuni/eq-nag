@@ -128,7 +128,7 @@
                         <mat-form-field style="width: 100%;" floatLabel="always">
                             <mat-label>Trigger on phrase</mat-label>
                             <mat-select [(ngModel)]="action.phrases" name="ddlActionPhrase_{{i}}" multiple>
-                                <mat-option *ngFor="let phrase of capturePhrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                                <mat-option *ngFor="let phrase of capturePhrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                             </mat-select>
                         </mat-form-field>
                     </div>

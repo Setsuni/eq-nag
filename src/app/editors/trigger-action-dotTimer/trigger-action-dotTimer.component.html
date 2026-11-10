@@ -8,7 +8,7 @@
                     <mat-form-field style="width: 100%;" floatLabel="always">
                         <mat-label>Tick phrase</mat-label>
                         <mat-select [(ngModel)]="action.secondaryPhrases" name="ddlActionSecondaryPhrases" multiple>
-                            <mat-option *ngFor="let phrase of capturePhrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                            <mat-option *ngFor="let phrase of capturePhrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                         </mat-select>
                         <mat-hint>Select the capture phrase for the dot's tick damage (not the initial damage).</mat-hint>
                     </mat-form-field>
