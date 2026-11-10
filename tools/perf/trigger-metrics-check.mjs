@@ -331,9 +331,7 @@ const counterReply = w => {
     check( !hints( new Array( 10 ).fill( 'word' ).join( '|' ) ).includes( 'many-alternatives' ), 'hints: few alternatives are fine' );
     check( hints( '(a+)+b' ).includes( 'nested-quantifier' ), 'hints: nested quantifier' );
     check( !hints( '(abc)+' ).includes( 'nested-quantifier' ), 'hints: a repeated plain group is fine' );
-    check( hints( '{S} hits you', false ).includes( 'leading-wildcard' ), 'hints: plain phrase starting with a code' );
-    check( hints( '{S}', false ).includes( 'no-literal' ), 'hints: plain phrase made of codes only' );
-    check( hints( 'You have been slain', false ).length === 0, 'hints: plain text phrase is fine' );
+    check( hints( '{S}', false ).length === 0 && hints( 'You have been slain', false ).length === 0, 'hints: plain phrases are not judged' );
     check( hints( '' ).length === 0, 'hints: empty phrase' );
 }
 

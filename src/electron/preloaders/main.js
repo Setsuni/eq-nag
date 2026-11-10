@@ -51,6 +51,7 @@ const channelPrefixes = [
     'show-settings',
     'rolls',
     'health',
+    'trigger-perf',
 ];
 
 const styleSheetUtil = new StyleSheetUtil();

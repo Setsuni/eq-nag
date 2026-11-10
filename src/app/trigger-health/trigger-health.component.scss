@@ -138,3 +138,111 @@ $color-red: #f06969;
     margin: 2px 0 0;
     opacity: 0.8;
 }
+
+.health-tabs {
+    display: flex;
+    gap: 4px;
+    margin: 6px 0 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+
+    .health-tab {
+        padding: 6px 16px;
+        cursor: pointer;
+        user-select: none;
+        border-bottom: 2px solid transparent;
+        opacity: 0.75;
+        &.on {
+            opacity: 1;
+            border-bottom-color: $color-blue;
+        }
+    }
+}
+
+.perf {
+    .perf-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin: 8px 0 6px;
+    }
+    .perf-state {
+        opacity: 0.85;
+    }
+    .perf-title {
+        margin: 14px 0 4px;
+        font-weight: 500;
+    }
+    .perf-sub {
+        font-weight: 300;
+        opacity: 0.75;
+    }
+    .perf-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 4px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+        .perf-item-text {
+            flex: 1 1 auto;
+        }
+        .perf-item-name {
+            font-weight: 500;
+        }
+        .perf-item-detail {
+            margin-top: 2px;
+            font-weight: 300;
+            color: #eeeeee;
+        }
+    }
+    .perf-table {
+        width: 100%;
+        border-collapse: collapse;
+        th, td {
+            padding: 5px 8px;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            &.num {
+                text-align: right;
+                white-space: nowrap;
+                font-variant-numeric: tabular-nums;
+            }
+        }
+        th {
+            font-weight: 500;
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        tr.dim td {
+            opacity: 0.45;
+        }
+        .perf-row-name {
+            cursor: pointer;
+            &:hover {
+                text-decoration: underline;
+            }
+        }
+        .perf-bar {
+            height: 3px;
+            margin-top: 3px;
+            background: rgba(255, 255, 255, 0.08);
+            i {
+                display: block;
+                height: 100%;
+                min-width: 1px;
+                background: $color-blue;
+            }
+        }
+    }
+    .perf-pager {
+        display: flex;
+        justify-content: flex-end;
+        gap: 4px;
+        margin-top: 4px;
+    }
+    .perf-note {
+        margin: 8px 0 0;
+        font-size: 12px;
+        opacity: 0.75;
+    }
+}
