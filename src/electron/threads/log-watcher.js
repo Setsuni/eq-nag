@@ -1,6 +1,7 @@
 // TODO: This can be accomplished using web workers.  Buckle up and do it.
 const { ipcRenderer } = require( 'electron' );
 const fs = require( 'fs' );
+const crypto = require( 'crypto' );
 const { Trigger, TriggerAction, ActionTypes, TriggerConditionTypes, OperatorTypes, CharacterClassLevel, TriggerSubAction, TriggerFolder, TriggerCondition, CapturePhrase, Phrase, TriggerParseHistoryModel, getActionLabel, LogTypes, ErrorMessages } = require( '../data/models/trigger' );
 const { QuickShareAuthorListTypes, SimulationProgress, NConditionalModel, VConditionalOperationModel, SConditionalModel, LConditionalOperationModel, SConditionalOperationModel } = require( '../data/models/common' );
 const { PhraseParse, LogTrigger, LogList } = require( './log.model' );
@@ -695,6 +696,7 @@ function LogWatcher(character, logPosition) {
     } );
 
     ipcRenderer.on( 'tick', function ( event, data ) {
+        const previousTriggers = triggers;
         triggers = data.triggers;
         triggerFolders = data.folders;
         enableFct = data.enableFct;
@@ -727,6 +729,8 @@ function LogWatcher(character, logPosition) {
                 } );
             }
         }
+
+        carryTriggerState( previousTriggers, triggers );
 
         const perfStart = perf.enabled ? perf.now() : 0;
         applyFolderConditions( triggerFolders );
@@ -972,9 +976,38 @@ function getPhraseRegexOptions( phrase ) {
 
 
 /**
- * Initializes all counter trigger actions.
+ * Carries the runtime state (open sequences and cooldowns) of each trigger over to its replacement from a tick.
+ * State is kept only when the trigger's definition and its per-character disabled flag are unchanged; an edited or
+ * toggled trigger starts fresh and a deleted one is dropped.
+ *
+ * @param {LogTrigger[]} previous The triggers of the previous tick.
+ * @param {LogTrigger[]} next The triggers of the current tick.
+ */
+function carryTriggerState( previous, next ) {
+    const previousById = new Map();
+    previous?.forEach( trigger => {
+        if ( trigger._signature !== undefined ) {
+            previousById.set( trigger.triggerId, trigger );
+        }
+    } );
+
+    next?.forEach( trigger => {
+        const definition = JSON.stringify( trigger, ( key, value ) => key.startsWith( '_' ) ? undefined : value );
+        trigger._signature = crypto.createHash( 'sha1' ).update( definition ).update( trigger._profileDisabled === true ? 'disabled' : 'enabled' ).digest( 'hex' );
+        const old = previousById.get( trigger.triggerId );
+        if ( old?._signature === trigger._signature ) {
+            trigger._sequentialMatchs = old._sequentialMatchs;
+            trigger._onCooldown = old._onCooldown;
+            trigger._cooldownStart = old._cooldownStart;
+        }
+    } );
+}
+
+/**
+ * Initializes all counter trigger actions.  A counter keeps its value across ticks while its reset settings are unchanged.
  */
 function initCounters() {
+    const previousCounters = counters;
     counters = {};
     triggers?.forEach( trigger => {
         if ( ( isDev || !trigger.onlyExecuteInDev ) && trigger.capturePhrases?.length > 0 ) {
@@ -984,10 +1017,14 @@ function initCounters() {
                     let renderedPhrases = resetsOnPhrases ? renderPhrases( action.resetCounterPhrases ) : [];
                     /** @type {RegExp[]} */
                     let renderedPhraseRegExps = [];
+                    const definition = JSON.stringify( [ action.duration, action.resetCounterPhrases ] );
+                    const previous = previousCounters[ action.displayText ];
+                    const keepValue = previous?._definition === definition;
                     counters[ action.displayText ] = {
-                        value: 0,
-                        lastUpdate: new Date(),
+                        value: keepValue ? previous.value : 0,
+                        lastUpdate: keepValue ? previous.lastUpdate : new Date(),
                         resetDelay: action.duration,
+                        _definition: definition,
                         _parse: logEntry => {
                             if ( resetsOnPhrases ) {
                                 let matched = false;
@@ -1249,7 +1286,7 @@ function generateTriggerFns() {
                 let _phraseParsers = [];
     
                 /** @type {{groups: Record<string, string>, hasGroups: boolean, captureIndex: number, time: number, logValue: string}[]} */
-                let _sequentialMatchs = [];
+                let _sequentialMatchs = trigger._sequentialMatchs ?? ( trigger._sequentialMatchs = [] );
     
                 /** @type {Record<string, string>} */
                 let _renderedPhrases = {};
