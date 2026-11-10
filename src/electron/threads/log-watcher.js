@@ -6,6 +6,7 @@ const { QuickShareAuthorListTypes, SimulationProgress, NConditionalModel, VCondi
 const { PhraseParse, LogTrigger, LogList } = require( './log.model' );
 const { OverlayComponent, OverlayWindow, TriggerSecondaryActionModel } = require( '../data/models/overlay-window' );
 const { CharacterModel } = require( '../data/models/character' );
+const ZoneTracker = require( '../data/zone-tracker' );
 const customAlphabet = require( 'nanoid' ).customAlphabet;
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
@@ -1991,8 +1992,8 @@ function executeTriggerAction( trigger, action, timestamp, res, deltaTime, simul
     } else if ( action.actionType === ActionTypes.ClearVariable ) {
         /* --== Clear Variable ==-- */
 
-        if ( action.variableName === 'CurrentZone' ) {
-            lastEnteredZone = null;
+        if ( action.variableName === 'CurrentZone' && res.phraseId === 'PhraseLoadingPls' ) {
+            zoneTracker.loading();
         }
 
         if ( res.result.groups && res.result.groups[ action.variableName ] ) {
@@ -3693,10 +3694,8 @@ function loadCachedStoredVariables( callback ) {
 
 
 
-/** The zone name from the last zone-in message, and when it was seen, used to learn which name /who reports for it. */
-let lastEnteredZone = null;
-let lastEnteredZoneAt = 0;
-const zoneKnowledgeWindowMs = 10 * 60 * 1000;
+/** Follows zone-in and /who messages to learn which name /who reports for a zone-in name. */
+const zoneTracker = new ZoneTracker();
 
 /**
  * Tells the main process which zone names were seen, and when /who reports a zone under another name than the zone-in message.
@@ -3709,14 +3708,10 @@ function reportZoneKnowledge( res ) {
         return;
     }
 
-    const name = zone.trim().replace( /\s+\d+$/, '' );
-
     if ( res.phraseId === 'PhraseEnterZoneX' ) {
-        lastEnteredZone = name;
-        lastEnteredZoneAt = Date.now();
-        ipcRenderer.send( 'zone-knowledge:record', { zone: name } );
-    } else if ( res.phraseId === 'PhraseCharInZone' && lastEnteredZone && Date.now() - lastEnteredZoneAt < zoneKnowledgeWindowMs && lastEnteredZone.toLowerCase() !== name.toLowerCase() ) {
-        ipcRenderer.send( 'zone-knowledge:record', { zone: name, from: lastEnteredZone, to: name } );
+        ipcRenderer.send( 'zone-knowledge:record', zoneTracker.entered( zone, Date.now() ) );
+    } else if ( res.phraseId === 'PhraseCharInZone' ) {
+        ipcRenderer.send( 'zone-knowledge:record', zoneTracker.who( zone, Date.now() ) );
     }
 }
 

@@ -495,6 +495,39 @@ test( 'summary counts findings by verb', () => {
     assert.equal( report.summary.defaultCount, 2 );
 } );
 
+// Zone tracker.
+const ZoneTracker = require( path.join( root, 'src/electron/data/zone-tracker.js' ) );
+const minute = 60 * 1000;
+
+test( 'a /who shortly after a zone-in pairs the two names, ignoring the instance number', () => {
+    const tracker = new ZoneTracker();
+    assert.deepEqual( tracker.entered( 'Soandso Keep', 0 ), { zone: 'Soandso Keep' } );
+    assert.deepEqual( tracker.who( 'Soandso Hold 19', 9 * minute ), { zone: 'Soandso Hold', from: 'Soandso Keep', to: 'Soandso Hold' } );
+    assert.deepEqual( tracker.who( 'Soandso Keep 3', 9 * minute ), { zone: 'Soandso Keep' } );
+} );
+
+test( 'a /who after the window is ignored', () => {
+    const tracker = new ZoneTracker();
+    tracker.entered( 'Soandso Keep', 0 );
+    assert.deepEqual( tracker.who( 'Soandso Hold', 11 * minute ), { zone: 'Soandso Hold' } );
+} );
+
+test( 'a /who after the loading screen without a zone-in is ignored, and a later zone-in pairs again', () => {
+    const tracker = new ZoneTracker();
+    tracker.entered( 'Soandso Keep', 0 );
+    tracker.loading();
+    assert.deepEqual( tracker.who( 'Soandso Hold', minute ), { zone: 'Soandso Hold' } );
+    tracker.entered( 'Soandso Keep', 2 * minute );
+    assert.equal( tracker.who( 'Soandso Hold', 3 * minute ).from, 'Soandso Keep' );
+} );
+
+test( 'a /who that follows its own clear and store still pairs', () => {
+    const tracker = new ZoneTracker();
+    tracker.entered( 'Soandso Keep', 0 );
+    // The /who phrase clears CurrentZone, which must not reset the tracker; only the loading phrase does.
+    assert.equal( tracker.who( 'Soandso Hold', minute ).to, 'Soandso Hold' );
+} );
+
 // Zone knowledge store, with electron replaced by a temporary data folder.
 const dataDir = fs.mkdtempSync( path.join( os.tmpdir(), 'nag-zone-knowledge-' ) );
 const originalLoad = Module._load;
@@ -534,6 +567,18 @@ try {
         assert.equal( pairs.filter( p => p.seed ).length, 6 );
         assert.ok( zones.includes( 'A New Zone' ) );
         assert.ok( zones.includes( 'Some New Name' ) );
+    } );
+
+    test( 'two zone-in and /who sightings learn the pair', () => {
+        const store = new ZoneKnowledgeStore();
+        const tracker = new ZoneTracker();
+        const record = message => message.from && store.recordPair( message.from, message.to );
+        tracker.entered( 'Soandso Keep', 0 );
+        assert.ok( !record( tracker.who( 'Soandso Hold 4', minute ) ) );
+        tracker.loading();
+        tracker.entered( 'Soandso Keep', 20 * minute );
+        assert.ok( record( tracker.who( 'Soandso Hold', 21 * minute ) ) );
+        assert.ok( store.getKnowledge().pairs.some( p => p.from === 'Soandso Keep' && p.to === 'Soandso Hold' && !p.seed ) );
     } );
 
     test( 'zone knowledge persists and is capped', () => {
