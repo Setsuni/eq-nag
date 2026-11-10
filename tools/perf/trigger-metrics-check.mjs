@@ -281,7 +281,8 @@ const counterReply = w => {
     check( report?.lineCount === 200, 'measurement: counts the lines in the window' );
     check( report?.endedAt >= report?.startedAt, 'measurement: has a time window' );
     const row = report?.rows.find( r => r.triggerId === hit.triggerId );
-    check( Math.abs( row?.checked - 200 ) <= 4 && row?.fired === 100, 'measurement: checked (estimated from the timed lines) and fired cover the window only' );
+    // The trigger gate keeps the trigger from being tried on the 100 lines that cannot match, so only the other 100 count as checked.
+    check( Math.abs( row?.checked - 100 ) <= 4 && row?.fired === 100, 'measurement: checked (estimated from the timed lines) and fired cover the window only' );
     check( row?.samples > 0, 'measurement: times the trigger' );
     const blockedRow = report?.rows.find( r => r.triggerId === blocked.triggerId );
     check( blockedRow?.checked === 0 && blockedRow?.skipped === true && report?.rows[ 2 ].triggerId === blocked.triggerId, 'measurement: a trigger whose conditions fail is not checked, is skipped and sorted last' );
