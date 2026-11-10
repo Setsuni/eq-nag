@@ -1,3 +1,11 @@
+$color-light: #ffffffde;
+$color-green: #69f0ae;
+$color-orange: #f0c669;
+$color-red: #f06969;
+$option-odd: #202020;
+$option-selected: #242424;
+$bg-label-dark: #151515;
+
 div.tab-content {
     position: fixed;
     left: 0;
@@ -57,7 +65,7 @@ div.tab-content {
     font: inherit;
     font-size: 14px;
     text-align: left;
-    color: #ffffffcc;
+    color: $color-light;
     background: none;
     border: none;
     border-left: 3px solid transparent;
@@ -68,9 +76,9 @@ div.tab-content {
         background: rgba(255, 255, 255, 0.06);
     }
     &.on {
-        color: #ffffff;
-        background: rgba(105, 240, 174, 0.1);
-        border-left-color: #69f0ae;
+        color: $color-light;
+        background: $option-selected;
+        border-left-color: $color-green;
     }
 }
 
@@ -79,8 +87,8 @@ div.tab-content {
     padding: 1px 6px;
     font-size: 12px;
     text-align: center;
-    color: #1d1d1d;
-    background: #ffab40;
+    color: $bg-label-dark;
+    background: $color-orange;
     border-radius: 9px;
 }
 
@@ -128,13 +136,13 @@ div.tab-content {
     margin: 24px 0 8px;
     font-size: 16px;
     font-weight: 400;
-    color: #ffffffdd;
+    color: $color-light;
 
     .spacer {
         flex: 1 1 auto;
     }
     &.danger {
-        color: #ef5350;
+        color: $color-red;
     }
 }
 
@@ -172,9 +180,17 @@ div.tab-content {
     gap: 0 32px;
 }
 
+.custom-dot {
+    flex: 0 0 8px;
+    width: 8px;
+    height: 8px;
+    background: $color-orange;
+    border-radius: 50%;
+}
+
 .status-card {
     padding: 16px;
-    background: rgba(255, 255, 255, 0.04);
+    background: $option-odd;
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 6px;
 }
@@ -197,7 +213,7 @@ div.tab-content {
     border-radius: 50%;
 
     &.ok {
-        background: #69f0ae;
+        background: $color-green;
     }
 }
 
@@ -220,7 +236,7 @@ div.tab-content {
 
 .status-tile {
     padding: 10px 12px;
-    background: rgba(0, 0, 0, 0.2);
+    background: $bg-label-dark;
     border-radius: 4px;
 
     .tile-label {
@@ -244,17 +260,17 @@ div.tab-content {
 .health-chip {
     padding: 2px 8px;
     font-size: 13px;
-    color: #ffffffcc;
+    color: $color-light;
     background: rgba(255, 255, 255, 0.12);
     border-radius: 10px;
 
     &.ok {
-        color: #1d1d1d;
-        background: #69f0ae;
+        color: $bg-label-dark;
+        background: $color-green;
     }
     &.warn {
-        color: #1d1d1d;
-        background: #ffab40;
+        color: $bg-label-dark;
+        background: $color-orange;
     }
 }
 

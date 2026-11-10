@@ -23,6 +23,7 @@ import { TriggerHealthDialogComponent, TriggerHealthDialogData, TriggerHealthDia
 
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
+const settingsTabIndex = 5;
 const updateIntervalDuration = 5 * 60 * 1000;
 
 @Component( {
@@ -715,9 +716,9 @@ export class MainComponent implements OnInit {
     onChangeTabs( selectedIndex: number ): void {
         this.selectedTabIndex = selectedIndex;
         this.showConsole = selectedIndex === 0;
-        this.settingsPanel.setActive( selectedIndex === 5 );
+        this.settingsPanel.setActive( selectedIndex === settingsTabIndex );
 
-        if ( selectedIndex === 5 ) {
+        if ( selectedIndex === settingsTabIndex ) {
             this.settingsPanel.loadSettings();
             this.settingsPanel.refreshTriggerHealth();
         }
@@ -736,7 +737,7 @@ export class MainComponent implements OnInit {
      * Shows the Trigger Health section in Settings.
      */
     public openTriggerHealth(): void {
-        this.selectedTabIndex = 5;
+        this.selectedTabIndex = settingsTabIndex;
         setTimeout( () => this.settingsPanel.scrollToTriggerHealth(), 150 );
     }
 

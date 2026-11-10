@@ -31,14 +31,12 @@
                     <div class="status-hint" *ngIf="watchStatus.length === 0">Run the setup to find your characters and place your overlays.</div>
                 </div>
                 <span class="spacer"></span>
-                <!-- Run setup again: opens the existing setup wizard. -->
                 <button mat-stroked-button (click)="runSetupWizard()">Run setup again</button>
-                <!-- end Run setup again -->
             </div>
             <div class="status-tiles">
                 <div class="status-tile">
-                    <div class="tile-label">Last log line</div>
-                    <div class="tile-value">{{lastLineAge ?? 'None yet'}}</div>
+                    <div class="tile-label">Log last written</div>
+                    <div class="tile-value">{{lastLineAge ?? '–'}}</div>
                 </div>
                 <div class="status-tile">
                     <div class="tile-label">Triggers</div>
@@ -67,6 +65,7 @@
     <section class="pane" [class.pane-hidden]="section !== 'characters'">
         <h2 class="pane-title">Characters &amp; log
             <span class="spacer"></span>
+            <span class="custom-dot" *ngIf="!advancedOpen[ 'characters' ] && customised( 'characters' )" matTooltip="Some advanced settings are changed"></span>
             <mat-slide-toggle [checked]="advancedOpen[ 'characters' ]" (change)="toggleAdvanced( 'characters' )">Advanced</mat-slide-toggle>
         </h2>
         <p class="pane-note">Add and remove characters on the Characters tab.</p>
@@ -143,6 +142,7 @@
     <section class="pane" [class.pane-hidden]="section !== 'overlays'">
         <h2 class="pane-title">Overlays
             <span class="spacer"></span>
+            <span class="custom-dot" *ngIf="!advancedOpen[ 'overlays' ] && customised( 'overlays' )" matTooltip="Some advanced settings are changed"></span>
             <mat-slide-toggle [checked]="advancedOpen[ 'overlays' ]" (change)="toggleAdvanced( 'overlays' )">Advanced</mat-slide-toggle>
         </h2>
         <p class="pane-note">Create, move and test overlays on the Overlays tab.</p>
@@ -193,6 +193,7 @@
     <section class="pane" [class.pane-hidden]="section !== 'sound'">
         <h2 class="pane-title">Sound &amp; voice
             <span class="spacer"></span>
+            <span class="custom-dot" *ngIf="!advancedOpen[ 'sound' ] && customised( 'sound' )" matTooltip="Some advanced settings are changed"></span>
             <mat-slide-toggle [checked]="advancedOpen[ 'sound' ]" (change)="toggleAdvanced( 'sound' )">Advanced</mat-slide-toggle>
         </h2>
 
@@ -301,6 +302,7 @@
         <h2 class="pane-title">Sharing
             <button mat-icon-button color="accent" (click)="showVerifiedUserInfo()" *ngIf="trustedAuthor"><mat-icon class="material-icons-outlined">verified_user</mat-icon></button>
             <span class="spacer"></span>
+            <span class="custom-dot" *ngIf="!advancedOpen[ 'sharing' ] && customised( 'sharing' )" matTooltip="Some advanced settings are changed"></span>
             <mat-slide-toggle [checked]="advancedOpen[ 'sharing' ]" (change)="toggleAdvanced( 'sharing' )">Advanced</mat-slide-toggle>
         </h2>
 
@@ -378,7 +380,11 @@
     </section>
 
     <section class="pane" [class.pane-hidden]="section !== 'rolls'">
-        <h2 class="pane-title">Roll tracker</h2>
+        <h2 class="pane-title">Roll tracker
+            <span class="spacer"></span>
+            <span class="custom-dot" *ngIf="!rollSettings?.advancedOpen && customised( 'rolls' )" matTooltip="Some advanced settings are changed"></span>
+            <mat-slide-toggle *ngIf="rollSettings" [checked]="rollSettings.advancedOpen" (change)="updateRollSettings( { advancedOpen: $event.checked } )">Advanced</mat-slide-toggle>
+        </h2>
         <div class="roll-tracker" *ngIf="rollSettings as roll">
             <div class="roll-columns" [class.collapsed]="!roll.advancedOpen">
                 <div class="roll-column">
@@ -394,9 +400,7 @@
                     </mat-form-field>
                 </div>
                 <div class="roll-column advanced">
-                    <h3 class="roll-heading">ADVANCED
-                        <button type="button" class="roll-link" (click)="updateRollSettings( { advancedOpen: !roll.advancedOpen } )">{{ roll.advancedOpen ? '▴ Hide' : '▸ Show' }}</button>
-                    </h3>
+                    <h3 class="roll-heading">ADVANCED</h3>
                     <ng-container *ngIf="roll.advancedOpen">
                         <mat-form-field class="roll-field roll-field-number">
                             <mat-label>Close after (seconds)</mat-label>
@@ -459,6 +463,7 @@
     <section class="pane" [class.pane-hidden]="section !== 'death'">
         <h2 class="pane-title">Death recap
             <span class="spacer"></span>
+            <span class="custom-dot" *ngIf="!advancedOpen[ 'death' ] && customised( 'death' )" matTooltip="Some advanced settings are changed"></span>
             <mat-slide-toggle [checked]="advancedOpen[ 'death' ]" (change)="toggleAdvanced( 'death' )">Advanced</mat-slide-toggle>
         </h2>
 

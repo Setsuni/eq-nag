@@ -3,7 +3,7 @@ import { DialogService } from 'src/app/dialogs/dialog.service';
 import { IpcService } from 'src/app/ipc.service';
 import { MatTable } from '@angular/material/table';
 import { customAlphabet } from 'nanoid';
-import { ActionTypes, AuthorModel, CapturePhrase, DeathRecapPreferences, LogMaintenanceRules, LogMaintenancePlanTypes, OverlayWindowModel, QuickShareAuthorListTypes, TriggerAction, TriggerModel, ScheduledTask, Range, SettingsKeys, SharedTriggerPermissions, DpsMeterSettings } from 'src/app/core.model';
+import { ActionTypes, AuthorModel, CapturePhrase, DeathRecapPreferences, LogMaintenanceRules, LogMaintenancePlanTypes, OverlayWindowModel, QuickShareAuthorListTypes, TriggerAction, TriggerModel, ScheduledTask, Range, SettingsKeys, SharedTriggerPermissions, DpsMeterSettings, FileReadDelays } from 'src/app/core.model';
 import { SettingsService } from '../settings-http.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { SetupService } from 'src/app/setup/setup.service';
@@ -104,6 +104,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     public updatedSettings: string[] = [];
     public rollSettings: RollTrackerSettings | null = null;
     public rollDefaults: RollTrackerSettings | null = null;
+    private fileReadDelays: FileReadDelays | null = null;
 
     public get timerOverlays(): OverlayWindowModel[] {
         return this.overlays?.filter( m => m.overlayType === 'Timer' );
@@ -288,6 +289,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
             this.quickShareAuthorList = f == null ? '' : f.join( '\r\n' );
         } );
 
+        this.ipcService.getSetting<FileReadDelays>( 'fileReadDelays', false ).subscribe( f => this.fileReadDelays = f );
         this.ipcService.getSetting<boolean>( SettingsKeys.allowPrerelease ).subscribe( f => this.allowPrerelease = f );
         this.ipcService.getSetting<boolean>( SettingsKeys.enableCheckWindowPosition ).subscribe( f => this.enableCheckWindowPosition = f );
 
@@ -599,7 +601,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
                 this.watchStatus = status ?? [];
                 this.statusNow = Date.now();
             } );
-        } );
+        } ).catch( () => { } );
     }
 
     ngOnDestroy(): void {
@@ -616,10 +618,32 @@ export class SettingsComponent implements OnInit, OnDestroy {
     }
 
     /**
+     * Tells whether a setting hidden behind a section's Advanced switch differs from its default.
+     */
+    customised( id: string ): boolean {
+        switch ( id ) {
+            case 'characters':
+                return this.fileReadDelays != null && ( this.fileReadDelays.readDelayMs !== 200 || this.fileReadDelays.readErrorDelayMs !== 1000 || this.fileReadDelays.flushDelayMs !== 1000 );
+            case 'overlays':
+                return this.enableCheckWindowPosition === false;
+            case 'sound':
+                return this.speechVolume !== 100 || this.audioVolume !== 100 || this.baseSpeakingRate !== 1 || this.phoneticTransforms.length > 0;
+            case 'sharing':
+                return ( this.quickShareAuthorListType != null && this.quickShareAuthorListType !== QuickShareAuthorListTypes.Disabled ) || this.sharedTriggerPermissions.disableSharedGlowEffects === true || this.sharedTriggerPermissions.disableAllGlowEffects === true;
+            case 'rolls':
+                const roll = this.rollSettings;
+                const defaults = this.rollDefaults;
+                return roll != null && defaults != null && ( [ 'closeAfterSeconds', 'topCount', 'resultSeconds', 'rerollRule', 'pasteTemplate', 'speakWinnerPhrase', 'speakTiePhrase' ] as ( keyof RollTrackerSettings )[] ).some( key => roll[ key ] !== defaults[ key ] );
+            default:
+                return false;
+        }
+    }
+
+    /**
      * Describes how long ago the newest log file change was, or null when there is none.
      */
     get lastLineAge(): string | null {
-        const times = this.watchStatus.map( s => s.lastLineAt ).filter( t => t != null );
+        const times = this.watchedCharacters.map( s => s.lastLineAt ).filter( t => t != null );
         if ( times.length === 0 ) {
             return null;
         }
