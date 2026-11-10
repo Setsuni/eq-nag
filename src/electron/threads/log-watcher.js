@@ -1227,9 +1227,15 @@ function generateTriggerFns() {
                                     // We won't care about case sensitivity.
                                     let _phrs = staticLiterals ?? StringUtilities.parseStoredVariablesToLiteralArray( phrase.phrase, storedVariables );
                                     let matched = false;
+                                    // Too many variable combinations to list; match with one expression instead.
+                                    const literalRgx = _phrs == null ? StringUtilities.parseStoredVariablesToLiteralRegExp( phrase.phrase, storedVariables ) : null;
+                                    if ( _phrs == null ) {
+                                        _phrs = literalRgx ? [ literalRgx.source ] : [];
+                                        matched = literalRgx?.test( value ) ?? false;
+                                    }
                                     const valueLower = toLowerCached( value );
     
-                                    if ( _phrs?.length > 0 ) {
+                                    if ( !literalRgx && _phrs?.length > 0 ) {
                                         for ( let i = 0; i < _phrs.length; i++ ) {
                                             if ( valueLower.indexOf( staticLiteralsLower?.[ i ] ?? _phrs[ i ].toLowerCase() ) > -1 ) {
                                                 matched = true;

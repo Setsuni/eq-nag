@@ -1,4 +1,3 @@
-const { result } = require( "lodash" );
 const {
     NConditionalModel,
     NConditionalOperationModel,
@@ -138,7 +137,7 @@ function parseStoredVariablesToRegexConditional( value ) {
     // \${(.[^}]*)}     Your ${SpellBeingCast} spell is interrupted.
     //                      Full match	47-63	{SpellBeingCast}
     //                      Group 1.	n/a	SpellBeingCast
-    let result = /\${(.[^}]*)}/g.exec( value );
+    let result = [ '', ...new Set( [ ...value.matchAll( /\${(.[^}]*)}/g ) ].map( m => m[ 1 ] ) ) ];
     const output = {
         value: value,
         operations: [],
@@ -165,7 +164,10 @@ function parseStoredVariablesToRegexConditional( value ) {
             vConditional.name = 'nag_' + nagId();
 
             let captureGroupRgx = `(?<${vConditional.name}>.+?)`;
-            output.value = value.replace( RegExp( `\\\${${result[ i ]}}`, 'g' ), captureGroupRgx );
+            const token = `\\\${${result[ i ]}}`;
+            // A repeated variable refers back to the first group, since duplicate group names are invalid.
+            output.value = output.value.replace( RegExp( token ), () => captureGroupRgx );
+            output.value = output.value.replace( RegExp( token, 'g' ), () => `\\k<${vConditional.name}>` );
 
             vConditional.validatorFn = ( match, storedVariables ) => {
                 if ( match?.groups[ vConditional.name ] ) {
@@ -263,7 +265,7 @@ function parseStoredVariablesToLiteral( value, storedVariables ) {
                     text += ',' + values[ i ];
                 }
             
-                value = value.replace( RegExp( `\\\${${key}}`, 'g' ), text );
+                value = value.replace( RegExp( `\\\${${key}}`, 'g' ), () => text );
             }
         }
     }
@@ -296,13 +298,13 @@ function parseConditionResultsToLiteral( value, conditionResults ) {
     // \${(.[^}]*)}     Your ${SpellBeingCast} spell is interrupted.
     //                      Full match	47-63	{SpellBeingCast}
     //                      Group 1.	n/a	SpellBeingCast
-    let result = /\${(.[^}]*)}/g.exec( value );
+    let result = [ '', ...new Set( [ ...value.matchAll( /\${(.[^}]*)}/g ) ].map( m => m[ 1 ] ) ) ];
     
     if ( result?.length > 1 ) {
         for ( let i = 1; i < result.length; i++ ) {
             //value = value.replace(/\${SpellBeingCast}/g, 'Envenomed Bolt');
             if ( conditionResults[ result[ i ] ] ) {
-                value = value.replace( RegExp( `\\\${${result[ i ]}}`, 'g' ), conditionResults[ result[ i ] ] );
+                value = value.replace( RegExp( `\\\${${result[ i ]}}`, 'g' ), () => conditionResults[ result[ i ] ] );
             }
         }
     }
@@ -629,13 +631,23 @@ function parseMatchesToLiteral( value, matches, deltaTime ) {
  * 
  * @param {string} value The phrase to parse.
  * @param {Record<string, any>} storedVariables The stored variables.
+ * @param {number} maxCombinations The most phrases to build.
+ * @returns {string[] | null} The phrases, or null when there would be more than maxCombinations; use parseStoredVariablesToLiteralRegExp then.
  */
-function parseStoredVariablesToLiteralArray( value, storedVariables ) {
+function parseStoredVariablesToLiteralArray( value, storedVariables, maxCombinations = 1000 ) {
     // \${(.[^}]*)}     Your ${SpellBeingCast} spell is interrupted.
     //                      Full match	47-63	{SpellBeingCast}
     //                      Group 1.	n/a	SpellBeingCast
     let names = [ ...new Set( [ ...value.matchAll( /\${(.[^}]*)}/g ) ].map( m => m[ 1 ] ) ) ];
     let literals = [ value ];
+
+    let combinations = 1;
+    for ( const name of names ) {
+        combinations *= storedVariables[ name ]?.length ?? 0;
+        if ( combinations > maxCombinations ) {
+            return null;
+        }
+    }
 
     for ( const name of names ) {
         let values = storedVariables[ name ];
@@ -652,6 +664,43 @@ function parseStoredVariablesToLiteralArray( value, storedVariables ) {
     }
 
     return literals;
+}
+
+/**
+ * Builds a case-insensitive regular expression matching any phrase parseStoredVariablesToLiteralArray would build, without building them.
+ * A variable used more than once must have the same value each time.
+ * 
+ * @param {string} value The phrase to parse.
+ * @param {Record<string, any>} storedVariables The stored variables.
+ * @returns {RegExp | null} Null when a variable has no stored values.
+ */
+function parseStoredVariablesToLiteralRegExp( value, storedVariables ) {
+    // Odd entries are variable names, even entries the text between them.
+    const parts = value.split( /\${(.[^}]*)}/ );
+    const groups = {};
+    let source = '';
+
+    for ( let i = 0; i < parts.length; i++ ) {
+        if ( i % 2 === 0 ) {
+            source += getEscapedString( parts[ i ] );
+            continue;
+        }
+
+        const name = parts[ i ];
+        const values = storedVariables[ name ];
+        if ( !( values?.length > 0 ) ) {
+            return null;
+        }
+
+        if ( groups[ name ] ) {
+            source += `\\k<${groups[ name ]}>`;
+        } else {
+            groups[ name ] = 'v' + Object.keys( groups ).length;
+            source += `(?<${groups[ name ]}>` + values.map( v => getEscapedString( v ) ).join( '|' ) + ')';
+        }
+    }
+
+    return new RegExp( source, 'i' );
 }
 
 
@@ -1277,6 +1326,7 @@ let StringUtilities = {
     parseStoredVariablesToRegexConditional: parseStoredVariablesToRegexConditional,
     parseStoredVariablesToLiteral: parseStoredVariablesToLiteral,
     parseStoredVariablesToLiteralArray: parseStoredVariablesToLiteralArray,
+    parseStoredVariablesToLiteralRegExp: parseStoredVariablesToLiteralRegExp,
     parseConditionResultsToLiteral: parseConditionResultsToLiteral,
     parseMatchesToLiteral: parseMatchesToLiteral,
     parseCountersToLiteral: parseCountersToLiteral,
