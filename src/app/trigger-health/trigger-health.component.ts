@@ -164,7 +164,7 @@ export class TriggerHealthComponent implements OnInit, OnDestroy {
         this.ipcService.showEditTriggerDialog( triggerId );
     }
 
-    public trackRow( index: number, row: PerfRow ): string {
+    public trackPerfRow( index: number, row: PerfRow ): string {
         return row.triggerId;
     }
 
