@@ -198,3 +198,23 @@ legend.full-width {
         margin-bottom: 8px;
     }
 }
+
+.zone-row {
+    margin-bottom: 10px;
+
+    .zone-field {
+        width: 100%;
+    }
+
+    &.zone-complex {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 4px 12px;
+        font-size: 13px;
+
+        .zone-label {
+            opacity: 0.75;
+        }
+    }
+}

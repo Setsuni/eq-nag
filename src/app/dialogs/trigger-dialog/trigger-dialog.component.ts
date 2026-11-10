@@ -6,12 +6,13 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { IpcService } from 'src/app/ipc.service';
 import { DialogService } from '../dialog.service';
 import { ColorUtility } from 'src/app/utilities';
-import { TriggerModel, CapturePhrase, ActionTypes, TriggerAction, OverlayWindowModel, OperatorTypes, ImportTypes, ExternalDataSources } from 'src/app/core.model';
+import { TriggerModel, CapturePhrase, ActionTypes, TriggerAction, TriggerCondition, TriggerConditionTypes, OverlayWindowModel, OperatorTypes, ImportTypes, ExternalDataSources } from 'src/app/core.model';
 import { Observable } from 'rxjs';
 import { CooldownExplanation } from 'src/app/editors/capture-phrases/capture-phrases.component';
 import { isAdvancedActionType } from 'src/app/editors/action-picker';
 
 const advancedStorageKey = 'nagTriggerEditorAdvanced';
+const zoneVariableName = 'CurrentZone';
 
 @Component( {
     selector: 'app-trigger-dialog',
@@ -35,14 +36,21 @@ export class TriggerDialogComponent implements OnInit {
     public isDev: boolean = false;
     public showAdvanced: boolean = false;
     public showOnlyWhen: boolean = false;
+    public zones: string[] = [];
     private _baseline: string = null;
-    public readonly helpUrl: string = 'https://guildantix.github.io/eq-nag/triggers/';
+    private _docsUrl: string = 'https://guildantix.github.io/eq-nag/triggers/';
+
+    /** The docs page for the section the player is working in. */
+    public helpPage: string = 'capture-phrases/';
+    public get helpUrl(): string {
+        return this._docsUrl + this.helpPage;
+    }
 
     /** Whether the trigger uses anything that only shows under Advanced. */
     public get usesAdvanced(): boolean {
         const m = this.model;
         return m.captureMethod === 'Sequential'
-            || m.conditions?.length > 0
+            || m.conditions?.some( c => !this.isSimpleZoneCondition( c ) || this.zoneMode === 'complex' )
             || m.classLevels?.some( c => c.class?.trim().length > 0 )
             || m.hotkeys?.length > 0
             || m.comments?.length > 0
@@ -51,7 +59,58 @@ export class TriggerDialogComponent implements OnInit {
 
     /** Whether the trigger uses anything that shows under Only when. */
     public get usesOnlyWhen(): boolean {
-        return this.model.useCooldown === true;
+        return this.model.useCooldown === true || this.zoneConditions.length > 0;
+    }
+
+    private isSimpleZoneCondition( condition: TriggerCondition ): boolean {
+        return condition.variableName === zoneVariableName && condition.operatorType === OperatorTypes.Contains && !( condition as any ).useRegEx;
+    }
+
+    private get zoneConditions(): TriggerCondition[] {
+        return this.model.conditions?.filter( c => c.variableName === zoneVariableName ) ?? [];
+    }
+
+    /** The zone field edits a lone "contains" rule on the current zone; anything else is shown but edited in Advanced. */
+    public get zoneMode(): 'simple' | 'complex' {
+        const zoneConditions = this.zoneConditions;
+        if ( zoneConditions.length === 0 ) {
+            return 'simple';
+        }
+        return zoneConditions.length === 1 && this.model.conditions.length === 1 && this.isSimpleZoneCondition( zoneConditions[ 0 ] ) ? 'simple' : 'complex';
+    }
+
+    public get zoneValue(): string {
+        return this.zoneConditions[ 0 ]?.variableValue ?? '';
+    }
+
+    /** Plain-English description of the zone rules the zone field cannot edit. */
+    public get complexZoneText(): string {
+        const words: Record<number, string> = {
+            [ OperatorTypes.IsNull ]: 'is empty',
+            [ OperatorTypes.Equals ]: 'is exactly',
+            [ OperatorTypes.DoesNotEqual ]: 'is not',
+            [ OperatorTypes.Contains ]: 'contains',
+        };
+        return this.zoneConditions.map( c => `${words[ c.operatorType ] ?? 'matches'} ${c.variableValue ?? ''}`.trim() ).join( ' and ' );
+    }
+
+    /** Creates, changes or removes the zone rule, the same rule the Conditions table makes. */
+    public setZone( value: string ): void {
+        const others = this.model.conditions ?? [];
+        const existing = this.zoneConditions[ 0 ];
+        if ( !( value?.length > 0 ) ) {
+            this.model.conditions = others.filter( c => c !== existing );
+        } else if ( existing ) {
+            existing.variableValue = value;
+            this.model.conditions = [ ...others ];
+        } else {
+            const condition = new TriggerCondition();
+            condition.conditionType = TriggerConditionTypes.VariableValue;
+            condition.operatorType = OperatorTypes.Contains;
+            condition.variableName = zoneVariableName;
+            condition.variableValue = value;
+            this.model.conditions = [ ...others, condition ];
+        }
     }
     private _fullName: string = '';
     public get fullName(): string {
@@ -140,6 +199,7 @@ export class TriggerDialogComponent implements OnInit {
     private initDisclosures(): void {
         this.showAdvanced = localStorage.getItem( advancedStorageKey ) === 'true' || this.usesAdvanced;
         this.showOnlyWhen = this.usesOnlyWhen || ( this.showAdvanced && ( this.model.conditions?.length > 0 || this.model.classLevels?.some( c => c.class?.trim().length > 0 ) ) );
+        this.ipcService.getEverquestZones().subscribe( zones => this.zones = zones ?? [] );
     }
 
     /** Shows or hides the advanced options, and remembers the choice for the next trigger. */

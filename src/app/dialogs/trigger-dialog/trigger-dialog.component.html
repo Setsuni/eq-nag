@@ -23,7 +23,7 @@
                 <input matInput name="txtTriggerName" type="text" [(ngModel)]="model.name" placeholder="What is this trigger for?" required />
             </mat-form-field>
 
-            <div class="step">
+            <div class="step" (focusin)="helpPage = 'capture-phrases/'" (click)="helpPage = 'capture-phrases/'">
                 <h3><span class="step-number">1</span>When this appears in the log</h3>
                 <app-capture-phrases [simple]="true" [(capturePhrases)]="model.capturePhrases" (capturePhraseAdded)="onCapturePhraseAdded($event)" [(captureMethod)]="model.captureMethod"></app-capture-phrases>
             </div>
@@ -33,17 +33,31 @@
                 <app-trigger-test [trigger]="model"></app-trigger-test>
             </div>
 
-            <div class="step">
+            <div class="step" (focusin)="helpPage = 'actions/'" (click)="helpPage = 'actions/'">
                 <h3><span class="step-number">2</span>Then</h3>
                 <app-trigger-actions [(actions)]="model.actions" [isDev]="isDev" [predefined]="model.predefined" [capturePhrases]="model.capturePhrases" [showAdvanced]="showAdvanced"></app-trigger-actions>
             </div>
 
-            <div class="disclosure">
+            <div class="disclosure" (focusin)="helpPage = 'conditions/'" (click)="helpPage = 'conditions/'">
                 <button type="button" class="disclosure-toggle" (click)="showOnlyWhen = !showOnlyWhen" [attr.aria-expanded]="showOnlyWhen">
                     <mat-icon>{{ showOnlyWhen ? 'expand_more' : 'chevron_right' }}</mat-icon>Only when&hellip;
                     <span class="disclosure-note" *ngIf="!showOnlyWhen && usesOnlyWhen">in use</span>
                 </button>
                 <div class="disclosure-body" *ngIf="showOnlyWhen">
+                    <div class="zone-row" *ngIf="zoneMode === 'simple'">
+                        <mat-form-field floatLabel="always" class="zone-field">
+                            <mat-label>Only in zone</mat-label>
+                            <input matInput [ngModel]="zoneValue" (ngModelChange)="setZone( $event )" name="txtOnlyZone" list="zoneNames" placeholder="Any zone" autocomplete="off" />
+                            <mat-hint>Part of the name is enough. Separate several zones with |</mat-hint>
+                        </mat-form-field>
+                        <datalist id="zoneNames"><option *ngFor="let zone of zones" [value]="zone"></option></datalist>
+                    </div>
+                    <div class="zone-row zone-complex" *ngIf="zoneMode === 'complex'">
+                        <span class="zone-label">Only in zone</span>
+                        <span class="zone-text">{{ complexZoneText }}</span>
+                        <button mat-button type="button" color="accent" *ngIf="!showAdvanced" (click)="setShowAdvanced( true )">Edit in Advanced</button>
+                        <span class="zone-text" *ngIf="showAdvanced">Edit it in the conditions below.</span>
+                    </div>
                     <div class="cooldown-row">
                         <mat-checkbox [(ngModel)]="model.useCooldown" name="cbxUseCooldown">Wait between alerts</mat-checkbox>
                         <sup class="help-sup"
@@ -62,7 +76,7 @@
                 </div>
             </div>
 
-            <div class="disclosure">
+            <div class="disclosure" (focusin)="helpPage = 'conditions/'" (click)="helpPage = 'conditions/'">
                 <button type="button" class="disclosure-toggle" (click)="setShowAdvanced( !showAdvanced )" [attr.aria-expanded]="showAdvanced">
                     <mat-icon>{{ showAdvanced ? 'expand_more' : 'chevron_right' }}</mat-icon>Advanced
                     <span class="disclosure-note" *ngIf="!showAdvanced && usesAdvanced">in use</span>
