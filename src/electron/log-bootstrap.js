@@ -1054,13 +1054,18 @@ function startLogWatcherWindow( logFile, isDev, sendTick, character, logPosition
     logWatcherWindow.webContents.openDevTools( { mode: 'undocked' } );
     logWatcherWindow.loadURL( `file://${__dirname}/threads/log-watcher.html?character=${encodeURI( JSON.stringify( character ) )}&logPosition=${logPosition}` );
 
+    const closingWindow = logWatcherWindow;
     logWatcherWindow.on( 'closed', async () => {
         logWatcherWindow = null;
+
+        if ( logWatchers[ character.characterId ]?.window === closingWindow ) {
+            logWatchers[ character.characterId ].window = null;
+        }
         
         if ( combatWatcher.characterId === character.characterId ) {
             // If there is still a character being watched, then start the combat watcher for that character.
             for ( let key in logWatchers ) {
-                if ( logWatchers.hasOwnProperty( key ) && logWatchers[ key ].window != null ) {
+                if ( logWatchers.hasOwnProperty( key ) && logWatchers[ key ].window != null && !logWatchers[ key ].window.isDestroyed() ) {
                     changeCombatCharacter( logWatchers[ key ].model, logWatchers[ key ].logSize, sendTick );
                     break;
                 }
@@ -1144,6 +1149,10 @@ function changeCombatCharacter( character, logPosition, sendTick ) {
 
     combatWatcher.characterId = character.characterId;
     combatWatcher.character = character;
+
+    if ( !combatWatcher.window || combatWatcher.window.isDestroyed() ) {
+        return;
+    }
 
     combatWatcher.window.webContents.send( 'log:character:changed', { character: character, logPosition: logPosition } );
     sendTick();
