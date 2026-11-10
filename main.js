@@ -102,6 +102,8 @@ const __dirname = path.dirname( __filename );
 var mainWindow, logWatcherWindow, testWindow;
 var enableDevMode = false;
 const updateCheckInterval = 10 * 60 * 1000;
+/** @type {NodeJS.Timeout | undefined} */
+var updateCheckTimer = undefined;
 const winManager = new WindowManager(__dirname);
 const userPreferences = new UserPreferencesStore( {} );
 const dkpDatabase = new DkpDatabaseStore();
@@ -292,7 +294,7 @@ function createWindow() {
     mainWindow.webContents.once( 'dom-ready', () => {
         sendTick();
         checkForUpdates();
-        setInterval( () => {
+        updateCheckTimer = setInterval( () => {
             checkForUpdates();
         }, updateCheckInterval );
 
@@ -782,9 +784,10 @@ autoUpdater.on( 'update-downloaded', () => {
 
     }
 
-    if ( updateCheckInterval > 0 ) {
+    if ( updateCheckTimer ) {
         // Once an update is loaded, stop checking for updates.
-        clearInterval( updateCheckInterval );
+        clearInterval( updateCheckTimer );
+        updateCheckTimer = undefined;
     }
 } );
 
