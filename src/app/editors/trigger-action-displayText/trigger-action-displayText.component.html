@@ -6,7 +6,7 @@
             <div class="card-property">
                 <div class="full-width content-middle">
                     <mat-form-field floatLabel="always">
-                        <mat-label>Display Text</mat-label>
+                        <mat-label>Display text</mat-label>
                         <input matInput [(ngModel)]="action.displayText" name="txtDisplayText" />
                     </mat-form-field>
                 </div>
@@ -15,7 +15,7 @@
             <div class="card-property">
                 <div class="content-middle">
                     <mat-form-field floatLabel="always">
-                        <mat-label>Overlay Window</mat-label>
+                        <mat-label>Overlay window</mat-label>
                         <mat-select [(ngModel)]="action.overlayId" name="ddlLogOverlay">
                             <mat-option *ngFor="let option of overlayOptions" [value]="option.overlayId">{{option.name}}</mat-option>
                         </mat-select>

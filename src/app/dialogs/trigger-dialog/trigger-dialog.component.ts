@@ -6,7 +6,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { IpcService } from 'src/app/ipc.service';
 import { DialogService } from '../dialog.service';
 import { ColorUtility } from 'src/app/utilities';
-import { TriggerModel, ActionTypes, TriggerAction, OverlayWindowModel, OperatorTypes, ImportTypes, ExternalDataSources } from 'src/app/core.model';
+import { TriggerModel, CapturePhrase, ActionTypes, TriggerAction, OverlayWindowModel, OperatorTypes, ImportTypes, ExternalDataSources } from 'src/app/core.model';
 import { Observable } from 'rxjs';
 
 @Component( {
@@ -144,6 +144,19 @@ export class TriggerDialogComponent implements OnInit {
                     this.closeModal();
                 }
             } );
+    }
+
+    /** Actions that ran for every previous phrase also run for the new one. */
+    public onCapturePhraseAdded( added: CapturePhrase ): void {
+        const previousIds = this.model.capturePhrases.filter( f => f.phraseId !== added.phraseId ).map( f => f.phraseId );
+        if ( previousIds.length === 0 ) {
+            return;
+        }
+        this.model.actions?.forEach( action => {
+            if ( previousIds.every( id => action.phrases?.includes( id ) ) ) {
+                action.phrases.push( added.phraseId );
+            }
+        } );
     }
 
     public onChangeTabs( index: number ): void {

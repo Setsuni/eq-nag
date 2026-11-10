@@ -5,8 +5,8 @@
 
             <div class="card-property">
                 <div class="full-width">
-                    <mat-form-field style="width: 100%;">
-                        <mat-label></mat-label>
+                    <mat-form-field style="width: 100%;" floatLabel="always">
+                        <mat-label>Tick phrase</mat-label>
                         <mat-select [(ngModel)]="action.secondaryPhrases" name="ddlActionSecondaryPhrases" multiple>
                             <mat-option *ngFor="let phrase of capturePhrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
                         </mat-select>
@@ -18,7 +18,7 @@
             <div class="card-property">
                 <div>
                     <mat-form-field style="width: 100%;" floatLabel="always">
-                        <mat-label>Overlay Window</mat-label>
+                        <mat-label>Overlay window</mat-label>
                         <mat-select [(ngModel)]="action.overlayId" name="ddlDotTimerOverlay">
                             <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                         </mat-select>
@@ -69,7 +69,7 @@
         </div>
 
     </mat-tab>
-    <mat-tab label="Timer Ending">
+    <mat-tab label="Timer ending">
 
         <div class="card-tab-content">
 
@@ -105,12 +105,12 @@
                 <div class="content-vertical content-right">
 
                     <mat-form-field *ngIf="action.endingSoonDisplayText" floatLabel="always">
-                        <mat-label>Display Text</mat-label>
+                        <mat-label>Display text</mat-label>
                         <input matInput [(ngModel)]="action.endingSoonText" name="txtEndingSoonText" placeholder="Enter the text to display" />
                     </mat-form-field>
 
                     <mat-form-field *ngIf="action.endingSoonDisplayText" floatLabel="always">
-                        <mat-label>Overlay Window</mat-label>
+                        <mat-label>Overlay window</mat-label>
                         <mat-select [(ngModel)]="action.endingSoonTextOverlayId" name="ddlEndingSoonTextOverlayId">
                             <mat-option *ngFor="let option of alertOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                         </mat-select>
@@ -180,7 +180,7 @@
         </div>
 
     </mat-tab>
-    <mat-tab label="Timer Ended">
+    <mat-tab label="Timer ended">
         <div class="card-tab-content" [appContextMenu]="getActionEndedCtxMenu(action)">
 
             <!-- Notify when ending -->
@@ -210,12 +210,12 @@
                 <div class="content-vertical content-right">
 
                     <mat-form-field *ngIf="action.endedDisplayText" floatLabel="always">
-                        <mat-label>Display Text</mat-label>
+                        <mat-label>Display text</mat-label>
                         <input matInput [(ngModel)]="action.endedText" name="txtEndedText" placeholder="Enter the text to display" />
                     </mat-form-field>
 
                     <mat-form-field *ngIf="action.endedDisplayText" floatLabel="always">
-                        <mat-label>Overlay Window</mat-label>
+                        <mat-label>Overlay window</mat-label>
                         <mat-select [(ngModel)]="action.endedTextOverlayId" name="ddlEndedTextOverlayId">
                             <mat-option *ngFor="let option of alertOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                         </mat-select>
@@ -284,7 +284,7 @@
 
         </div>
     </mat-tab>
-    <mat-tab label="Exclude Targets">
+    <mat-tab label="Exclude targets">
         <div class="card-tab-content">
             
             <app-phrases [(phrases)]="action.excludeTargets">
@@ -293,7 +293,7 @@
 
         </div>
     </mat-tab>
-    <mat-tab label="End Early">
+    <mat-tab label="End early">
         <div class="card-tab-content">
             
             <app-phrases [(phrases)]="action.endEarlyPhrases">

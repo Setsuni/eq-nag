@@ -6,7 +6,7 @@
             <div class="card-property">
                 <div>
                     <mat-form-field style="width: 100%;" floatLabel="always">
-                        <mat-label>Overlay Window</mat-label>
+                        <mat-label>Overlay window</mat-label>
                         <mat-select [(ngModel)]="action.overlayId" name="ddlDotTimerOverlay">
                             <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                         </mat-select>
@@ -57,8 +57,8 @@
             <div class="card-property" *ngIf="action.actionType === actionTypes.BeneficialTimer">
                 <div class="content-middle">Cast time</div>
                 <div class="content-middle">
-                    <mat-form-field style="width: 100%;">
-                        <mat-label></mat-label>
+                    <mat-form-field style="width: 100%;" floatLabel="always">
+                        <mat-label>Cast time</mat-label>
                         <input matInput type="number" [(ngModel)]="action.castTime" name="txtCastTime" required />
                         <mat-hint>Base casting time in milliseconds. (ex: 2.5 is 2500)</mat-hint>
                     </mat-form-field>
@@ -83,7 +83,7 @@
 
     </mat-tab>
 
-    <mat-tab label="Stopwatch Ended">
+    <mat-tab label="Stopwatch ended">
         <div class="card-tab-content" [appContextMenu]="getActionEndedCtxMenu(action)">
 
             <!-- Yes store duration in variable -->
@@ -91,7 +91,7 @@
                 <div class="content-middle"><mat-checkbox [(ngModel)]="action.storeDuration" name="cbxStoreDuration">Store stopwatch duration in variable.</mat-checkbox></div>
                 <div class="content-right" *ngIf="action.storeDuration">
                     <mat-form-field floatLabel="always">
-                        <mat-label>Variable Name</mat-label>
+                        <mat-label>Variable name</mat-label>
                         <input matInput [(ngModel)]="action.variableName" name="txtVariableName" />
                     </mat-form-field>
                 </div>
@@ -154,12 +154,12 @@
                 <div class="content-vertical content-right">
 
                     <mat-form-field *ngIf="action.endedDisplayText" floatLabel="always">
-                        <mat-label>Display Text</mat-label>
+                        <mat-label>Display text</mat-label>
                         <input matInput [(ngModel)]="action.endedText" name="txtEndedText" placeholder="Enter the text to display" />
                     </mat-form-field>
 
                     <mat-form-field *ngIf="action.endedDisplayText" floatLabel="always">
-                        <mat-label>Overlay Window</mat-label>
+                        <mat-label>Overlay window</mat-label>
                         <mat-select [(ngModel)]="action.endedTextOverlayId" name="ddlEndedTextOverlayId">
                             <mat-option *ngFor="let option of alertOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                         </mat-select>
@@ -228,7 +228,7 @@
 
         </div>
     </mat-tab>
-    <mat-tab label="Stop Stopwatch">
+    <mat-tab label="Stop stopwatch">
         <div class="card-tab-content">
 
             <app-phrases [(phrases)]="action.endEarlyPhrases">

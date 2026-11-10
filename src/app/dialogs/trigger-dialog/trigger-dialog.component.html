@@ -30,7 +30,7 @@
                             </legend>
                             
                             <mat-form-field floatLabel="always">
-                                <mat-label>Trigger Name</mat-label>
+                                <mat-label>Trigger name</mat-label>
                                 <input matInput name="txtTriggerName" type="text" [(ngModel)]="model.name" required />
                             </mat-form-field>
         
@@ -42,13 +42,13 @@
                         
                         <app-conditions [(conditions)]="model.conditions"></app-conditions>
                         
-                        <app-capture-phrases [(capturePhrases)]="model.capturePhrases" [(captureMethod)]="model.captureMethod" [(useCooldown)]="model.useCooldown" [(cooldownDuration)]="model.cooldownDuration"></app-capture-phrases>
+                        <app-capture-phrases [(capturePhrases)]="model.capturePhrases" (capturePhraseAdded)="onCapturePhraseAdded($event)" [(captureMethod)]="model.captureMethod" [(useCooldown)]="model.useCooldown" [(cooldownDuration)]="model.cooldownDuration"></app-capture-phrases>
     
                         <fieldset *ngIf="model.captureMethod === 'Sequential'">
                             <legend class="full-width"><span class="title">Sequential Rules</span><span class="spacer"></span></legend>
                             
                             <mat-form-field>
-                                <mat-label>Restart Behavior</mat-label>
+                                <mat-label>Restart behavior</mat-label>
                                 <mat-select [(ngModel)]="model.sequentialRestartBehavior" name="ddlSequentialRestartBehavior">
                                     <mat-option value="none">None</mat-option>
                                     <mat-option value="exactFirstMatch">Restart on Phrase #1</mat-option>
@@ -75,7 +75,7 @@
                         </div>
                     </ng-template>
                 </mat-tab>
-                <mat-tab label="Character Classes">
+                <mat-tab label="Character classes">
                     <ng-template matTabContent>
                         <div class="tab-content">
 

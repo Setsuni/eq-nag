@@ -104,7 +104,7 @@
                             </div>
                         </div> -->
                         <div class="f-row">
-                            <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>Horizontal Alignment</mat-label></div>
+                            <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>Horizontal alignment</mat-label></div>
                             <div class="f-sm-4 al-center" style="text-align: left !important;">
                                 <mat-radio-group [(ngModel)]="model.horizontalAlignment" name="horizontalAlignment" (ngModelChange)="broadcastModel()" class="horizontal">
                                     <mat-radio-button value="left"><mat-icon class="material-icons-outlined">format_align_left</mat-icon></mat-radio-button>
@@ -115,7 +115,7 @@
                             <div class="f-sm-4 al-center"></div>
                         </div>
                         <div class="f-row">
-                            <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>Vertical Alignment</mat-label></div>
+                            <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>Vertical alignment</mat-label></div>
                             <div class="f-sm-4 al-center" style="text-align: left !important;">
                                 <mat-radio-group [(ngModel)]="model.verticalAlignment" name="verticalAlignment" (ngModelChange)="broadcastModel()" class="horizontal">
                                     <mat-radio-button value="top"><mat-icon class="material-icons-outlined">vertical_align_top</mat-icon></mat-radio-button>
@@ -127,7 +127,7 @@
                         </div>
                         
                         <div class="f-row">
-                            <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>White Space</mat-label></div>
+                            <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>White space</mat-label></div>
                             <div class="f-sm-4 al-center" style="text-align: left !important;">
                                 <mat-radio-group [(ngModel)]="model.textOverflow.whiteSpace" name="whiteSpace" (ngModelChange)="broadcastModel()" class="horizontal">
                                     <mat-radio-button value="nowrap"><mat-icon class="material-icons-outlined">horizontal_rule</mat-icon></mat-radio-button>
@@ -149,7 +149,7 @@
                         </div>
 
                         <div class="f-row" style="margin-bottom: 60px;">
-                            <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>Overflow Style</mat-label></div>
+                            <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>Overflow style</mat-label></div>
                             <div class="f-sm-4 al-center" style="text-align: left !important;">
                                 <mat-radio-group [(ngModel)]="model.textOverflow.textOverflow" name="textOverflow" (ngModelChange)="broadcastModel()" class="horizontal">
                                     <mat-radio-button value="clip" title="Clip text"><mat-icon class="material-icons-outlined">content_cut</mat-icon></mat-radio-button>
@@ -203,7 +203,7 @@
                         <div class="f-row">
                             <div class="f-sm-6 al-center">
                                 <mat-form-field floatLabel="always">
-                                    <mat-label>Timer Sort Type</mat-label>
+                                    <mat-label>Timer sort type</mat-label>
                                     <mat-select [(ngModel)]="model.timerSortType" name="ddlTimerSortType">
                                         <mat-option [value]="timerSortTypes.None">First in on top.</mat-option>
                                         <mat-option [value]="timerSortTypes.Ascending">Shortest time remaining on top.</mat-option>
@@ -263,7 +263,7 @@
 
                         <div class="f-row">
                             <div class="f-sm-4 al-left"><mat-label *ngIf="model.groupByTarget">Item</mat-label></div>
-                            <div class="f-sm-4 al-right"><mat-label *ngIf="model.groupByTarget">Min Width</mat-label></div>
+                            <div class="f-sm-4 al-right"><mat-label *ngIf="model.groupByTarget">Min width</mat-label></div>
                             <div class="f-sm-4 al-center"><mat-slider thumbLabel tickInterval="1" step="10" min="50" max="500" style="width: 100%;" [(ngModel)]="model.groupMinWidth" name="groupMinWidth" (change)="broadcastModel()" *ngIf="model.groupByTarget"></mat-slider></div>
                         </div>
 

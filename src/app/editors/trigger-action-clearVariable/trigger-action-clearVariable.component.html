@@ -9,7 +9,7 @@
             <p>Choose a variable to clear.</p>
 
             <mat-form-field floatLabel="always">
-                <mat-label>Variable Name</mat-label>
+                <mat-label>Variable name</mat-label>
                 <mat-select [(ngModel)]="action.variableName" name="ddlVariableName">
                     <mat-option *ngFor="let variable of storedVariables" [value]="variable">{{variable}}</mat-option>
                 </mat-select>
