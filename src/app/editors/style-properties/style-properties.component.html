@@ -6,8 +6,8 @@
         </tr>
         <tr>
             <td colspan="6">
-                <mat-form-field style="width: 100%;">
-                    <mat-label></mat-label>
+                <mat-form-field style="width: 100%;" floatLabel="always">
+                    <mat-label>Font family</mat-label>
                     <mat-select class="font-ddl" [(ngModel)]="model.fontFamily" name="ddlFontFamily" disableOptionCentering (selectionChange)="onChangeFontFamily()" style="max-width: unset;">
                         <mat-option class="font-option" value="Roboto" style="font-family: Roboto, sans-serif; font-size: 16px;"><small>Roboto</small></mat-option>
                         <mat-option class="font-option" value="Red Rose" style="font-family: 'Red Rose', sans-serif; font-size: 16px;"><small>Red Rose</small></mat-option>
@@ -17,7 +17,6 @@
                         <mat-option class="font-option" value="Ranchers" style="font-family: Ranchers, sans-serif; font-size: 16px;"><small>Ranchers</small></mat-option>
                         <mat-option class="font-option" value="Press Start 2P" style="font-family: 'Press Start 2P', sans-serif; font-size: 14px;"><small>Press Start 2P</small></mat-option>
                     </mat-select>
-                    <mat-hint>Font Family</mat-hint>
                 </mat-form-field>
             </td>
         </tr>

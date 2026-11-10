@@ -1,6 +1,6 @@
 
-<div class="floating-top-right"><button mat-button color="accent" (click)="addNewAction()"><mat-icon>add</mat-icon>New</button></div>
 <div class="content" #content>
+    <div class="actions-toolbar"><button mat-button color="accent" (click)="addNewAction()"><mat-icon>add</mat-icon>New</button></div>
     <div class="flex-layout">
         <mat-card class="card action-card" *ngFor="let action of actions; let i = index" style="margin: 20px; min-width: 550px; width: calc(100% - 6em);" [ngClass]="{'box-shadow-blue': scrollIndex === i}">
             <mat-card-header>
@@ -52,13 +52,12 @@
             <mat-card-content *ngIf="!scrolling">
                 
                 <div>
-                    <mat-form-field style="width: 100%;">
-                        <mat-label></mat-label>
+                    <mat-form-field style="width: 100%;" floatLabel="always">
+                        <mat-label>Action type</mat-label>
                         <input matInput [value]="actionTypeLabels(action.actionType)" readonly
                             [matMenuTriggerFor]="multiColumnActionMenu"
                             #menuTrigger="matMenuTrigger"  placeholder="Select an action type"
                             attr.aria-label="Action Type Selector for {{ actionTypeLabels(action.actionType) }}">
-                            <mat-hint>Action Type</mat-hint>
                     </mat-form-field>
 
                     <mat-menu #multiColumnActionMenu="matMenu" class="multi-column-menu-panel">
@@ -125,15 +124,17 @@
     
                 <div *ngIf="action.actionType != null && action.actionType != actionTypes.List">
     
-                    <div>
-                        <mat-form-field style="width: 100%;">
-                            <mat-label></mat-label>
+                    <div *ngIf="!runsForAnyPhrase( action ); else anyPhrase">
+                        <mat-form-field style="width: 100%;" floatLabel="always">
+                            <mat-label>Trigger on phrase</mat-label>
                             <mat-select [(ngModel)]="action.phrases" name="ddlActionPhrase_{{i}}" multiple>
-                                <mat-option *ngFor="let phrase of capturePhrases" [value]="phrase.phraseId">{{phrase.phrase}}</mat-option>
+                                <mat-option *ngFor="let phrase of capturePhrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
                             </mat-select>
-                            <mat-hint>Trigger on phrase</mat-hint>
                         </mat-form-field>
                     </div>
+                    <ng-template #anyPhrase>
+                        <p class="runs-for">Runs for: any phrase</p>
+                    </ng-template>
     
                 </div>
     

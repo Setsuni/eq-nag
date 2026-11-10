@@ -8,6 +8,7 @@ import { ColorUtility, Color } from '../../utilities';
 import { customAlphabet } from 'nanoid';
 import { MonitorSelectDialogComponent } from '../monitor-select-dialog/monitor-select-dialog.component';
 import { MatDialog } from '@angular/material/dialog';
+import { DialogService } from '../dialog.service';
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
 // import { Color } from '@angular-material-components/color-picker';
@@ -55,6 +56,7 @@ export class OverlayEditorDialogComponent implements OnInit {
     public textGlowColor: string = '#000000';
     public enterDescription: boolean;
     public showColoredBackground: boolean = false;
+    private _baseline: string = null;
     
     public get maxFontWeightIndex(): number {
         if ( this.model?.fontFamily != null ) {
@@ -124,7 +126,7 @@ export class OverlayEditorDialogComponent implements OnInit {
         this.ipcService.disableOverlayEditMode( this.overlayId );
     }
 
-    constructor( private ipcService: IpcService, private route: ActivatedRoute, private dialog: MatDialog ) { }
+    constructor( private ipcService: IpcService, private route: ActivatedRoute, private dialog: MatDialog, private dialogService: DialogService ) { }
 
     ngOnInit() {
         this.model = new OverlayWindowModel();
@@ -154,6 +156,7 @@ export class OverlayEditorDialogComponent implements OnInit {
                     this.textBorderIntensity = ColorUtility.FromHex( this.model.textBorderColor ).a * 100;
                     this.textGlowIntensity = ColorUtility.FromHex( this.model.textGlowColor ).a * 100;
                     this.dotGroupHeaderWeightIndex = availableFonts[ this.model.fontFamily ].indexOf( this.model.groupHeaderWeight );
+                    window.setTimeout( () => this._baseline = JSON.stringify( this.model ) );
                 } );
 
                 this.ipcService.overlayBoundsChanged().subscribe( e => {
@@ -366,6 +369,32 @@ export class OverlayEditorDialogComponent implements OnInit {
 
 
     
+    public get hasUnsavedChanges(): boolean {
+        return this._baseline != null && JSON.stringify( this.model ) !== this._baseline;
+    }
+
+    /**
+     * Cancels the overlay editor, asking first when there are unsaved changes.
+     */
+    public requestClose(): void {
+        if ( !this.hasUnsavedChanges ) {
+            this.closeModal();
+            return;
+        }
+        this.dialogService
+            .showConfirmationDialog(
+                'Close without saving?',
+                'Click "Discard" to close the editor and lose your changes.',
+                'Click "Keep editing" to go back to the editor.',
+                null, 'normal', null,
+                { Yes: 'Discard', No: 'Keep editing' } )
+            .subscribe( discard => {
+                if ( discard ) {
+                    this.cancel();
+                }
+            } );
+    }
+
     /**
      * Cancels the overlay editor, reverting any changes made.
      */

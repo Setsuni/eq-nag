@@ -129,6 +129,11 @@ export class CapturePhrasesComponent implements OnInit {
      */
     @Output() public capturePhrasesChange: EventEmitter<CapturePhrase[]> = new EventEmitter<CapturePhrase[]>();
 
+    /**
+     * Emits the new phrase when one is added.
+     */
+    @Output() public capturePhraseAdded: EventEmitter<CapturePhrase> = new EventEmitter<CapturePhrase>();
+
 
 
 
@@ -354,6 +359,7 @@ export class CapturePhrasesComponent implements OnInit {
         phrase.phraseId = nanoid();
         this.capturePhrases.push( phrase );
         this.capturePhrasesChange.emit( this.capturePhrases );
+        this.capturePhraseAdded.emit( phrase );
         this.capturePhrasesTable?.renderRows();
         this.updateAllHighlights();
     }

@@ -30,8 +30,8 @@
     <ng-container matColumnDef="phrase">
         <th mat-header-cell *matHeaderCellDef style="text-align: left;"> Phrase </th>
         <td mat-cell *matCellDef="let element; let i = index">
-            <mat-form-field style="width: 100%;" class="consolas">
-                <mat-label></mat-label>
+            <mat-form-field style="width: 100%;" class="consolas" floatLabel="always">
+                <mat-label>Capture phrase</mat-label>
                 <textarea
                     matInput
                     cdkTextareaAutosize
@@ -45,7 +45,6 @@
                     autocorrect="off"
                     autocapitalize="off">
                 </textarea>
-                <mat-hint>Capture Phrase</mat-hint>
             </mat-form-field>
         </td>
     </ng-container>

@@ -7,15 +7,18 @@
                 <span class="second">{{fullNameSuffix}}</span>
             </span>
             <span class="spacer"></span>
-            <button mat-icon-button aria-label="Exit application" (click)="closeModal()">
+            <a mat-icon-button class="help-link" [href]="helpUrl" target="_blank" rel="noopener" aria-label="Open the help page for this tab" matTooltip="Help for this tab">
+                <mat-icon>help_outline</mat-icon>
+            </a>
+            <button mat-icon-button aria-label="Exit application" (click)="requestClose()">
                 <mat-icon>clear</mat-icon>
             </button>
         </mat-toolbar>
     </header>
     <section class="show-scrollbar">
         <form #triggerForm="ngForm">
-            <mat-tab-group class="modal-menu" animationDuration="0ms" (selectedIndexChange)="onChangeTabs($event)" [selectedIndex]="0">
-                <mat-tab label="Capture">
+            <mat-tab-group class="modal-menu" animationDuration="0ms" (selectedIndexChange)="onChangeTabs($event)" [selectedIndex]="tabIndex">
+                <mat-tab label="When">
                     <div class="tab-content">
                         
                         <fieldset class="margin-t-20">
@@ -26,28 +29,26 @@
                                 <mat-checkbox [(ngModel)]="model.onlyExecuteInDev" name="cbxOnlyShowInDev" *ngIf="isDev && model.predefined">Only execute in dev</mat-checkbox>
                             </legend>
                             
-                            <mat-form-field>
-                                <mat-label></mat-label>
+                            <mat-form-field floatLabel="always">
+                                <mat-label>Trigger name</mat-label>
                                 <input matInput name="txtTriggerName" type="text" [(ngModel)]="model.name" required />
-                                <mat-hint>Trigger Name</mat-hint>
                             </mat-form-field>
         
-                            <mat-form-field>
-                                <mat-label></mat-label>
+                            <mat-form-field floatLabel="always">
+                                <mat-label>Comments</mat-label>
                                 <textarea matInput name="txtComments" [(ngModel)]="model.comments" rows="5"></textarea>
-                                <mat-hint>Comments</mat-hint>
                             </mat-form-field>
                         </fieldset>
                         
                         <app-conditions [(conditions)]="model.conditions"></app-conditions>
                         
-                        <app-capture-phrases [(capturePhrases)]="model.capturePhrases" [(captureMethod)]="model.captureMethod" [(useCooldown)]="model.useCooldown" [(cooldownDuration)]="model.cooldownDuration"></app-capture-phrases>
+                        <app-capture-phrases [(capturePhrases)]="model.capturePhrases" (capturePhraseAdded)="onCapturePhraseAdded($event)" [(captureMethod)]="model.captureMethod" [(useCooldown)]="model.useCooldown" [(cooldownDuration)]="model.cooldownDuration"></app-capture-phrases>
     
                         <fieldset *ngIf="model.captureMethod === 'Sequential'">
                             <legend class="full-width"><span class="title">Sequential Rules</span><span class="spacer"></span></legend>
                             
                             <mat-form-field>
-                                <mat-label>Restart Behavior</mat-label>
+                                <mat-label>Restart behavior</mat-label>
                                 <mat-select [(ngModel)]="model.sequentialRestartBehavior" name="ddlSequentialRestartBehavior">
                                     <mat-option value="none">None</mat-option>
                                     <mat-option value="exactFirstMatch">Restart on Phrase #1</mat-option>
@@ -65,7 +66,7 @@
 
                     </div>
                 </mat-tab>
-                <mat-tab label="Actions">
+                <mat-tab label="Then">
                     <ng-template matTabContent>
                         <div class="tab-content">
 
@@ -74,7 +75,7 @@
                         </div>
                     </ng-template>
                 </mat-tab>
-                <mat-tab label="Character Classes">
+                <mat-tab label="Character classes">
                     <ng-template matTabContent>
                         <div class="tab-content">
 
@@ -87,9 +88,9 @@
         </form>
     </section>
     <footer>
-        <button mat-button [disabled]="triggerForm.invalid" (click)="applyChanges()">Apply</button>
-        <button mat-button [disabled]="triggerForm.invalid" (click)="saveAndClose()">Save</button>
-        <button mat-button color="warn" (click)="closeModal()">Cancel</button>
+        <button mat-flat-button color="primary" [disabled]="triggerForm.invalid" (click)="saveAndClose()">Save</button>
+        <button mat-button [disabled]="triggerForm.invalid" (click)="applyChanges()">Save and keep open</button>
+        <button mat-button (click)="requestClose()">Cancel</button>
         <button mat-button color="default" (click)="reimportFromAllakhazam()" *ngIf="showReimportFromAlla">Re-import from {{serviceName}}</button>
     
         <ng-container *ngIf="isDev">

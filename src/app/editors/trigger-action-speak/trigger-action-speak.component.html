@@ -3,10 +3,9 @@
         
         <div class="card-tab-content">
 
-            <mat-form-field>
-                <mat-label></mat-label>
+            <mat-form-field floatLabel="always">
+                <mat-label>Text to speak</mat-label>
                 <input matInput [(ngModel)]="action.displayText" name="txtSpeakText" />
-                <mat-hint>Text to speak</mat-hint>
                 <button mat-icon-button type="button" color="accent" aria-label="Speak Text" matSuffix (click)="speakPhrase(action.displayText, action.speechRate)">
                     <mat-icon>play_circle_outline</mat-icon>
                 </button>

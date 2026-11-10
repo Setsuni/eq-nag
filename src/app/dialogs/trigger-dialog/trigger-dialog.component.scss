@@ -18,6 +18,11 @@ mat-form-field {
     }
 }
 
+// Labels are always shown, so the required marker sits inline after the label text.
+:host ::ng-deep .mat-form-field-label .mat-placeholder-required.mat-form-field-required-marker {
+    position: static;
+}
+
 legend.full-width {
     min-width: 100%;
 }
