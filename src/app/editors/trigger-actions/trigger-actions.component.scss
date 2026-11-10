@@ -34,9 +34,34 @@ mat-form-field {
 }
 
 .action-card {
-    margin: 0 0 10px;
+    margin: 0 0 8px;
+    padding: 0 16px 8px;
     width: 100%;
     box-sizing: border-box;
+
+    &.collapsed {
+        padding-bottom: 0;
+    }
+
+    ::ng-deep mat-card-header {
+        padding: 6px 8px;
+        align-items: center;
+
+        .mat-card-title {
+            margin: 0;
+            font-size: 15px;
+            font-weight: 500;
+        }
+
+        .mat-card-subtitle {
+            margin: 2px 0 0;
+            font-size: 12px;
+        }
+
+        .mat-card-header-text {
+            margin: 0 12px;
+        }
+    }
 }
 
 ::ng-deep .card.action-card {

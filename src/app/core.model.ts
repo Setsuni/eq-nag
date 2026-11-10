@@ -372,6 +372,17 @@ export class TriggerHotkey {
     public quickAction: boolean = false;
 }
 
+/** The outcome of testing an unsaved trigger against one log line. */
+export interface TriggerTestResult {
+    requestId: string;
+    ok: boolean;
+    error?: 'timeout' | 'noCharacter' | 'failed';
+    /** False when a rule under "Only when" would stop the trigger right now. */
+    conditionsPassed: boolean;
+    matches: { phraseId: string, phrase: string }[];
+    fired: boolean;
+}
+
 export class TriggerModel {
     
     public triggerId: string = null;

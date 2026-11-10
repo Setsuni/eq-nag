@@ -771,6 +771,22 @@ function LogWatcher(character, logPosition) {
         perf.enabled && perf.record( 'log-watcher: tick (rebuild triggers)', perfStart );
     } );
 
+    ipcRenderer.on( 'trigger:test:run',
+        /**
+         * Tests an unsaved trigger from the trigger editor against one log line, optionally firing its actions.
+         *
+         * @param {any} event Electron event args.
+         * @param {{ requestId: string, trigger: any, line: string, fire: boolean }} request The test request.
+         */
+        ( event, request ) => {
+            const run = () => ipcRenderer.send( 'trigger:test:result', runTriggerTest( request ) );
+            if ( triggerGenComplete ) {
+                run();
+            } else {
+                onTriggerGenCompleteHandlers.push( run );
+            }
+        } );
+
     ipcRenderer.on( 'trigger-perf:start', () => startTriggerMeasurement() );
 
     ipcRenderer.on( 'trigger-perf:stop', () => finishTriggerMeasurement() );
@@ -1919,6 +1935,64 @@ function generateTriggerFns() {
         let fns = onTriggerGenCompleteHandlers.splice( 0, onTriggerGenCompleteHandlers.length );
         fns.forEach( f => f() );
     }
+}
+
+
+
+
+
+
+
+
+
+
+/**
+ * Evaluates a trigger that may not be saved against one log line, with its conditions ignored but reported.
+ * When asked to, runs the actions of every phrase that matched.
+ *
+ * @param {{ requestId: string, trigger: any, line: string, fire: boolean }} request The test request.
+ */
+function runTriggerTest( request ) {
+    const result = { requestId: request.requestId, ok: true, conditionsPassed: true, matches: [], fired: false };
+
+    try {
+        const trigger = JSON.parse( JSON.stringify( request.trigger ) );
+        trigger.triggerId = `test:${trigger.triggerId ?? 'new'}`;
+        trigger.enabled = true;
+        trigger.onlyExecuteInDev = false;
+
+        // Generate the parse functions for this trigger alone, leaving the live trigger list as it was.
+        const liveTriggers = triggers;
+        triggers = [ trigger ];
+        try {
+            generateTriggerFns();
+        } finally {
+            triggers = liveTriggers;
+        }
+
+        const log = ( request.line ?? '' ).replace( rgxTimestamp, '' );
+        result.conditionsPassed = typeof trigger._checkConditions === 'function' ? trigger._checkConditions() : true;
+        trigger._checkConditions = () => true;
+
+        const timestamp = new Date();
+        trigger._parse( log, ( res, deltaTime ) => {
+            result.matches.push( { phraseId: res.phraseId, phrase: trigger.capturePhrases.find( p => p.phraseId === res.phraseId )?.phrase ?? '' } );
+            if ( request.fire ) {
+                trigger.actions?.forEach( action => {
+                    if ( ( isDev || !action.onlyExecuteInDev ) && ( action.actionType === ActionTypes.List || action.phrases?.indexOf( res.phraseId ) > -1 ) ) {
+                        executeTriggerAction( trigger, action, timestamp, res, deltaTime, false );
+                        result.fired = true;
+                    }
+                } );
+            }
+        } );
+    } catch ( error ) {
+        result.ok = false;
+        result.error = 'failed';
+        logHistoryMgr.logError( error, request.line, false, null, ErrorMessages.triggerExecution(), null );
+    }
+
+    return result;
 }
 
 

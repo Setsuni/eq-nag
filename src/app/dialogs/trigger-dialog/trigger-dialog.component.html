@@ -29,6 +29,11 @@
             </div>
 
             <div class="step">
+                <h3>Test with a log line</h3>
+                <app-trigger-test [trigger]="model"></app-trigger-test>
+            </div>
+
+            <div class="step">
                 <h3><span class="step-number">2</span>Then</h3>
                 <app-trigger-actions [(actions)]="model.actions" [isDev]="isDev" [predefined]="model.predefined" [capturePhrases]="model.capturePhrases" [showAdvanced]="showAdvanced"></app-trigger-actions>
             </div>

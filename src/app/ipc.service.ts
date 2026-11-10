@@ -3,7 +3,7 @@ import * as Electron from 'electron';
 import { UpdateInfo } from 'electron-updater';
 import { Observable, Observer, ReplaySubject, Subject } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
-import { DataTickModel, DkpEntryModel, TriggerModel, OverlayWindowModel, ActionTypes, FocusEffectSettings, CharacterModel, BasicError, TriggerFolder, FileModel, Tag, AuthorModel, PackageFileModel, TriggerPackageMetaModel, TriggerPackageVersion, FctStylesModel, OverlayBoundsChangedEventArgs, DialogEventArgs, QuickShareMetaModel, LogFileLocation, IpcMessage, DeathRecapPreferences, QuickShareAuthorListTypes, Progress, QuitFailureData, DuplicateTriggerAction, ScrapedSpell, ScrapedClickEffect, TriggerParseHistoryModel, SimulationProgress, FctCombatGroup, CombatTypes, StylePropertiesModel, CombatAnimations, TriggersProfileModel, ConsoleMessageModel, LogTypes, ServerCombatModel, ProgressModel, ServerConsoleMessage, ChatRoomLinkReceivedEventArgs, RenderTokenModel, TokenChangeModel, ShareFilePayload, ShareFileReadResult, ShareFileSaveResult } from './core.model';
+import { DataTickModel, DkpEntryModel, TriggerModel, OverlayWindowModel, ActionTypes, FocusEffectSettings, CharacterModel, BasicError, TriggerFolder, FileModel, Tag, AuthorModel, PackageFileModel, TriggerPackageMetaModel, TriggerPackageVersion, FctStylesModel, OverlayBoundsChangedEventArgs, DialogEventArgs, QuickShareMetaModel, LogFileLocation, IpcMessage, DeathRecapPreferences, QuickShareAuthorListTypes, Progress, QuitFailureData, DuplicateTriggerAction, ScrapedSpell, ScrapedClickEffect, TriggerParseHistoryModel, SimulationProgress, FctCombatGroup, CombatTypes, StylePropertiesModel, CombatAnimations, TriggersProfileModel, ConsoleMessageModel, LogTypes, ServerCombatModel, ProgressModel, ServerConsoleMessage, ChatRoomLinkReceivedEventArgs, RenderTokenModel, TokenChangeModel, ShareFilePayload, ShareFileReadResult, ShareFileSaveResult, TriggerTestResult } from './core.model';
 import { GinaConfiguration, GinaTriggerGroups } from './gina.model';
 import { ColorUtility } from './utilities';
 import { nagId } from './core/nag-id.util';
@@ -1342,6 +1342,30 @@ export class IpcService {
                 } );
             } );
             window.api.ipc.send( 'trigger:get', null );
+
+        } );
+
+        return obs;
+    }
+
+    /**
+     * Tests a trigger that may not be saved against one log line.
+     *
+     * @param trigger The trigger as it is in the editor.
+     * @param line The log line, with or without its timestamp.
+     * @param fire True to also run the actions of the phrases that matched.
+     */
+    public testTrigger( trigger: TriggerModel, line: string, fire: boolean ): Observable<TriggerTestResult> {
+        let obs: Observable<TriggerTestResult> = new Observable<TriggerTestResult>( ( observer: Observer<TriggerTestResult> ) => {
+
+            const requestId = nagId();
+            window.api.ipc.once( 'trigger:test:result', ( e, result: TriggerTestResult ) => {
+                this.ngZone.run( () => {
+                    observer.next( result );
+                    observer.complete();
+                } );
+            } );
+            window.api.ipc.send( 'trigger:test:run', { requestId: requestId, trigger: JSON.parse( JSON.stringify( trigger ) ), line: line, fire: fire } );
 
         } );
 

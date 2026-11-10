@@ -352,6 +352,49 @@ class LogBootstrapper {
             combatWatcher.window?.webContents.send( 'log:simulate:file', data );
         } );
 
+        // Trigger editor "Test with a log line": the log watcher evaluates the unsaved trigger against one line.
+        const triggerTestReplies = {};
+        ipcMain.on( 'trigger:test:run',
+            /**
+             * Sends a trigger and a log line to a log watcher, starting one for the first character if none is running.
+             *
+             * @param {Electron.IpcMainEvent} event Electron event args.
+             * @param {{ requestId: string, trigger: any, line: string, fire: boolean }} data The test request.
+             */
+            function ( event, data ) {
+                const reply = result => {
+                    delete triggerTestReplies[ data.requestId ];
+                    if ( !event.sender.isDestroyed() ) {
+                        event.sender.send( 'trigger:test:result', Object.assign( { requestId: data.requestId }, result ) );
+                    }
+                };
+                triggerTestReplies[ data.requestId ] = reply;
+                setTimeout( () => triggerTestReplies[ data.requestId ] && reply( { ok: false, error: 'timeout' } ), 8000 );
+
+                const watcherKey = Object.keys( logWatchers ).find( key => logWatchers[ key ].window != null );
+                if ( watcherKey ) {
+                    logWatchers[ watcherKey ].window.webContents.send( 'trigger:test:run', data );
+                    return;
+                }
+
+                const _chr = characterDatabase.getAll()[ 0 ];
+                if ( !_chr || !logWatchers[ _chr.characterId ] ) {
+                    reply( { ok: false, error: 'noCharacter' } );
+                    return;
+                }
+
+                let _stats = FsUtilities.statOrNullSync( _chr.logFile );
+                logWatchers[ _chr.characterId ].window = startLogWatcherWindow( _chr.logFile, isDev, sendTick, _chr, logWatchers[ _chr.characterId ].logSize > ( _stats?.size ?? 0 ) ? 0 : logWatchers[ _chr.characterId ].logSize );
+                mainWindowRef.reference.webContents.send( 'log:character:activated', _chr.characterId );
+                logWatchers[ _chr.characterId ].window.webContents.once( 'dom-ready', () => {
+                    logWatchers[ _chr.characterId ].window.webContents.send( 'trigger:test:run', data );
+                } );
+            } );
+
+        ipcMain.on( 'trigger:test:result', function ( event, result ) {
+            triggerTestReplies[ result?.requestId ]?.( result );
+        } );
+
         ipcMain.on( 'log:store:variable', function ( event, data ) {
             for ( let key in logWatchers ) {
                 if ( logWatchers.hasOwnProperty( key ) && logWatchers[ key ].window != null ) {
