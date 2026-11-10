@@ -1681,8 +1681,8 @@ function Renderer( originX, originY, glowOnStart ) {
 
                 // TODO: This runs too early when the overlays haven't been loaded yet.
                 if ( div ) {
-                    div.style.left = ( overlay.x + origin.x + overlay.displayBounds.x ) + 'px';
-                    div.style.top = ( overlay.y + origin.y + overlay.displayBounds.y ) + 'px';
+                    div.style.left = ( overlay.x + origin.x + ( overlay.displayBounds?.x ?? 0 ) ) + 'px';
+                    div.style.top = ( overlay.y + origin.y + ( overlay.displayBounds?.y ?? 0 ) ) + 'px';
                     div.style.height = ( overlay.windowHeight ) + 'px';
                     div.style.width = ( overlay.windowWidth ) + 'px';
                 }
@@ -1870,8 +1870,8 @@ function Renderer( originX, originY, glowOnStart ) {
                 return;
             }
             
-            overlayInstances[ data.overlayId ].dom.style.left = `${data.x + origin.x + data.displayBounds.x}px`;
-            overlayInstances[ data.overlayId ].dom.style.top = `${data.y + origin.y + data.displayBounds.y}px`;
+            overlayInstances[ data.overlayId ].dom.style.left = `${data.x + origin.x + ( data.displayBounds?.x ?? 0 )}px`;
+            overlayInstances[ data.overlayId ].dom.style.top = `${data.y + origin.y + ( data.displayBounds?.y ?? 0 )}px`;
         } );
 
     ipcRenderer.on( 'renderer:window:disable-edit', function ( event, overlayId ) {
@@ -2071,8 +2071,8 @@ function Renderer( originX, originY, glowOnStart ) {
                     return;
                 }
                 
-                overlayInstances[ d.overlayId ].dom.style.left = `${d.x + origin.x + d.displayBounds.x}px`;
-                overlayInstances[ d.overlayId ].dom.style.top = `${d.y + origin.y + d.displayBounds.y}px`;
+                overlayInstances[ d.overlayId ].dom.style.left = `${d.x + origin.x + ( d.displayBounds?.x ?? 0 )}px`;
+                overlayInstances[ d.overlayId ].dom.style.top = `${d.y + origin.y + ( d.displayBounds?.y ?? 0 )}px`;
                 overlayInstances[ d.overlayId ].dom.style.width = `${d.windowWidth}px`;
                 overlayInstances[ d.overlayId ].dom.style.height = `${d.windowHeight}px`;
             } );
@@ -2390,8 +2390,8 @@ function initializeOverlay( overlay ) {
         }
     }
 
-    div.style.left = ( overlay.x + overlay.displayBounds.x + origin.x ) + 'px';
-    div.style.top = ( overlay.y + overlay.displayBounds.y + origin.y ) + 'px';
+    div.style.left = ( overlay.x + ( overlay.displayBounds?.x ?? 0 ) + origin.x ) + 'px';
+    div.style.top = ( overlay.y + ( overlay.displayBounds?.y ?? 0 ) + origin.y ) + 'px';
     div.style.height = ( overlay.windowHeight ) + 'px';
     div.style.width = ( overlay.windowWidth ) + 'px';
                 
@@ -2465,8 +2465,8 @@ function updateOverlay( overlayId, model ) {
     overlayInstances[ overlayId ].model = model;
     overlayInstances[ overlayId ].title.innerText = model.name ? model.name : 'Overlay';
 
-    overlayInstances[ overlayId ].dom.style.left = `${model.x + origin.x + model.displayBounds.x}px`;
-    overlayInstances[ overlayId ].dom.style.top = `${model.y + origin.y + model.displayBounds.y}px`;
+    overlayInstances[ overlayId ].dom.style.left = `${model.x + origin.x + ( model.displayBounds?.x ?? 0 )}px`;
+    overlayInstances[ overlayId ].dom.style.top = `${model.y + origin.y + ( model.displayBounds?.y ?? 0 )}px`;
     overlayInstances[ overlayId ].dom.style.width = `${model.windowWidth}px`;
     overlayInstances[ overlayId ].dom.style.height = `${model.windowHeight}px`;
 
@@ -4265,8 +4265,8 @@ function enableMoveResize( dom, moveHandle, onMoveResize, skipDynamicMouse ) {
                 if ( dom === overlayInstances[ overlayId ].dom ) {
                     let changes = false;
 
-                    changes = changes ? changes : overlayInstances[ overlayId ].model.x !== ( bounds.x - origin.x - overlayInstances[ overlayId ].model.displayBounds.x );
-                    changes = changes ? changes : overlayInstances[ overlayId ].model.y !== ( bounds.y - origin.y - overlayInstances[ overlayId ].model.displayBounds.y );
+                    changes = changes ? changes : overlayInstances[ overlayId ].model.x !== ( bounds.x - origin.x - ( overlayInstances[ overlayId ].model.displayBounds?.x ?? 0 ) );
+                    changes = changes ? changes : overlayInstances[ overlayId ].model.y !== ( bounds.y - origin.y - ( overlayInstances[ overlayId ].model.displayBounds?.y ?? 0 ) );
                     changes = changes ? changes : overlayInstances[ overlayId ].model.windowWidth !== bounds.width;
                     changes = changes ? changes : overlayInstances[ overlayId ].model.windowHeight !== bounds.height;
 

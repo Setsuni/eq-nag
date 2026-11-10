@@ -123,6 +123,76 @@ function determineContainingDisplay( bounds ) {
 
 
 /**
+ * Returns true if the given bounds are a usable display rectangle.
+ * 
+ * @returns {boolean}
+ * 
+ * @param {Electron.Rectangle} bounds The bounds to evaluate.
+ */
+function validDisplayBounds( bounds ) {
+    return bounds != null && [ bounds.x, bounds.y, bounds.width, bounds.height ].every( v => Number.isFinite( v ) ) && bounds.width > 0 && bounds.height > 0;
+}
+
+
+
+
+
+
+
+
+
+
+/**
+ * Gives an overlay without valid display bounds a display, so the renderer can place it.
+ * 
+ * @remarks If the overlay's display still exists, its bounds are used. If it 
+ *  is gone (or was never set), the overlay moves to the primary display and 
+ *  is centered when its position doesn't fit there.
+ * 
+ * @returns {boolean} Returns true if the overlay was changed.
+ * 
+ * @param {import("./../data/models/overlay-window").OverlayWindow} overlay The overlay to repair.
+ * @param {Electron.Display[]} displays All displays.
+ * @param {Electron.Display} primaryDisplay The primary display.
+ */
+function repairOverlayDisplayBounds( overlay, displays, primaryDisplay ) {
+    if ( !overlay || validDisplayBounds( overlay.displayBounds ) ) {
+        return false;
+    }
+
+    const display = displays.find( f => f.id === overlay.displayId );
+
+    if ( display ) {
+        overlay.displayBounds = display.bounds;
+        overlay.displayLabel = display.label;
+        return true;
+    }
+
+    const width = overlay.windowWidth ?? 0;
+    const height = overlay.windowHeight ?? 0;
+
+    overlay.displayId = primaryDisplay.id;
+    overlay.displayBounds = primaryDisplay.bounds;
+    overlay.displayLabel = primaryDisplay.label;
+
+    if ( !Number.isFinite( overlay.x ) || !Number.isFinite( overlay.y ) || overlay.x < 0 || overlay.y < 0 || overlay.x > primaryDisplay.size.width - width || overlay.y > primaryDisplay.size.height - height ) {
+        overlay.x = ( primaryDisplay.size.width - width ) / 2;
+        overlay.y = ( primaryDisplay.size.height - height ) / 2;
+    }
+
+    return true;
+}
+
+
+
+
+
+
+
+
+
+
+/**
  * Returns an array of keys on the given object.
  * 
  * @template T
@@ -204,6 +274,8 @@ let ElectronUtilities = {
     compareRectangles: compareRectangles,
     calculateRendererBounds: calculateRendererBounds,
     invalidScreenBounds: invalidScreenBounds,
+    validDisplayBounds: validDisplayBounds,
+    repairOverlayDisplayBounds: repairOverlayDisplayBounds,
 };
 
 module.exports = ElectronUtilities;

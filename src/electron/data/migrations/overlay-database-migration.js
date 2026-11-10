@@ -258,6 +258,11 @@ function executeDataMigration( data ) {
         data?.overlays?.forEach( overlay => {
             var refDisplay = displays.find( f => f.id == overlay.displayId );
 
+            if ( !refDisplay || !overlay.displayBounds ) {
+                // Overlays without a usable display are repaired when the database loads.
+                return;
+            }
+
             // The OS/Electron can report minor fluctuations in the x/y
             // component, so we need to be nearly equal but not necessarily 
             // exactly equal.  For our purposes in particular, close is good 

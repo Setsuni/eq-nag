@@ -125,7 +125,32 @@ class OverlayDatabaseStore extends Store {
                 this.#data = data;
                 this.storeDataFile( this.#data );
             } );
+
+            if ( this.#repairDisplayBounds( this.#data?.overlays ) ) {
+                this.storeDataFile( this.#data );
+            }
         } );
+    }
+
+    /**
+     * Gives overlays that have no valid display bounds a display.
+     * 
+     * @returns {boolean} Returns true if any overlay was changed.
+     * 
+     * @param {OverlayWindow[]} overlays The overlays to repair.
+     */
+    #repairDisplayBounds( overlays ) {
+        const displays = screen.getAllDisplays();
+        const primaryDisplay = screen.getPrimaryDisplay();
+        let changed = false;
+
+        overlays?.forEach( overlay => {
+            if ( ElectronUtilities.repairOverlayDisplayBounds( overlay, displays, primaryDisplay ) ) {
+                changed = true;
+            }
+        } );
+
+        return changed;
     }
     
 
@@ -151,6 +176,8 @@ class OverlayDatabaseStore extends Store {
 
         // Generate a new id for the overlay.
         overlay.overlayId = overlay.overlayId?.length === 16 ? overlay.overlayId : nanoid();
+
+        this.#repairDisplayBounds( [ overlay ] );
 
         // Add it to the store.
         this.#data.overlays.push( overlay );
@@ -265,6 +292,7 @@ class OverlayDatabaseStore extends Store {
 
         // If the index is valid, then update the found overlay.
         if ( i > -1 && i < this.#data?.overlays?.length ) {
+            this.#repairDisplayBounds( [ overlay ] );
             this.#data.overlays[ i ] = overlay;
 
             // Save changes to the data.

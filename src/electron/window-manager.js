@@ -1511,7 +1511,7 @@ class WindowManager {
         overlays.forEach( overlay => {
             const display = displays.find( f => f.id === overlay.displayId );
 
-            if ( display ) {
+            if ( display && overlay.displayBounds ) {
                 let boundsChanged = !ElectronUtilities.compareRectangles( overlay.displayBounds, display.bounds, true );
 
                 // First, let's see if the OS has just swapped the display id's around.
