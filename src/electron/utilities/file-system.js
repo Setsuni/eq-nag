@@ -66,20 +66,14 @@ function pathGetFilename( filePath ) {
  * @param {string} filePath The full or filename of the file.
  */
 function pathAppendFilename( filePath, suffix ) {
-
-    // Matches the full path, ex: C:\EverQuest\Logs\filename.ext
-    const matches = /^.*\\(.+\\)*(.+)\.(.+)$/.exec( filePath );
-    if ( matches ) {
-        return filePath.replace( matches[ 2 ], matches[ 2 ] + suffix );
-    }
-    
-    // Matches the filename only, ex: filename.ext
-    const exactFilename = /^(.+)\.(.+)$/.exec( filePath );
-    if ( exactFilename ) {
-        return filePath.replace( exactFilename[ 1 ], exactFilename[ 1 ] + suffix );
+    const fileName = nodePath.basename( filePath );
+    if ( !/^.+\..+$/.test( fileName ) ) {
+        throw 'Invalid file path given';
     }
 
-    throw 'Invalid file path given';
+    const extension = nodePath.extname( fileName );
+    const stem = fileName.slice( 0, fileName.length - extension.length );
+    return nodePath.join( nodePath.dirname( filePath ), stem + suffix + extension );
 }
 
 /**
