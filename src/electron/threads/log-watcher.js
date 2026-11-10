@@ -1734,6 +1734,12 @@ function parseLogEntries( raw, simulating, padTime ) {
 
         if ( parsingLiveLine ) {
             updateCatchUp( timestamp );
+
+            // From here on the line's time is a wall clock time: the learned clock offset (a time zone or DST mismatch)
+            // is removed once, so nothing downstream converts it again.
+            if ( staleTracker.clockOffsetMs !== 0 ) {
+                timestamp = new Date( timestamp.getTime() + staleTracker.clockOffsetMs );
+            }
         }
 
         if ( !simulating && log.startsWith( '**A Magic Die' ) ) {

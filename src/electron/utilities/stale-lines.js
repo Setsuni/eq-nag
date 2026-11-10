@@ -17,6 +17,11 @@ class StaleLineTracker {
     /** The lag of the last line, in milliseconds, with the clock offset removed. */
     lagMs = 0;
 
+    /** The learned difference, in milliseconds, between the wall clock and the parsed log time. */
+    get clockOffsetMs() {
+        return this.#clockOffsetMs;
+    }
+
     #clockOffsetMs = 0;
     #steadyLagMs = null;
     #steadySinceMs = 0;
