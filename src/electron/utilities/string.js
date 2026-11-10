@@ -1,4 +1,3 @@
-const { result } = require( "lodash" );
 const {
     NConditionalModel,
     NConditionalOperationModel,
@@ -112,22 +111,16 @@ function parseStoredVariablesToRegex(value, storedVariables) {
     // \${(.[^}]*)}     Your ${SpellBeingCast} spell is interrupted.
     //                      Full match	47-63	{SpellBeingCast}
     //                      Group 1.	n/a	SpellBeingCast
-    let result = /\${(.[^}]*)}/g.exec( value );
-    
-    if ( result?.length > 1 ) {
-        for ( let i = 1; i < result.length; i++ ) {
-            let values = storedVariables[ result[ i ] ];
-            //value = value.replace(/\${SpellBeingCast}/g, '(?:Envenomed Bolt|Pyre of Mori)');
-            if ( values?.length > 0 ) {
+    let names = [ ...new Set( [ ...value.matchAll( /\${(.[^}]*)}/g ) ].map( m => m[ 1 ] ) ) ];
 
-                let captureGroupRgx = '(?<' + result[ i ] + '>' + getEscapedString( values[ 0 ] );
-                for ( let i = 1; i < values.length; i++ ) {
-                    captureGroupRgx += '|' + getEscapedString( values[ i ] );
-                }
-                captureGroupRgx += ')';
-                
-                value = value.replace( RegExp( `\\\${${result[ i ]}}`, 'g' ), captureGroupRgx );
-            }
+    for ( const name of names ) {
+        let values = storedVariables[ name ];
+        if ( values?.length > 0 && /^[A-Za-z_$][\w$]*$/.test( name ) ) {
+            let captureGroupRgx = '(?<' + name + '>' + values.map( v => getEscapedString( v ) ).join( '|' ) + ')';
+            let token = `\\\${${getEscapedString( name )}}`;
+            // A repeated variable refers back to the first group, since duplicate group names are invalid.
+            value = value.replace( RegExp( token ), () => captureGroupRgx );
+            value = value.replace( RegExp( token, 'g' ), () => `\\k<${name}>` );
         }
     }
     return value;
@@ -144,7 +137,7 @@ function parseStoredVariablesToRegexConditional( value ) {
     // \${(.[^}]*)}     Your ${SpellBeingCast} spell is interrupted.
     //                      Full match	47-63	{SpellBeingCast}
     //                      Group 1.	n/a	SpellBeingCast
-    let result = /\${(.[^}]*)}/g.exec( value );
+    let result = [ '', ...new Set( [ ...value.matchAll( /\${(.[^}]*)}/g ) ].map( m => m[ 1 ] ) ) ];
     const output = {
         value: value,
         operations: [],
@@ -171,7 +164,10 @@ function parseStoredVariablesToRegexConditional( value ) {
             vConditional.name = 'nag_' + nagId();
 
             let captureGroupRgx = `(?<${vConditional.name}>.+?)`;
-            output.value = value.replace( RegExp( `\\\${${result[ i ]}}`, 'g' ), captureGroupRgx );
+            const token = `\\\${${getEscapedString( result[ i ] )}}`;
+            // A repeated variable refers back to the first group, since duplicate group names are invalid.
+            output.value = output.value.replace( RegExp( token ), () => captureGroupRgx );
+            output.value = output.value.replace( RegExp( token, 'g' ), () => `\\k<${vConditional.name}>` );
 
             vConditional.validatorFn = ( match, storedVariables ) => {
                 if ( match?.groups[ vConditional.name ] ) {
@@ -269,7 +265,7 @@ function parseStoredVariablesToLiteral( value, storedVariables ) {
                     text += ',' + values[ i ];
                 }
             
-                value = value.replace( RegExp( `\\\${${key}}`, 'g' ), text );
+                value = value.replace( RegExp( `\\\${${getEscapedString( key )}}`, 'g' ), () => text );
             }
         }
     }
@@ -302,13 +298,13 @@ function parseConditionResultsToLiteral( value, conditionResults ) {
     // \${(.[^}]*)}     Your ${SpellBeingCast} spell is interrupted.
     //                      Full match	47-63	{SpellBeingCast}
     //                      Group 1.	n/a	SpellBeingCast
-    let result = /\${(.[^}]*)}/g.exec( value );
+    let result = [ '', ...new Set( [ ...value.matchAll( /\${(.[^}]*)}/g ) ].map( m => m[ 1 ] ) ) ];
     
     if ( result?.length > 1 ) {
         for ( let i = 1; i < result.length; i++ ) {
             //value = value.replace(/\${SpellBeingCast}/g, 'Envenomed Bolt');
             if ( conditionResults[ result[ i ] ] ) {
-                value = value.replace( RegExp( `\\\${${result[ i ]}}`, 'g' ), conditionResults[ result[ i ] ] );
+                value = value.replace( RegExp( `\\\${${getEscapedString( result[ i ] )}}`, 'g' ), () => conditionResults[ result[ i ] ] );
             }
         }
     }
@@ -561,60 +557,45 @@ function parseMatchesToLiteral( value, matches, deltaTime ) {
         return value;
     }
 
-    // \${(.[^}]*)}     Your ${SpellBeingCast} spell is interrupted.
-    //                      Full match	47-63	{SpellBeingCast}
-    //                      Group 1.	n/a	SpellBeingCast
-    let namedResults = [ ...value.matchAll( /\${(.[^}]*)}/g ) ];// /\${(.[^}]*)}/g.exec( value );
-    
-    if ( namedResults?.length > 0 && matches?.groups != null ) {
-        for ( let m = 0; m < namedResults.length; m++ ) {
-            // ex: matches.groups.player == 'Soandso'
-            //  when given the phrase
-            //      ${target} has been slain by ${player}!
-            //  matches the log entry
-            //      Mob Name A has been slain by Soandso!
-            let key = namedResults[ m ][ 1 ];
-
-            if ( key === 'deltaTime' ) {
-                value = value.replace( RegExp( `\\\${${key}}`, 'g' ), deltaTime );
-            } else if ( matches.groups[ key ] != null ) {
-                value = value.replace( RegExp( `\\\${${key}}`, 'g' ), matches.groups[ key ] );
-            }
-        }
-    }
-
-    // #{([0-9]+?)}     This is a test #{1} so that testing can #{2}.
+    // Everything is replaced in a single pass so that captured text is inserted literally and never expanded again.
     //
-    //                      Match 1
-    //                      Full match	15-19	#{1}
-    //                      Group 1.	17-18	1
+    // \${([^{}$]+)}                 Your ${SpellBeingCast} spell is interrupted.
+    //                                  Group 1.	SpellBeingCast
+    //                                  A name cannot contain { } or $, so unterminated text like ${ is ${2} still substitutes ${2}.
+    //                                  A name of digits only is an indexed result, as in ${1}.
     //
-    //                      Match 2
-    //                      Full match	40-44	#{2}
-    //                      Group 1.	42-43	2
-    //
-    // Having alternate syntax including ${1} and {1}.
-    let indexedResults = [ ...value.matchAll( /(:?#|\$)?{([0-9]+?)}/g ) ];
-
-    if ( indexedResults?.length > 0 ) {
-        for ( let i = 0; i < indexedResults.length; i++ ) {
-            // ex: matches[2] == 'Soandso'
-            //  when given the phrase
-            //      (.+?) has been slain by (.+?)!
-            //  matches the log entry
-            //      Mob Name A has been slain by Soandso!
-            let index = +indexedResults[ i ][ indexedResults[ i ].length - 1 ];
-            if ( matches[ index ] != null ) {
-                if ( indexedResults[ i ][ 1 ] === '$' || indexedResults[ i ][ 1 ] === '#' ) {
-                    value = value.replace( RegExp( `(#|\\$)\\{${index}\\}`, 'g' ), matches[ index ] );
-                } else {
-                    value = value.replace( RegExp( `\\{${index}\\}`, 'g' ), matches[ index ] );
+    // (:?#|\$)?{([0-9]+?)}           This is a test #{1} so that testing can #{2}.
+    //                                  Group 1.	#
+    //                                  Group 2.	1
+    //                                  Having alternate syntax including ${1} and {1}.
+    return value.replace( /\${([^{}$]+)}|(:?#|\$)?{([0-9]+?)}/g, ( full, name, prefix, digits ) => {
+        // ex: matches.groups.player == 'Soandso'
+        //  when given the phrase
+        //      ${target} has been slain by ${player}!
+        //  matches the log entry
+        //      Mob Name A has been slain by Soandso!
+        if ( name != null ) {
+            if ( matches.groups != null ) {
+                if ( name === 'deltaTime' ) {
+                    return deltaTime;
+                } else if ( matches.groups[ name ] != null ) {
+                    return matches.groups[ name ];
                 }
             }
+            digits = /^[0-9]+$/.test( name ) ? name : null;
+            prefix = '$';
         }
-    }
 
-    return value;
+        // ex: matches[2] == 'Soandso'
+        //  when given the phrase
+        //      (.+?) has been slain by (.+?)!
+        //  matches the log entry
+        //      Mob Name A has been slain by Soandso!
+        if ( digits != null && String( +digits ) === digits && matches[ +digits ] != null ) {
+            return prefix === ':#' ? prefix + matches[ +digits ] : matches[ +digits ];
+        }
+        return full;
+    } );
 }
 
 
@@ -635,31 +616,76 @@ function parseMatchesToLiteral( value, matches, deltaTime ) {
  * 
  * @param {string} value The phrase to parse.
  * @param {Record<string, any>} storedVariables The stored variables.
+ * @param {number} maxCombinations The most phrases to build.
+ * @returns {string[] | null} The phrases, or null when there would be more than maxCombinations; use parseStoredVariablesToLiteralRegExp then.
  */
-function parseStoredVariablesToLiteralArray( value, storedVariables ) {
+function parseStoredVariablesToLiteralArray( value, storedVariables, maxCombinations = 10 ) {
     // \${(.[^}]*)}     Your ${SpellBeingCast} spell is interrupted.
     //                      Full match	47-63	{SpellBeingCast}
     //                      Group 1.	n/a	SpellBeingCast
-    let result = /\${(.[^}]*)}/g.exec( value );
-    let literals = [];
+    let names = [ ...new Set( [ ...value.matchAll( /\${(.[^}]*)}/g ) ].map( m => m[ 1 ] ) ) ];
+    let literals = [ value ];
 
-    if ( result?.length > 1 ) {
-        for ( let i = 1; i < result.length; i++ ) {
-            let values = storedVariables[ result[ i ] ];
-            if ( values?.length > 0 ) {
-                
-                for ( let i = 1; i < values.length; i++ ) {
-                    literals.push( value.replace( RegExp( `\\\${${result[ i ]}}`, 'g' ), values[ i ] ) );
-                    
+    let combinations = 1;
+    for ( const name of names ) {
+        combinations *= storedVariables[ name ]?.length ?? 0;
+        if ( combinations > maxCombinations ) {
+            return null;
+        }
+    }
+
+    for ( const name of names ) {
+        let values = storedVariables[ name ];
+        let rgx = RegExp( `\\\${${getEscapedString( name )}}`, 'g' );
+        let expanded = [];
+        if ( values?.length > 0 ) {
+            for ( const literal of literals ) {
+                for ( const text of values ) {
+                    expanded.push( literal.replace( rgx, () => text ) );
                 }
-                
             }
         }
-    } else {
-        literals.push( value );
+        literals = expanded;
     }
 
     return literals;
+}
+
+/**
+ * Builds a case-insensitive regular expression matching any phrase parseStoredVariablesToLiteralArray would build, without building them.
+ * A variable used more than once must have the same value each time.
+ *
+ * @param {string} value The phrase to parse.
+ * @param {Record<string, any>} storedVariables The stored variables.
+ * @returns {RegExp | null} Null when a variable has no stored values.
+ */
+function parseStoredVariablesToLiteralRegExp( value, storedVariables ) {
+    // Odd entries are variable names, even entries the text between them.
+    const parts = value.split( /\${(.[^}]*)}/ );
+    const groups = {};
+    let source = '';
+
+    for ( let i = 0; i < parts.length; i++ ) {
+        if ( i % 2 === 0 ) {
+            source += getEscapedString( parts[ i ] );
+            continue;
+        }
+
+        const name = parts[ i ];
+        const values = storedVariables[ name ];
+        if ( !( values?.length > 0 ) ) {
+            return null;
+        }
+
+        if ( groups[ name ] ) {
+            source += `\\k<${groups[ name ]}>`;
+        } else {
+            groups[ name ] = 'v' + Object.keys( groups ).length;
+            source += `(?<${groups[ name ]}>` + values.map( v => getEscapedString( v ) ).join( '|' ) + ')';
+        }
+    }
+
+    return new RegExp( source, 'i' );
 }
 
 
@@ -1285,6 +1311,7 @@ let StringUtilities = {
     parseStoredVariablesToRegexConditional: parseStoredVariablesToRegexConditional,
     parseStoredVariablesToLiteral: parseStoredVariablesToLiteral,
     parseStoredVariablesToLiteralArray: parseStoredVariablesToLiteralArray,
+    parseStoredVariablesToLiteralRegExp: parseStoredVariablesToLiteralRegExp,
     parseConditionResultsToLiteral: parseConditionResultsToLiteral,
     parseMatchesToLiteral: parseMatchesToLiteral,
     parseCountersToLiteral: parseCountersToLiteral,
