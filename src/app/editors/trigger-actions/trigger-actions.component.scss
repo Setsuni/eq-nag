@@ -50,8 +50,8 @@ mat-form-field {
 
     mat-card-title.mat-card-title {
         margin: 0;
-        font-size: 15px;
-        font-weight: 500;
+        font-size: 15px !important;
+        font-weight: 500 !important;
     }
 
     mat-card-subtitle.mat-card-subtitle {

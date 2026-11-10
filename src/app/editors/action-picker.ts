@@ -92,7 +92,7 @@ export function summarizeAction( action: TriggerAction ): string {
             parts.push( quoted( action.displayText ) || '(nothing to say yet)' );
             break;
         case ActionTypes.PlayAudio:
-            parts.push( action.audioFileId ? 'Saved sound' : '(no sound picked yet)' );
+            !action.audioFileId && parts.push( '(no sound picked yet)' );
             break;
         case ActionTypes.Timer:
         case ActionTypes.Countdown:
