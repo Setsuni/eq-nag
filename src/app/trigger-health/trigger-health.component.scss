@@ -1,0 +1,140 @@
+$color-green: #69f0ae;
+$color-blue: #69b2f0;
+$color-orange: #f0c669;
+$color-red: #f06969;
+
+.health-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 8px 0 4px;
+    .spacer {
+        flex: 1 1 auto;
+    }
+}
+
+.health-status {
+    margin: 8px 0 12px;
+    .undo-all {
+        margin-left: 14px;
+        cursor: pointer;
+    }
+}
+
+.health-empty {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 14px 4px;
+    color: #eeeeee;
+}
+
+.health-group {
+    margin-top: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 4px;
+    overflow: hidden;
+
+    .group-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        background: rgba(255, 255, 255, 0.05);
+        cursor: pointer;
+        user-select: none;
+        .spacer {
+            flex: 1 1 auto;
+        }
+        .group-path {
+            font-weight: 400;
+        }
+        .group-count {
+            font-size: 12px;
+            padding: 1px 8px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.12);
+        }
+        .package-badge {
+            font-size: 11px;
+            padding: 1px 7px;
+            border-radius: 3px;
+            border: 1px solid rgba(105, 178, 240, 0.6);
+            color: $color-blue;
+        }
+    }
+}
+
+.finding {
+    padding: 9px 12px 6px 40px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+
+    .finding-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-wrap: wrap;
+    }
+    .finding-name {
+        font-weight: 500;
+    }
+    .severity {
+        font-size: 11px;
+        padding: 1px 8px;
+        border-radius: 3px;
+        border: 1px solid;
+        &.never {
+            color: $color-red;
+        }
+        &.may {
+            color: $color-orange;
+        }
+        &.cost {
+            color: $color-blue;
+        }
+        &.info {
+            color: #bdbdbd;
+        }
+    }
+    .severity-note {
+        font-size: 11px;
+        opacity: 0.7;
+        &.look {
+            color: $color-orange;
+            opacity: 1;
+        }
+    }
+    .finding-reason {
+        margin-top: 3px;
+        color: #eeeeee;
+        font-weight: 300;
+    }
+    .finding-detail {
+        margin-top: 3px;
+        font-family: Consolas, monospace;
+        font-size: 12px;
+        opacity: 0.75;
+        word-break: break-word;
+    }
+    .finding-warning {
+        margin-top: 3px;
+        font-size: 12px;
+        color: $color-orange;
+    }
+    .finding-actions {
+        display: flex;
+        gap: 4px;
+        margin: 4px 0 2px -8px;
+        flex-wrap: wrap;
+    }
+}
+
+.advanced-title {
+    margin: 22px 0 0;
+    font-weight: 300;
+}
+
+.advanced-note {
+    margin: 2px 0 0;
+    opacity: 0.8;
+}
