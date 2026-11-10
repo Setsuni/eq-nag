@@ -1,6 +1,7 @@
 // TODO: This can be accomplished using web workers.  Buckle up and do it.
 const { ipcRenderer } = require( 'electron' );
 const fs = require( 'fs' );
+const crypto = require( 'crypto' );
 const { Trigger, TriggerAction, ActionTypes, TriggerConditionTypes, OperatorTypes, CharacterClassLevel, TriggerSubAction, TriggerFolder, TriggerCondition, CapturePhrase, Phrase, TriggerParseHistoryModel, getActionLabel, LogTypes, ErrorMessages } = require( '../data/models/trigger' );
 const { QuickShareAuthorListTypes, SimulationProgress, NConditionalModel, VConditionalOperationModel, SConditionalModel, LConditionalOperationModel, SConditionalOperationModel } = require( '../data/models/common' );
 const { PhraseParse, LogTrigger, LogList } = require( './log.model' );
@@ -679,7 +680,6 @@ function LogWatcher(character, logPosition) {
     ipcRenderer.on( 'tick', function ( event, data ) {
         const previousTriggers = triggers;
         triggers = data.triggers;
-        carryTriggerState( previousTriggers, triggers );
         triggerFolders = data.folders;
         enableFct = data.enableFct;
         damageDealtOverlayId = data.damageDealtOverlayId;
@@ -711,6 +711,8 @@ function LogWatcher(character, logPosition) {
                 } );
             }
         }
+
+        carryTriggerState( previousTriggers, triggers );
 
         const perfStart = perf.enabled ? perf.now() : 0;
         applyFolderConditions( triggerFolders );
@@ -954,7 +956,8 @@ function getPhraseRegexOptions( phrase ) {
 
 /**
  * Carries the runtime state (open sequences and cooldowns) of each trigger over to its replacement from a tick.
- * State is kept only when the trigger's definition is unchanged; an edited trigger starts fresh and a deleted one is dropped.
+ * State is kept only when the trigger's definition and its per-character disabled flag are unchanged; an edited or
+ * toggled trigger starts fresh and a deleted one is dropped.
  *
  * @param {LogTrigger[]} previous The triggers of the previous tick.
  * @param {LogTrigger[]} next The triggers of the current tick.
@@ -968,7 +971,8 @@ function carryTriggerState( previous, next ) {
     } );
 
     next?.forEach( trigger => {
-        trigger._signature = JSON.stringify( trigger, ( key, value ) => key.startsWith( '_' ) ? undefined : value );
+        const definition = JSON.stringify( trigger, ( key, value ) => key.startsWith( '_' ) ? undefined : value );
+        trigger._signature = crypto.createHash( 'sha1' ).update( definition ).update( trigger._profileDisabled === true ? 'disabled' : 'enabled' ).digest( 'hex' );
         const old = previousById.get( trigger.triggerId );
         if ( old?._signature === trigger._signature ) {
             trigger._sequentialMatchs = old._sequentialMatchs;
