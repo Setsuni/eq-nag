@@ -3858,6 +3858,24 @@ function killListTimers( instanceId, timers, index ) {
 
 
 /**
+ * Returns true if the given renderer space point is on a known display.  If the
+ * displays have not been loaded, the point is assumed to be valid.
+ * 
+ * @param {number} x The x coordinate.
+ * @param {number} y The y coordinate.
+ */
+function isPointOnDisplay( x, y ) {
+    if ( !( displayMetas?.length > 0 ) ) {
+        return true;
+    }
+
+    x -= origin.x;
+    y -= origin.y;
+
+    return displayMetas.some( display => x >= display.bounds.x && x <= display.bounds.x + display.bounds.width && y >= display.bounds.y && y <= display.bounds.y + display.bounds.height );
+}
+
+/**
  * Renders a list action component.
  * 
  * @param {RendererComponent} component The component to render.
@@ -3904,7 +3922,11 @@ function renderListAction( component, restore ) {
     } );
 
     if ( component.action.staticPosition != null ) {
-        listObj.bounds = component.action.staticPosition;
+        if ( isPointOnDisplay( component.action.staticPosition.x, component.action.staticPosition.y ) ) {
+            listObj.bounds = component.action.staticPosition;
+        } else {
+            listObj.bounds = null;
+        }
     }
 
     if ( !existing ) {
@@ -4015,8 +4037,8 @@ function renderListAction( component, restore ) {
         component.dom.style.minWidth = listObj.bounds.width + 'px';
     } else {
         // Put it on the center of the main monitor.
-        component.dom.style.left = ( screen.getPrimaryDisplay().workArea.width / 2 ) - ( component.dom.offsetWidth / 2 ) + 'px';
-        component.dom.style.top = ( screen.getPrimaryDisplay().workArea.height / 2 ) - ( component.dom.offsetHeight / 2 ) + 'px';
+        component.dom.style.left = ( origin.x + ( screen.getPrimaryDisplay().workArea.width / 2 ) - ( component.dom.offsetWidth / 2 ) ) + 'px';
+        component.dom.style.top = ( origin.y + ( screen.getPrimaryDisplay().workArea.height / 2 ) - ( component.dom.offsetHeight / 2 ) ) + 'px';
     }
 
     // Re-apply the css classes
