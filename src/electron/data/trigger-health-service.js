@@ -102,11 +102,11 @@ class TriggerHealthService {
         } );
 
         if ( patches.length === 0 ) {
-            return { changed: 0, undoId: null, report: this.#toClient( this.check() ) };
+            return { fixes: 0, changed: 0, undoId: null, report: this.#toClient( this.check() ) };
         }
 
         if ( !( await this.#ensureBackup() ) ) {
-            return { changed: 0, undoId: null, error: 'backup', report: this.#toClient( report ) };
+            return { fixes: 0, changed: 0, undoId: null, error: 'backup', report: this.#toClient( report ) };
         }
 
         const result = applyPatches( this.#triggerDatabase.getAll(), this.#triggerDatabase.getFolders(), patches );
@@ -120,6 +120,7 @@ class TriggerHealthService {
         }
 
         return {
+            fixes: result.applied.length,
             changed: result.triggerIds.length + result.folderIds.length,
             skipped: result.skipped.length,
             undoId,
@@ -147,10 +148,12 @@ class TriggerHealthService {
         const index = this.#undoStack.findIndex( e => e.undoId === undoId );
         const entries = undoId == null ? this.#undoStack.splice( 0 ).reverse() : ( index > -1 ? this.#undoStack.splice( index, 1 ) : [] );
         let changed = 0;
+        let fixes = 0;
 
         entries.forEach( entry => {
             const result = applyPatches( this.#triggerDatabase.getAll(), this.#triggerDatabase.getFolders(), entry.patches, true );
             changed += result.triggerIds.length + result.folderIds.length;
+            fixes += result.applied.length;
         } );
 
         if ( changed > 0 ) {
@@ -158,7 +161,7 @@ class TriggerHealthService {
             sendTick();
         }
 
-        return { changed, report: this.#toClient( this.check() ) };
+        return { fixes, changed, report: this.#toClient( this.check() ) };
     }
 
     /**

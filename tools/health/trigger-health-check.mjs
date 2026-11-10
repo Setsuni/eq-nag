@@ -575,6 +575,7 @@ try {
         ipcHandlers[ 'health:fix-safe' ]( event );
         await waitFor( () => event.replies.length > 0 );
         assert.equal( event.replies[ 0 ].changed, 1 );
+        assert.equal( event.replies[ 0 ].fixes, 1 );
         assert.equal( serviceTriggers[ 0 ].conditions[ 0 ].operatorType, 0 );
         assert.equal( serviceTriggers[ 1 ].conditions[ 0 ].operatorType, 1 );
         assert.equal( backups, 1 );
