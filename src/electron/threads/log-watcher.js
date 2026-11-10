@@ -160,6 +160,14 @@ let parsingStaleLine = false;
 let catchingUp = false;
 /** The constant difference, in whole hours, between the wall clock and the parsed log time (a time zone or DST mismatch). */
 let clockOffsetMs = 0;
+/** The lag of the stale lines being watched for a constant offset, and when and how many lines were seen at it. */
+let steadyLagMs = null;
+let steadySinceMs = 0;
+let steadyLineCount = 0;
+/** A stale lag that holds within this many milliseconds, for steadyWindowMs and steadyMinLines, is a constant clock offset. */
+const steadyToleranceMs = 3000;
+const steadyWindowMs = 30000;
+const steadyMinLines = 5;
 const rgxRandomRoll = /^\*\*A Magic Die is rolled by (?<player>.+?)\. It could have been any number from (?<min>\d+) to (?<max>\d+), but this time it turned up a (?<roll>\d+)\./;
 
 /** @type {LogList[]} */
@@ -216,6 +224,7 @@ function toLowerCached( value ) {
 function startParsingLogFile( logPath, startLogPosition ) {
     
     clockOffsetMs = 0;
+    steadyLagMs = null;
     catchingUp = false;
 
     fileMonitor.monitorLines( ( lines ) => {
@@ -1680,6 +1689,26 @@ function updateCatchUp( timestamp ) {
             clockOffsetMs += hours;
             lag -= hours;
         }
+    }
+
+    if ( Math.abs( lag ) > staleLineMs ) {
+        // A backlog's lag shrinks as Nag catches up.  A lag that stays constant while lines keep arriving is a clock
+        // offset (for example a half-hour time zone), so it is learned instead of muting every alert.
+        const now = Date.now();
+        if ( steadyLagMs === null || Math.abs( lag - steadyLagMs ) > steadyToleranceMs ) {
+            steadyLagMs = lag;
+            steadySinceMs = now;
+            steadyLineCount = 1;
+        } else {
+            steadyLineCount++;
+            if ( now - steadySinceMs >= steadyWindowMs && steadyLineCount >= steadyMinLines ) {
+                clockOffsetMs += lag;
+                lag = 0;
+                steadyLagMs = null;
+            }
+        }
+    } else {
+        steadyLagMs = null;
     }
 
     parsingStaleLine = lag > staleLineMs;
