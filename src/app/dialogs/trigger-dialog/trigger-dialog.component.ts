@@ -47,8 +47,8 @@ export class TriggerDialogComponent implements OnInit {
         // Return the first half of the full name, by size.
         if ( this.fullName.length > 0 ) {
             let half = Math.floor( this.fullName.length / 2 );
-            // if the first part of the second half is a slash, increment half by 1 to include the slash in the first half.
-            if ( this.fullName[ half ] === '/' ) {
+            // if the first part of the second half is a slash or space, move past it so it stays in the first half.
+            while ( this.fullName[ half ] === '/' || this.fullName[ half ] === ' ' ) {
                 half++;
             }
             return this.fullName.substring( 0, half );
@@ -60,8 +60,8 @@ export class TriggerDialogComponent implements OnInit {
         // Return the second half of the full name, by size.
         if ( this.fullName.length > 0 ) {
             let half = Math.floor( this.fullName.length / 2 );
-            // if the first part of the second half is a slash, increment half by 1 to include the slash in the first half.
-            if ( this.fullName[ half ] === '/' ) {
+            // if the first part of the second half is a slash or space, move past it so it stays in the first half.
+            while ( this.fullName[ half ] === '/' || this.fullName[ half ] === ' ' ) {
                 half++;
             }
             return this.fullName.substring( half );
