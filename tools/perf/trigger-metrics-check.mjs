@@ -359,18 +359,22 @@ const counterReply = w => {
 // Round-robin sampling times every trigger equally often, scales the time up and counts every line.
 {
     const metrics = new TriggerMetrics();
-    check( metrics.sampleWindow( 10 ) === -1, 'metrics: nothing is timed while idle' );
+    metrics.sampleWindow( 10 );
+    check( metrics.first === -1 && metrics.second === -1, 'metrics: nothing is timed while idle' );
     metrics.begin( 0 );
     const lines = 5 * 10;
     const timesTimed = new Array( 10 ).fill( 0 );
     for ( let line = 0; line < lines; line++ ) {
-        const start = metrics.sampleWindow( 10 );
+        metrics.sampleWindow( 10 );
         for ( let i = 0; i < 10; i++ ) {
-            metrics.isTimed( start, i ) && timesTimed[ i ]++;
+            ( i === metrics.first || i === metrics.second ) && timesTimed[ i ]++;
         }
     }
     check( timesTimed.every( n => n === lines * timedPerLine / 10 ) && metrics.lines === lines, 'metrics: every trigger is timed equally often' );
-    check( metrics.sampleWindow( 0 ) === -1, 'metrics: no triggers, nothing to time' );
+    metrics.sampleWindow( 0 );
+    check( metrics.first === -1 && metrics.second === -1, 'metrics: no triggers, nothing to time' );
+    metrics.sampleWindow( 1 );
+    check( metrics.first === 0 && metrics.second === -1, 'metrics: a single trigger is timed alone' );
     metrics.sampleWindow( 10 );
     const stats = metrics.statsFor( 't' );
     metrics.record( stats, 2000000n );
@@ -480,12 +484,18 @@ if ( triggersFile && logFile && failures === 0 ) {
     console.log( `Samples per checked trigger over ${lines.length} lines: min ${sampleCounts[ 0 ]}, median ${sampleCounts[ Math.floor( sampleCounts.length / 2 ) ]}, max ${sampleCounts[ sampleCounts.length - 1 ]} (median is ${( perLineSamples( 0.5 ) * 1e6 ).toFixed( 0 )} per million lines).` );
     console.log( `Library: ${counters.matches.length} matches, ${measured.active} enabled, ${( counters.runs / lines.length ).toFixed( 1 )} runs per line, ${( checkedTotal / lines.length ).toFixed( 1 )} checked per line, ${measured.report?.rows.filter( r => r.skipped ).length} never checked.` );
 
-    // Cost per line; rounds are interleaved so a slow moment hits every variant.
+    // Cost per line; rounds are interleaved and the order rotates, so neither a slow moment nor a growing heap favours a variant.
     const times = { baseline: [], counters: [], measuring: [] };
+    const variants = [
+        ...( baselineSource ? [ [ 'baseline', () => run( baselineSource, false, false ) ] ] : [] ),
+        [ 'counters', () => run( null, false, false ) ],
+        [ 'measuring', () => run( null, true, false ) ],
+    ];
     for ( let i = 0; i < repeat; i++ ) {
-        baselineSource && times.baseline.push( run( baselineSource, false, false ).ms );
-        times.counters.push( run( null, false, false ).ms );
-        times.measuring.push( run( null, true, false ).ms );
+        for ( let j = 0; j < variants.length; j++ ) {
+            const [ name, fn ] = variants[ ( i + j ) % variants.length ];
+            times[ name ].push( fn().ms );
+        }
     }
     const median = list => [ ...list ].sort( ( a, b ) => a - b )[ Math.floor( list.length / 2 ) ];
     const perLine = list => median( list ) / lines.length;
