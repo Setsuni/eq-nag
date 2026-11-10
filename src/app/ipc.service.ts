@@ -396,10 +396,12 @@ export class IpcService {
 
                 this.onConsoleSuccess().subscribe( log => {
                     this._consoleMessages.push( log );
+                    this._consoleMessages = this._consoleMessages.slice( -500 );
                 } );
 
                 this.onConsoleError().subscribe( log => {
                     this._consoleMessages.push( log );
+                    this._consoleMessages = this._consoleMessages.slice( -500 );
 
                     if ( log.present === true && log.message ) {
                         this.dialogService.showErrorDialog( log.label ?? 'Error', log.message );
@@ -418,8 +420,8 @@ export class IpcService {
                 } );
 
                 this.onBatchParseHistory().subscribe( history => {
-                    this._successfulParses.push( ...history.successful );
-                    this._failedParses.push( ...history.exceptions );
+                    this._successfulParses = this._successfulParses.concat( history.successful ).slice( -500 );
+                    this._failedParses = this._failedParses.concat( history.exceptions ).slice( -500 );
                 } );
 
                 this.onChatRoomServerLog().subscribe( log => this._serverLogData.push( log ) );
@@ -451,6 +453,9 @@ export class IpcService {
     public onBatchParseHistory(): Observable<{ successful: TriggerParseHistoryModel[], exceptions: TriggerParseHistoryModel[] }> {
         let obs: Observable<{ successful: TriggerParseHistoryModel[], exceptions: TriggerParseHistoryModel[] }> = new Observable<{ successful: TriggerParseHistoryModel[], exceptions: TriggerParseHistoryModel[] }>( ( observer: Observer<{ successful: TriggerParseHistoryModel[], exceptions: TriggerParseHistoryModel[] }> ) => {
             this._successfulParseHistoryObservers.push( observer );
+            return () => {
+                this._successfulParseHistoryObservers = this._successfulParseHistoryObservers.filter( x => x !== observer );
+            };
         } );
 
         return obs;
@@ -459,6 +464,9 @@ export class IpcService {
     public onConsoleSuccess(): Observable<ConsoleMessageModel> {
         let obs: Observable<ConsoleMessageModel> = new Observable<ConsoleMessageModel>( ( observer: Observer<ConsoleMessageModel> ) => {
             this._consoleSuccessObservers.push( observer );
+            return () => {
+                this._consoleSuccessObservers = this._consoleSuccessObservers.filter( x => x !== observer );
+            };
         } );
 
         return obs;
@@ -467,6 +475,9 @@ export class IpcService {
     public onConsoleError(): Observable<ConsoleMessageModel> {
         let obs: Observable<ConsoleMessageModel> = new Observable<ConsoleMessageModel>( ( observer: Observer<ConsoleMessageModel> ) => {
             this._consoleErrorObservers.push( observer );
+            return () => {
+                this._consoleErrorObservers = this._consoleErrorObservers.filter( x => x !== observer );
+            };
         } );
 
         return obs;
@@ -475,6 +486,9 @@ export class IpcService {
     public onConsoleProgress(): Observable<ProgressModel> {
         let obs: Observable<ProgressModel> = new Observable<ProgressModel>( ( observer: Observer<ProgressModel> ) => {
             this._consoleProgressObservers.push( observer );
+            return () => {
+                this._consoleProgressObservers = this._consoleProgressObservers.filter( x => x !== observer );
+            };
         } );
 
         return obs;
@@ -872,6 +886,10 @@ export class IpcService {
     }
 
     public clearLogHistory(): void {
+        this._successfulParses = [];
+        this._failedParses = [];
+        this._consoleMessages = [];
+        this._consoleProgress = [];
         window.api.ipc.send( 'app:clear-log-history', null );
     }
 

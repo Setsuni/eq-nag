@@ -1,3 +1,9 @@
+<p class="activity-line" *ngIf="!developer">
+    <span class="log-timestamp">{{item.timestamp | date:'HH:mm:ss' }}</span>
+    <span class="links"></span>
+    <span class="log-text">{{item.message}}</span>
+</p>
+<ng-container *ngIf="developer">
 <p [ngClass]="{'error': item.logType === logTypes.error}">
     <span class="log-timestamp">[{{item.timestamp | date:'HH:mm:ss.SSS' }}]</span>
     <span class="links" style="margin-right: 2px;">
@@ -9,3 +15,4 @@
 <p class="log-details" [ngClass]="{'error': item.logType === logTypes.error}" *ngIf="renderPayload && expanded">
     <span class="log-details-line" [innerHTML]="payloadHtml"></span>
 </p>
+</ng-container>

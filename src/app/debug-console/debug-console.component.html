@@ -1,6 +1,9 @@
 <div class="debug-console-container" *ngIf="show" nagResizeable location="top" resizeVisibility="hidden" resizeMax="80%" #container>
     <div class="console-toolbar">
+        <button mat-button class="view-button" [ngClass]="{'selected': !developer}" (click)="developer = false" matTooltip="Trigger matches and status messages">Activity</button>
+        <button mat-button class="view-button" [ngClass]="{'selected': developer}" (click)="developer = true" matTooltip="Everything the app logs, with a command prompt">Developer log</button>
         <button mat-button (click)="clear()">Clear</button>
+        <button mat-button (click)="copyLog()" *ngIf="developer" matTooltip="Copy the whole developer log, ignoring the search and filters, to paste into a support request">Copy whole log</button>
         <button mat-button (click)="show = false">Hide</button>
         
         <mat-form-field>
@@ -13,10 +16,12 @@
 
         <div *ngIf="consoleList.showTriggerHistory">
             <button mat-button (click)="hideTriggerHistory()">{{consoleList.triggerName}} <mat-icon [inline]="true">clear</mat-icon></button>
-            <button mat-button class="color-red" [ngClass]="{'selected': consoleList.parseType === 'failed'}" (click)="setParseType('failed')">Failed</button>
+            <button mat-button class="color-red" *ngIf="developer" [ngClass]="{'selected': consoleList.parseType === 'failed'}" (click)="setParseType('failed')">Failed</button>
             <button mat-button class="color-green" [ngClass]="{'selected': consoleList.parseType === 'successful'}" (click)="setParseType('successful')">Success</button>
             <button mat-button class="color-bright-white" (click)="showEditTriggerDialog()">Edit Trigger</button>
         </div>
+
+        <button mat-button class="problems-button" *ngIf="!developer && consoleList.problemCount > 0" (click)="developer = true" matTooltip="Open the Developer log">{{consoleList.problemCount}} {{consoleList.problemCount === 1 ? 'problem' : 'problems'}} - see Developer log</button>
 
         <span style="flex: 1 1 auto;"></span>
 
@@ -27,7 +32,11 @@
 
     </div>
 
-    <console-list #consoleList [searchText]="appliedSearchText" [characterId]="characterId" (onListUpdated)="onListUpdated($event.scrollBottom)"></console-list>
+    <console-list #consoleList [searchText]="appliedSearchText" [characterId]="characterId" [developer]="developer" (onListUpdated)="onListUpdated($event.scrollBottom)"></console-list>
+
+    <div class="activity-empty" *ngIf="!developer && consoleList.history.length === 0">
+        No trigger matches yet. When a trigger fires it shows up here. Problems and technical messages are in the Developer log.
+    </div>
 
     <div class="console-bottom-buttons" *ngIf="showBottomTools">
         <button mat-button (click)="scrollToBottom()" *ngIf="!atBottom">Jump to bottom</button>
@@ -39,5 +48,5 @@
     
 </div>
 <div class="debug-toggle" *ngIf="!show">
-    <button mat-button (click)="show = true">Console</button>
+    <button mat-button (click)="show = true"><mat-icon [inline]="true">notes</mat-icon> Activity</button>
 </div>

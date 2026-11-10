@@ -96,6 +96,15 @@
             font-size: 12px;
             line-height: 26px;
 
+            &.problems-button {
+                color: #f06969;
+            }
+
+            &.view-button.selected {
+                background-color: #ffffff1a;
+                font-weight: 600;
+            }
+
             &.selected {
 
                 &.color-green {
@@ -134,6 +143,12 @@
                 background-color: #141414;
             }
         }
+    }
+
+    .activity-empty {
+        padding: 10px 17px;
+        font-size: 12px;
+        opacity: 0.6;
     }
 
     .console-bottom-buttons {

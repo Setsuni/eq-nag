@@ -187,6 +187,7 @@ class TriggerHealthService {
             if ( options?.startup && report.summary.defaultCount === 0 ) {
                 mainWindowRef.reference?.webContents.send( 'console:success', {
                     label: 'Trigger Health',
+                    activity: true,
                     message: `Trigger health check: all ${report.summary.triggers.toLocaleString( 'en-US' )} triggers look fine.`,
                     timestamp: new Date(),
                 } );

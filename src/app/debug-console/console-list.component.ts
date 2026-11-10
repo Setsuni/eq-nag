@@ -1,7 +1,9 @@
-import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, HostListener, Input, OnChanges, OnInit, Output, SimpleChanges } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, EventEmitter, HostListener, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
 import { ConsoleMessageModel, LogTypes, ProgressModel, TriggerParseHistoryModel } from '../core.model';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import * as _ from 'lodash-es';
+import { Subject } from 'rxjs';
+import { takeUntil } from 'rxjs/operators';
 import { IpcService } from '../ipc.service';
 
 @Component( {
@@ -10,12 +12,16 @@ import { IpcService } from '../ipc.service';
     styleUrls: [ 'console-list.component.scss' ],
     changeDetection: ChangeDetectionStrategy.OnPush,
 } )
-export class ConsoleListComponent implements OnInit, OnChanges {
+export class ConsoleListComponent implements OnInit, OnChanges, OnDestroy {
+
+    private readonly _destroyed: Subject<void> = new Subject<void>();
 
     public showTriggerHistory: boolean = false;
     public parseType: 'successful' | 'failed' = 'successful';
     @Input() public searchText: string = null;
     @Input() public characterId: string = null;
+    /** True shows the developer log; false shows only trigger matches and a few status messages. */
+    @Input() public developer: boolean = false;
     @Output() public onListUpdated: EventEmitter<{ scrollBottom: boolean }> = new EventEmitter<{ scrollBottom: boolean }>();
 
     private histories: { successful: TriggerParseHistoryModel[], exceptions: TriggerParseHistoryModel[] } = { successful: [], exceptions: [] };
@@ -26,6 +32,11 @@ export class ConsoleListComponent implements OnInit, OnChanges {
     public logTypes: typeof LogTypes = LogTypes;
     public triggerId: string | null = null;
     public triggerName: string | null = null;
+
+    /** Trigger errors and error messages since the last clear. */
+    public get problemCount(): number {
+        return this.histories.exceptions.length + this.consoleMessages.filter( x => x.logType === LogTypes.error ).length;
+    }
 
     public history: ( ConsoleMessageModel | TriggerParseHistoryModel | ProgressModel )[] = [];
 
@@ -55,27 +66,27 @@ export class ConsoleListComponent implements OnInit, OnChanges {
     ngOnInit() {
 
         // This is called because the console list is destroyed when hidden.
-        this.ipcService.getConsoleData().subscribe( history => {
+        this.ipcService.getConsoleData().pipe( takeUntil( this._destroyed ) ).subscribe( history => {
             this.setHistories( history.successful, history.failed, history.consoleMessages, history.consoleProgress );
         } );
         
-        this.ipcService.onBatchParseHistory().subscribe( history => {
+        this.ipcService.onBatchParseHistory().pipe( takeUntil( this._destroyed ) ).subscribe( history => {
             if ( history.exceptions?.length > 0 || history.successful?.length > 0 ) {
                 this.appendHistories( history.successful, history.exceptions );
             }
         } );
 
-        this.ipcService.onConsoleSuccess().subscribe( log => {
-            this.consoleMessages.push( log );
+        this.ipcService.onConsoleSuccess().pipe( takeUntil( this._destroyed ) ).subscribe( log => {
+            this.pushConsoleMessage( log );
             this.renderHistory( false );
         } );
 
-        this.ipcService.onConsoleError().subscribe( log => {
-            this.consoleMessages.push( log );
+        this.ipcService.onConsoleError().pipe( takeUntil( this._destroyed ) ).subscribe( log => {
+            this.pushConsoleMessage( log );
             this.renderHistory( false );
         } );
 
-        this.ipcService.onConsoleProgress().subscribe( log => {
+        this.ipcService.onConsoleProgress().pipe( takeUntil( this._destroyed ) ).subscribe( log => {
             if ( this.consoleProgress.findIndex( x => x.logId === log.logId ) === -1 ) {
                 this.consoleProgress.push( log );
                 this.renderHistory( false );
@@ -90,6 +101,149 @@ export class ConsoleListComponent implements OnInit, OnChanges {
 
     }
 
+
+
+
+
+
+
+
+
+
+    ngOnDestroy() {
+        this._destroyed.next();
+        this._destroyed.complete();
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Adds a console message, keeping the newest 500.
+     *
+     * @param message The console message.
+     */
+    private pushConsoleMessage( message: ConsoleMessageModel ): void {
+        this.consoleMessages.push( message );
+        this.consoleMessages = this.consoleMessages.slice( -500 );
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns true if the message is something a player wants in the Activity view:
+     * trigger health, the zone trigger count and the catching-up notices.
+     *
+     * @param message The console message.
+     */
+    private static isActivityMessage( message: ConsoleMessageModel ): boolean {
+        if ( message.logType === LogTypes.error ) {
+            return false;
+        }
+
+        return message.activity === true ||
+            message.label === 'Trigger Health' ||
+            /^Triggers active in this zone: /.test( message.message ?? '' ) ||
+            /^Nag (is catching up|has caught up)/.test( message.message ?? '' );
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns every entry of the developer log, ignoring the search, character and trigger filters.
+     */
+    private allItems(): ( ConsoleMessageModel | TriggerParseHistoryModel | ProgressModel )[] {
+        return _.orderBy( Array.prototype.concat( this.histories.successful, this.histories.exceptions, this.consoleMessages, this.consoleProgress ), [ 'timestamp' ], [ 'asc' ] );
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns the number of entries in the whole developer log.
+     */
+    public getCopyCount(): number {
+        return this.allItems().length;
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns the whole developer log as plain text, for pasting into a support request.
+     */
+    public getCopyText(): string {
+        return this.allItems().map( item => {
+            let line = `[${new Date( item.timestamp ).toISOString()}] `;
+            if ( item instanceof TriggerParseHistoryModel ) {
+                line += `${item.triggerName} ${item.logType === LogTypes.error ? item.errorDescription : ( Array.isArray( item.rawLogEntry ) ? item.rawLogEntry[ 0 ] : item.rawLogEntry )}`;
+                if ( item.error !== null && item.error !== undefined ) {
+                    line += ` ${ConsoleListComponent.payloadText( item.error )}`;
+                }
+            } else if ( item instanceof ProgressModel ) {
+                line += `${item.label ?? ''} ${item.message ?? ''} (${item.progress}%)`;
+            } else {
+                let message = item as ConsoleMessageModel;
+                line += `${message.label ?? ''} ${message.message ?? ''}`;
+                if ( message.payload !== null && message.payload !== undefined ) {
+                    line += ` ${ConsoleListComponent.payloadText( message.payload )}`;
+                }
+            }
+            return line;
+        } ).join( '\r\n' );
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns the payload as text, including the stack of an error.
+     *
+     * @param payload The message payload.
+     */
+    private static payloadText( payload: any ): string {
+        if ( payload instanceof Error ) {
+            return payload.stack ?? `${payload.name}: ${payload.message}`;
+        }
+
+        try {
+            return typeof payload === 'string' ? payload : JSON.stringify( payload );
+        } catch ( error ) {
+            return String( payload );
+        }
+    }
 
 
 
@@ -212,6 +366,7 @@ export class ConsoleListComponent implements OnInit, OnChanges {
     private trimHistories() {
         this.histories.successful = this.histories.successful.slice( -500 );
         this.histories.exceptions = this.histories.exceptions.slice( -500 );
+        this.consoleMessages = this.consoleMessages.slice( -500 );
     }
 
 
@@ -232,11 +387,13 @@ export class ConsoleListComponent implements OnInit, OnChanges {
 
         if ( this.triggerId ) {
     
-            this.history = this.parseType === 'successful' ? Array.prototype.concat( this.triggerHistories.successful ) : Array.prototype.concat( this.triggerHistories.failed );
+            this.history = this.parseType === 'successful' || !this.developer ? Array.prototype.concat( this.triggerHistories.successful ) : Array.prototype.concat( this.triggerHistories.failed );
             
         } else {
 
-            this.history = Array.prototype.concat( this.histories.successful, this.histories.exceptions, this.consoleMessages, this.consoleProgress );
+            this.history = this.developer ?
+                Array.prototype.concat( this.histories.successful, this.histories.exceptions, this.consoleMessages, this.consoleProgress ) :
+                Array.prototype.concat( this.histories.successful, this.consoleMessages.filter( x => ConsoleListComponent.isActivityMessage( x ) ) );
             this.history = _.orderBy( this.history, [ 'timestamp' ], [ 'asc' ] );
 
         }
@@ -244,7 +401,7 @@ export class ConsoleListComponent implements OnInit, OnChanges {
         let search = this.searchText?.toLowerCase();
         this.history = this.history.filter( x => {
             if ( x instanceof TriggerParseHistoryModel ) {
-                return ( !search || String( x.rawLogEntry ?? '' ).toLowerCase().indexOf( search ) > -1 ) &&
+                return ( !search || String( x.rawLogEntry ?? '' ).toLowerCase().indexOf( search ) > -1 || String( x.triggerName ?? '' ).toLowerCase().indexOf( search ) > -1 ) &&
                     ( !this.characterId || x.characterId === this.characterId );
             } else {
                 return ( !search || String( x.message ?? '' ).toLowerCase().indexOf( search ) > -1 );
@@ -309,6 +466,8 @@ export class ConsoleListComponent implements OnInit, OnChanges {
     public clear() {
         this.histories = { successful: [], exceptions: [] };
         this.triggerHistories = { successful: [], failed: [] };
+        this.consoleMessages = [];
+        this.consoleProgress = [];
         this.triggerId = null;
         this.triggerName = null;
         this.hideTriggerHistory();
