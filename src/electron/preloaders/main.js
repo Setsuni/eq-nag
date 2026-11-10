@@ -53,10 +53,20 @@ const channelPrefixes = [
     'health',
 ];
 
+// Channels outside the prefix list.  The trigger measurement results come from the log watchers, never from this window.
+const exactChannels = [
+    'trigger-perf:start',
+    'trigger-perf:stop',
+    'trigger-perf:get',
+    'trigger-perf:counters',
+    'trigger-perf:characters',
+    'trigger-perf:finished',
+];
+
 const styleSheetUtil = new StyleSheetUtil();
 
 function validChannel( channel ) {
-    return channelPrefixes.indexOf( channel.split( /:/gi )[ 0 ] ) > -1;
+    return channelPrefixes.indexOf( channel.split( /:/gi )[ 0 ] ) > -1 || exactChannels.indexOf( channel ) > -1;
 }
 
 contextBridge.exposeInMainWorld( 'api', {

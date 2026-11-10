@@ -22,6 +22,10 @@ const perf = require( '../utilities/perf' );
 // Triggers are timed on one log line in ten (perf-taps.js scales them up), so
 // the per-trigger timing doesn't slow the log watcher down much.
 let perfTriggerSample = 0;
+const { TriggerMetrics, measureDurationMs: triggerMeasureDuration } = require( '../utilities/trigger-metrics' );
+const TriggerPerfAnalysis = require( '../utilities/trigger-perf-analysis' );
+const triggerMetrics = new TriggerMetrics();
+var triggerMeasureTimer = null;
 const { LogHistoryManager } = require( '../utilities/log-console' );
 const { createChatRoomLink } = require( '../utilities/peer-to-peer' );
 const { nagException, nagLog } = require( '../utilities/nag-console' );
@@ -719,6 +723,14 @@ function LogWatcher(character, logPosition) {
         perf.enabled && perf.record( 'log-watcher: tick (rebuild triggers)', perfStart );
     } );
 
+    ipcRenderer.on( 'trigger-perf:start', () => startTriggerMeasurement() );
+
+    ipcRenderer.on( 'trigger-perf:stop', () => finishTriggerMeasurement() );
+
+    ipcRenderer.on( 'trigger-perf:counters-request', ( event, requestId ) => {
+        ipcRenderer.send( 'trigger-perf:counters-response', { requestId: requestId, characterId: characterId, counters: triggerMetrics.counters( activeTriggers ) } );
+    } );
+
     ipcRenderer.on( 'component:destroy', function ( event, instanceId ) {
 
         // Let's remove the destroyed instance from any cancellation or secondary action tracking.
@@ -1021,6 +1033,8 @@ function generateTriggerFns() {
     triggers?.forEach( trigger => {
 
         try {
+
+            trigger._stats = triggerMetrics.statsFor( trigger.triggerId );
 
             if ( ( isDev || !trigger.onlyExecuteInDev ) && trigger.capturePhrases?.length > 0 ) {
     
@@ -1459,6 +1473,7 @@ function generateTriggerFns() {
         
                             // If all conditions passed, then parse the phrase.
                             if ( trigger._checkConditions() ) {
+                                trigger._stats.checked++;
                                 _phraseParsers.forEach( ( parser, i ) => {
                                     let _res = parser( value );
                                     if ( _res?.match ) {
@@ -1500,6 +1515,7 @@ function generateTriggerFns() {
                             let passed = false;
         
                             if ( trigger._checkConditions() ) {
+                                trigger._stats.checked++;
         
                                 let _res = _phraseParsers[ 0 ]( value );
         
@@ -1628,6 +1644,38 @@ function generateTriggerFns() {
         let fns = onTriggerGenCompleteHandlers.splice( 0, onTriggerGenCompleteHandlers.length );
         fns.forEach( f => f() );
     }
+}
+
+
+
+
+
+
+
+
+
+
+/**
+ * Starts timing the triggers for ten minutes, or until finishTriggerMeasurement is called.
+ */
+function startTriggerMeasurement() {
+    if ( triggerMetrics.measuring ) {
+        return;
+    }
+    triggerMetrics.begin( Date.now() );
+    triggerMeasureTimer = setTimeout( finishTriggerMeasurement, triggerMeasureDuration );
+}
+
+/**
+ * Ends the measurement and sends the report to the main process.
+ */
+function finishTriggerMeasurement() {
+    if ( !triggerMetrics.measuring ) {
+        return;
+    }
+    clearTimeout( triggerMeasureTimer );
+    const report = TriggerPerfAnalysis.buildReport( triggerMetrics.end( activeTriggers, Date.now() ), activeTriggers );
+    ipcRenderer.send( 'trigger-perf:result', { characterId: characterId, report: report } );
 }
 
 
@@ -1871,11 +1919,16 @@ function parseLogEntries( raw, simulating, padTime ) {
 
         let entryMatched = false;
         const perfTriggers = perf.enabled && ++perfTriggerSample % 10 === 0;
-        activeTriggers.forEach( trigger => {
+        const measureStart = triggerMetrics.sampleWindow( activeTriggers.length );
+        activeTriggers.forEach( ( trigger, index ) => {
 
             if ( !!trigger.enabled && !trigger._profileDisabled ) {
                 const perfStart = perfTriggers ? perf.now() : 0;
+                const timed = measureStart >= 0 && triggerMetrics.isTimed( measureStart, index );
+                const timerStart = timed ? process.hrtime.bigint() : 0n;
                 trigger._parse( log, ( res, deltaTime ) => {
+
+                    trigger._stats.fired++;
 
                     try {
                             
@@ -1914,6 +1967,7 @@ function parseLogEntries( raw, simulating, padTime ) {
                     }
                     
                 } );
+                timed && triggerMetrics.record( trigger._stats, process.hrtime.bigint() - timerStart );
                 perfTriggers && perf.record( trigger._perfName ??= `trigger: ${trigger.name}`, perfStart, 10 );
             }
             
