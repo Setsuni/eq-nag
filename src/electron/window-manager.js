@@ -403,6 +403,12 @@ class WindowManager {
         
         ipcMain.on( 'overlay:dialog:edit', ( event, overlayId ) => {
             let posData = userPreferencesDatabase.getOverlayEditorPosition( overlayId );
+            if ( posData != null && !screen.getAllDisplays().some( d => {
+                let b = d.workArea;
+                return posData.x + 100 > b.x && posData.x < b.x + b.width - 100 && posData.y >= b.y && posData.y < b.y + b.height - 100;
+            } ) ) {
+                posData = null;
+            }
             let overlayEditorDialog = new BrowserWindow( {
                 parent: mainWindowRef.reference,
                 modal: false,
@@ -432,7 +438,14 @@ class WindowManager {
                 overlayEditorDialog.show();
                 this.#openOverlayEditors.push( overlayEditorDialog );
             } );
+            // The overlay renderer sits at the screen-saver level and would otherwise cover this window.
+            let keepOnTopInterval = setInterval( () => {
+                if ( !overlayEditorDialog.isDestroyed() ) {
+                    overlayEditorDialog.setAlwaysOnTop( true, "screen-saver" );
+                }
+            }, 500 );
             overlayEditorDialog.on( 'close', () => {
+                clearInterval( keepOnTopInterval );
                 let i = this.#openOverlayEditors.indexOf( overlayEditorDialog );
                 if ( i > -1 ) {
                     this.#openOverlayEditors.splice( i, 1 );
