@@ -174,6 +174,20 @@ export class OverlayMapComponent implements OnInit {
         this.dragOffset = { x: 0, y: 0 };
     }
 
+    /**
+     * Whether another monitor sits right above this one, leaving no room for its label outside.
+     * 
+     * @param display The monitor to check.
+     */
+    public labelInside( display: MapDisplay ): boolean {
+        const reach = this.space.width * 0.045;
+        return this.displays.some( other => other !== display
+            && other.bounds.x < display.bounds.x + display.bounds.width
+            && other.bounds.x + other.bounds.width > display.bounds.x
+            && other.bounds.y + other.bounds.height > display.bounds.y - reach
+            && other.bounds.y < display.bounds.y );
+    }
+
     private dragOffsetFor( box: MapBox ): { x: number, y: number } {
         return this.dragId === box.overlay.overlayId ? this.dragOffset : { x: 0, y: 0 };
     }

@@ -29,6 +29,19 @@
     }
 }
 
+.monitor.label-inside {
+    z-index: 5;
+
+    .monitor-label {
+        top: auto;
+        bottom: 2px;
+        left: 2px;
+        padding: 0 4px;
+        border-radius: 2px;
+        background-color: #000000b3;
+    }
+}
+
 .box {
     position: absolute;
     box-sizing: border-box;

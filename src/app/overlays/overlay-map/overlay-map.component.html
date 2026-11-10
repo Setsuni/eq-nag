@@ -1,6 +1,6 @@
 <div class="map-wrap" *ngIf="displays.length > 0">
     <div #mapArea class="map-area" [style.aspect-ratio]="space.width + ' / ' + space.height" [style.max-width.px]="ratio * 240">
-        <div class="monitor" *ngFor="let display of displays"
+        <div class="monitor" *ngFor="let display of displays" [class.label-inside]="labelInside( display )"
             [style.left.%]="( display.bounds.x - space.x ) / space.width * 100"
             [style.top.%]="( display.bounds.y - space.y ) / space.height * 100"
             [style.width.%]="display.bounds.width / space.width * 100"
