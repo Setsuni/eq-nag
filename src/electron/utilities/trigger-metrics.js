@@ -16,10 +16,10 @@ const measureDurationMs = 10 * 60 * 1000;
 class TriggerMetrics {
 
     /** @type {Record<string, {checked: number, fired: number, samples: number, totalMs: number, maxMs: number}>} */
-    #stats = {};
+    #stats = Object.create( null );
 
     /** @type {Record<string, [number, number]>} The counters when the measurement started. */
-    #base = {};
+    #base = Object.create( null );
 
     #measuring = false;
     #startedAt = 0;
@@ -59,7 +59,7 @@ class TriggerMetrics {
      * @param {number} now The start time, in ms since the epoch.
      */
     begin( now ) {
-        this.#base = {};
+        this.#base = Object.create( null );
         for ( const id in this.#stats ) {
             const s = this.#stats[ id ];
             this.#base[ id ] = [ s.checked, s.fired ];
@@ -120,7 +120,7 @@ class TriggerMetrics {
      */
     end( triggers, now ) {
         this.#measuring = false;
-        const result = { startedAt: this.#startedAt, endedAt: now, lineCount: this.#lines, triggers: {} };
+        const result = { startedAt: this.#startedAt, endedAt: now, lineCount: this.#lines, triggers: Object.create( null ) };
         triggers.forEach( trigger => {
             const s = this.statsFor( trigger.triggerId );
             const base = this.#base[ trigger.triggerId ] ?? [ 0, 0 ];
@@ -141,7 +141,7 @@ class TriggerMetrics {
      * @param {{triggerId: string, name: string}[]} triggers The triggers.
      */
     counters( triggers ) {
-        const result = {};
+        const result = Object.create( null );
         triggers.forEach( trigger => {
             const s = this.#stats[ trigger.triggerId ];
             result[ trigger.triggerId ] = { name: trigger.name, checked: s?.checked ?? 0, fired: s?.fired ?? 0 };

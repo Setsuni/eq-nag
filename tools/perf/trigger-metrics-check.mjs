@@ -391,6 +391,8 @@ const counterReply = w => {
     const good = { startedAt: 1, endedAt: 2, lineCount: 3, totalMs: 1, rows: [ { triggerId: 'a', name: 'Slow', checked: 1, fired: 0, totalMs: 1, maxMs: 1, sharePercent: 100, avgMsPerCheck: 1, skipped: false, hints: [ { code: 'no-literal' }, 'bogus' ] } ] };
     check( store.sanitizeReport( good )?.rows[ 0 ].hints.length === 1, 'sanitize: keeps known hints only' );
     check( store.sanitizeReport( { ...good, rows: [ { ...good.rows[ 0 ], hints: undefined } ] } )?.rows[ 0 ].hints.length === 0, 'sanitize: a row without hints gets none' );
+    check( store.sanitizeReport( { ...good, rows: [ { ...good.rows[ 0 ], hints: [ '__proto__', 'constructor', 'toString', 'no-literal' ] } ] } ).rows[ 0 ].hints.length === 1, 'sanitize: inherited names are not hint codes' );
+    check( Object.keys( store.sanitizeCounters( JSON.parse( '{"__proto__":{"name":"x","checked":1,"fired":1},"a":{"name":"y","checked":1,"fired":1}}' ) ) ).length === 2, 'sanitize: counters keep odd ids as plain entries' );
     check( [ null, 5, 'x', [], {}, { ...good, lineCount: 'x' }, { ...good, rows: 'x' } ].every( r => store.sanitizeReport( r ) === null ), 'sanitize: junk is not a report' );
     check( store.sanitizeReport( { ...good, rows: [ null, { triggerId: 1 }, { ...good.rows[ 0 ], checked: NaN }, good.rows[ 0 ] ] } ).rows.length === 1, 'sanitize: bad rows are dropped' );
     check( store.sanitizeCounters( { a: { name: 'x', checked: 1, fired: 2 }, b: { name: 5 }, c: null } ).a.fired === 2 && Object.keys( store.sanitizeCounters( { b: { name: 5 } } ) ).length === 0 && store.sanitizeCounters( 'x' ) === null, 'sanitize: counters' );
@@ -399,6 +401,7 @@ const counterReply = w => {
     writeFileSync( path.join( folder, 'trigger-perf.json' ), 'null' );
     const fromNull = new store( folder );
     check( fromNull.get( 'c' ) === null && fromNull.characterIds().length === 0, 'store: a file holding null is empty' );
+    check( fromNull.get( '__proto__' ) === null && fromNull.get( 'constructor' ) === null, 'store: inherited names are not characters' );
     fromNull.set( 'c', store.sanitizeReport( good ) );
     check( new store( folder ).get( 'c' )?.lineCount === 3, 'store: saves over a bad file' );
     writeFileSync( path.join( folder, 'trigger-perf.json' ), JSON.stringify( { a: { ...good, rows: [ { ...good.rows[ 0 ], hints: undefined }, 5 ] }, b: 7, c: { rows: 1 } } ) );
