@@ -39,7 +39,10 @@ class TriggerHealthService {
             folders: this.#triggerDatabase.getFolders(),
             zones: eqZones,
             zoneKnowledge: this.#zoneKnowledge.getKnowledge(),
-            packages: this.#triggerDatabase.getInstalledPackages(),
+            packages: [
+                ...this.#triggerDatabase.getInstalledPackages(),
+                ...( this.#triggerDatabase.getInstalledQuickShares() ?? [] ).map( q => ( { packageId: q.quickShareId, name: 'Quick Share', author: q.author, authorDiscord: q.authorDiscord } ) ),
+            ],
             characterClasses: this.#characterDatabase.getAll().map( c => c.class ),
         } );
 
@@ -73,7 +76,7 @@ class TriggerHealthService {
                 this.#triggerDatabase.backupDatafile( () => {
                     this.#backupMade = true;
                     resolve( true );
-                } );
+                }, () => resolve( false ) );
             } catch ( error ) {
                 resolve( false );
             }

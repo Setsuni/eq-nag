@@ -75,9 +75,11 @@ test( 'zone Equals is flagged and switches to Contains', () => {
     const report = run( [ t ] );
     const [ finding ] = only( report, 'zoneEquals' );
     assert.ok( finding );
-    assert.equal( finding.severity, 'may' );
-    assert.equal( finding.fix.bulk, true );
+    assert.equal( finding.severity, 'info' );
+    assert.equal( finding.level, 'advanced' );
+    assert.equal( finding.fix.bulk, false );
     assert.equal( finding.needsLook, false );
+    assert.equal( run( [ t ] ).summary.bulkFixes, 0 );
 
     const applied = health.applyPatches( [ t ], baseFolders(), finding.fix.patches );
     assert.equal( applied.applied.length, 1 );
@@ -113,7 +115,7 @@ test( 'only CurrentZone Equals is flagged', () => {
 } );
 
 // Check 2.
-const seed = { zones: [], pairs: [ { from: 'Tower of Discord', to: 'Citadel of the Worldslayer' }, { from: 'The Demiplane of Blood', to: 'Dreadspire Keep' } ] };
+const seed = { zones: [], pairs: [ { from: 'Tower of Discord', to: 'Citadel of the Worldslayer', seed: true }, { from: 'The Demiplane of Blood', to: 'Dreadspire Keep', seed: true } ] };
 
 test( 'alias is added and bulk-fixable', () => {
     const t = trigger( 'Soandso Alias', { conditions: [ condition( 16, 'Tower of Discord' ) ] } );
@@ -124,6 +126,20 @@ test( 'alias is added and bulk-fixable', () => {
     health.applyPatches( [ t ], baseFolders(), finding.fix.patches );
     assert.equal( t.conditions[ 0 ].variableValue, 'Tower of Discord|Citadel of the Worldslayer' );
     assert.equal( only( run( [ t ], { zoneKnowledge: seed } ), 'zoneAlias' ).length, 0 );
+} );
+
+test( 'a learned alias needs a look and is not bulk', () => {
+    const t = trigger( 'Soandso Learned Alias', { conditions: [ condition( 16, 'Some Old Name' ) ] } );
+    const knowledge = { zones: [], pairs: [ { from: 'Some Old Name', to: 'Some New Name' } ] };
+    const [ finding ] = only( run( [ t ], { zoneKnowledge: knowledge } ), 'zoneAlias' );
+    assert.equal( finding.needsLook, true );
+    assert.equal( finding.fix.bulk, false );
+    assert.match( finding.reason, /learned/ );
+} );
+
+test( 'Equals checks the alias case-sensitively', () => {
+    const t = trigger( 'Soandso Case', { conditions: [ condition( 1, 'Tower of Discord|citadel of the worldslayer' ) ] } );
+    assert.equal( only( run( [ t ], { zoneKnowledge: seed } ), 'zoneAlias' ).length, 1 );
 } );
 
 test( 'alias is not flagged when both names are present', () => {
@@ -224,6 +240,13 @@ test( 'an unknown zone with no close match is informational and advanced', () =>
     const [ finding ] = only( run( [ t ] ), 'zoneUnknown' );
     assert.equal( finding.severity, 'info' );
     assert.equal( finding.level, 'advanced' );
+} );
+
+test( 'a trigger without a capture method is flagged', () => {
+    const t = trigger( 'Soandso NoMethod' );
+    delete t.captureMethod;
+    const [ finding ] = only( run( [ t ] ), 'noPhrase' );
+    assert.match( finding.reason, /no capture method/ );
 } );
 
 test( 'a trigger without a conditions list is flagged', () => {
@@ -330,6 +353,7 @@ test( 'a class restriction no character has is informational', () => {
     assert.equal( only( run( [ t ], { characterClasses: [ 'MAG' ] } ), 'classUnused' ).length, 1 );
     assert.equal( only( run( [ t ], { characterClasses: [ 'WAR' ] } ), 'classUnused' ).length, 0 );
     assert.equal( only( run( [ t ], { characterClasses: [] } ), 'classUnused' ).length, 0 );
+    assert.equal( only( run( [ t ], { characterClasses: [ 'MAG', '' ] } ), 'classUnused' ).length, 0 );
 } );
 
 // Check 13.
@@ -363,7 +387,7 @@ test( 'a folder condition is one finding that counts affected triggers', () => {
     const [ finding ] = only( report, 'zoneEquals' );
     assert.equal( finding.subject.kind, 'folder' );
     assert.equal( finding.affectedTriggerIds.length, 2 );
-    assert.match( finding.reason, /^Folder condition:/ );
+    assert.doesNotMatch( finding.reason, /^Folder condition:/ );
     assert.match( finding.reason, /Affects 2 triggers/ );
     assert.equal( finding.subject.folderPath, 'Raids / Old World' );
 
@@ -373,17 +397,20 @@ test( 'a folder condition is one finding that counts affected triggers', () => {
 
 // Package triggers.
 test( 'package triggers are flagged but excluded from bulk', () => {
-    const t = trigger( 'Pack: Vindi', { packageId: 'pkg1', conditions: [ condition( 1, 'Chardok' ) ] } );
+    const t = trigger( 'Pack: Vindi', { packageId: 'pkg1', conditions: [ condition( 1, '' ) ] } );
     const report = run( [ t ], { packages: [ { packageId: 'pkg1', name: 'Soandso Raid Pack', authorDiscord: 'soandso' } ] } );
-    const [ finding ] = only( report, 'zoneEquals' );
+    const [ finding ] = only( report, 'emptyCondition' );
     assert.equal( finding.package.name, 'Soandso Raid Pack' );
     assert.equal( finding.fix.bulk, false );
     assert.equal( report.summary.bulkFixes, 0 );
 
-    const quickShare = trigger( 'Imported', { packageId: 'qs1', conditions: [ condition( 1, 'Chardok' ) ] } );
+    const quickShare = trigger( 'Imported', { packageId: 'qs1', conditions: [ condition( 1, '' ) ] } );
     const second = run( [ quickShare ], { packages: [ { packageId: 'pkg1' } ] } );
-    assert.equal( only( second, 'zoneEquals' )[ 0 ].package, null );
+    assert.equal( only( second, 'emptyCondition' )[ 0 ].package, null );
     assert.equal( second.summary.bulkFixes, 1 );
+    const third = run( [ quickShare ], { packages: [ { packageId: 'qs1', name: 'Quick Share' } ] } );
+    assert.equal( only( third, 'emptyCondition' )[ 0 ].package.packageId, 'qs1' );
+    assert.equal( third.summary.bulkFixes, 0 );
 } );
 
 // Patches.
@@ -423,18 +450,18 @@ test( 'bulk fixing every safe item leaves no safe items', () => {
     triggers[ 3 ].actions[ 0 ].phrases = [ 'gone' ];
     const options = { zoneKnowledge: seed };
     const report = run( triggers, options );
-    assert.equal( report.summary.bulkFixes, 4 );
+    assert.equal( report.summary.bulkFixes, 3 );
     const patches = report.findings.filter( f => f.fix?.bulk ).flatMap( f => f.fix.patches );
     health.applyPatches( triggers, baseFolders(), patches );
     const after = run( triggers, options );
     assert.equal( after.summary.bulkFixes, 0 );
     assert.ok( after.findings.every( f => !f.fix?.bulk ) );
-    assert.equal( only( after, 'zoneEquals' ).length, 1 );
+    assert.equal( only( after, 'zoneEquals' ).length, 2 );
 } );
 
 test( 'report text lists names and reasons, and the advanced items only when asked', () => {
     const report = run( [
-        trigger( 'Soandso Report', { conditions: [ condition( 1, 'Chardok' ) ] } ),
+        trigger( 'Soandso Report', { conditions: [ condition( 1, '' ) ] } ),
         trigger( 'Soandso Dev', { onlyExecuteInDev: true } ),
     ] );
     const plain = health.formatReportText( report );
@@ -447,7 +474,7 @@ test( 'report text lists names and reasons, and the advanced items only when ask
 test( 'summary counts findings by verb', () => {
     const report = run( [
         trigger( 'Soandso Broken', { capturePhrases: [ phrase( '(', { useRegEx: true } ) ] } ),
-        trigger( 'Soandso Zone', { conditions: [ condition( 1, 'Chardok' ) ] } ),
+        trigger( 'Soandso Zone', { conditions: [ condition( 16, 'Permafrsot Keep' ) ] } ),
         trigger( 'Soandso Dev', { onlyExecuteInDev: true } ),
     ] );
     assert.equal( report.summary.defaultCounts.never, 1 );
@@ -474,14 +501,17 @@ try {
         const store = new ZoneKnowledgeStore();
         const { pairs, zones } = store.getKnowledge();
         assert.equal( pairs.length, 6 );
+        assert.ok( pairs.every( p => p.seed === true ) );
         assert.equal( zones.length, 0 );
         assert.ok( pairs.some( p => p.from === 'The Demiplane of Blood' && p.to === 'Dreadspire Keep' ) );
     } );
 
     test( 'zone knowledge learns pairs once and ignores known or silly ones', () => {
         const store = new ZoneKnowledgeStore();
-        assert.equal( store.recordPair( 'Some Old Name', 'Some New Name 12' ), true );
-        assert.equal( store.recordPair( 'some old name', 'Some New Name' ), false );
+        assert.equal( store.recordPair( 'Some Old Name', 'Some New Name 12' ), false );
+        assert.equal( store.getKnowledge().pairs.length, 6 );
+        assert.equal( store.recordPair( 'some old name', 'Some New Name' ), true );
+        assert.equal( store.recordPair( 'Some Old Name', 'Some New Name' ), false );
         assert.equal( store.recordPair( 'Tower of Discord', 'Citadel of the Worldslayer' ), false );
         assert.equal( store.recordPair( 'Same Name', 'same name' ), false );
         assert.equal( store.recordPair( 'x'.repeat( 200 ), 'Short' ), false );
@@ -489,6 +519,7 @@ try {
         assert.equal( store.recordZone( 'A New Zone 7' ), true );
         const { pairs, zones } = store.getKnowledge();
         assert.equal( pairs.length, 7 );
+        assert.equal( pairs.filter( p => p.seed ).length, 6 );
         assert.ok( zones.includes( 'A New Zone' ) );
         assert.ok( zones.includes( 'Some New Name' ) );
     } );
@@ -508,8 +539,9 @@ try {
     const waitFor = fn => new Promise( resolve => { const poll = () => ( fn() ? resolve() : setTimeout( poll, 5 ) ); poll(); } );
 
     const serviceTriggers = [
-        trigger( 'Soandso Svc One', { conditions: [ condition( 1, 'Chardok' ) ] } ),
-        trigger( 'Soandso Svc Pack', { packageId: 'pkgS', conditions: [ condition( 1, 'Chardok' ) ] } ),
+        trigger( 'Soandso Svc One', { conditions: [ condition( 1, '' ) ] } ),
+        trigger( 'Soandso Svc Pack', { packageId: 'pkgS', conditions: [ condition( 1, '' ) ] } ),
+        trigger( 'Soandso Svc Share', { packageId: 'qsS', conditions: [ condition( 1, '' ) ] } ),
     ];
     let saves = 0;
     let backups = 0;
@@ -519,6 +551,7 @@ try {
         getAll: () => serviceTriggers,
         getFolders: () => baseFolders(),
         getInstalledPackages: () => [ { packageId: 'pkgS', name: 'Soandso Pack' } ],
+        getInstalledQuickShares: () => [ { quickShareId: 'qsS', author: 'Soandso', authorDiscord: 'soandso' } ],
         backupDatafile: done => { backups++; done(); },
         save: () => { saves++; },
         onTriggersImported: fn => { fakeDatabase.imported = fn; },
@@ -531,7 +564,8 @@ try {
     test( 'service check reports to the client without patches and broadcasts the summary', () => {
         const event = reply( 'health:check' );
         ipcHandlers[ 'health:check' ]( event, { startup: true } );
-        assert.equal( event.replies[ 0 ].findings.length, 2 );
+        assert.equal( event.replies[ 0 ].findings.length, 3 );
+        assert.equal( event.replies[ 0 ].findings.filter( f => f.package ).length, 2 );
         assert.ok( event.replies[ 0 ].findings.every( f => f.fix && f.fix.patches === undefined ) );
         assert.ok( sent.some( ( [ c ] ) => c === 'health:summary' ) );
     } );
@@ -541,7 +575,7 @@ try {
         ipcHandlers[ 'health:fix-safe' ]( event );
         await waitFor( () => event.replies.length > 0 );
         assert.equal( event.replies[ 0 ].changed, 1 );
-        assert.equal( serviceTriggers[ 0 ].conditions[ 0 ].operatorType, 16 );
+        assert.equal( serviceTriggers[ 0 ].conditions[ 0 ].operatorType, 0 );
         assert.equal( serviceTriggers[ 1 ].conditions[ 0 ].operatorType, 1 );
         assert.equal( backups, 1 );
         assert.equal( saves, 1 );
@@ -559,12 +593,12 @@ try {
         await waitFor( () => forced.replies.length > 0 );
         assert.equal( forced.replies[ 0 ].changed, 1 );
         assert.equal( backups, 1 );
-        assert.equal( serviceTriggers[ 1 ].conditions[ 0 ].operatorType, 16 );
+        assert.equal( serviceTriggers[ 1 ].conditions[ 0 ].operatorType, 0 );
 
         const undo = reply( 'health:undo' );
         ipcHandlers[ 'health:undo' ]( undo, { undoId: forced.replies[ 0 ].undoId } );
         assert.equal( serviceTriggers[ 1 ].conditions[ 0 ].operatorType, 1 );
-        assert.equal( serviceTriggers[ 0 ].conditions[ 0 ].operatorType, 16 );
+        assert.equal( serviceTriggers[ 0 ].conditions[ 0 ].operatorType, 0 );
 
         const undoAll = reply( 'health:undo' );
         ipcHandlers[ 'health:undo' ]( undoAll, {} );
@@ -574,6 +608,16 @@ try {
         const unknown = reply( 'health:undo' );
         ipcHandlers[ 'health:undo' ]( unknown, { undoId: 'undo-999' } );
         assert.equal( unknown.replies[ 0 ].changed, 0 );
+    } );
+
+    test( 'service aborts the change when the backup fails', async () => {
+        const failing = [ trigger( 'Soandso Backup', { conditions: [ condition( 1, '' ) ] } ) ];
+        const failingDatabase = { ...fakeDatabase, getAll: () => failing, backupDatafile: ( done, fail ) => fail( new Error( 'disk full' ) ) };
+        const failingService = new TriggerHealthService( failingDatabase, { getKnowledge: () => ( { zones: [], pairs: [] } ) }, { getAll: () => [] } );
+        const result = await failingService.fixSafe( () => { } );
+        assert.equal( result.error, 'backup' );
+        assert.equal( result.changed, 0 );
+        assert.equal( failing[ 0 ].conditions[ 0 ].operatorType, 1 );
     } );
 
     test( 'service tells the main window how many imported triggers need a look', async () => {

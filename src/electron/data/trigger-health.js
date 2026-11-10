@@ -18,7 +18,7 @@ const REGEX_LOOKING_TEXT = /^\^|\$$|\\\.|\(\?<|\\d/;
 
 /** The checks, in the order they are numbered in the design. */
 const CHECKS = {
-    zoneEquals: { number: 1, severity: 'may', level: 'default' },
+    zoneEquals: { number: 1, severity: 'info', level: 'advanced' },
     zoneAlias: { number: 2, severity: 'may', level: 'default' },
     zoneUnknown: { number: 3, severity: 'may', level: 'default' },
     phraseInvalid: { number: 4, severity: 'never', level: 'default' },
@@ -234,15 +234,15 @@ function buildZoneIndex( zones, knowledge ) {
     zones?.forEach( add );
     knowledge?.zones?.forEach( add );
 
-    /** @type {Map<string, string[]>} */
+    /** @type {Map<string, { to: string, seed: boolean }[]>} */
     const aliases = new Map();
     knowledge?.pairs?.forEach( pair => {
         add( pair.from );
         add( pair.to );
         const key = String( pair.from ).trim().toLowerCase();
         const targets = aliases.get( key ) ?? [];
-        if ( !targets.some( t => t.toLowerCase() === String( pair.to ).trim().toLowerCase() ) ) {
-            targets.push( String( pair.to ).trim() );
+        if ( !targets.some( t => t.to.toLowerCase() === String( pair.to ).trim().toLowerCase() ) ) {
+            targets.push( { to: String( pair.to ).trim(), seed: pair.seed === true } );
         }
         aliases.set( key, targets );
     } );
@@ -326,10 +326,7 @@ function splitValue( value ) {
  */
 function covers( operator, alternatives, target ) {
     const lower = target.toLowerCase();
-    return alternatives.some( alt => {
-        const a = alt.toLowerCase();
-        return operator === OP_EQUALS ? a === lower : a.length > 0 && lower.includes( a );
-    } );
+    return alternatives.some( alt => operator === OP_EQUALS ? alt === target : alt.length > 0 && lower.includes( alt.toLowerCase() ) );
 }
 
 /**
@@ -350,7 +347,8 @@ function checkTriggerHealth( input ) {
     const folders = input.folders ?? [];
     const zoneIndex = buildZoneIndex( input.zones ?? [], input.zoneKnowledge );
     const packageMap = new Map( ( input.packages ?? [] ).map( p => [ p.packageId, p ] ) );
-    const characterClasses = new Set( ( input.characterClasses ?? [] ).filter( c => c ) );
+    const characterClasses = new Set( ( input.characterClasses ?? [] ).filter( c => c?.trim() ) );
+    const hasClasslessCharacter = ( input.characterClasses ?? [] ).some( c => !c?.trim() );
 
     /** @type {Map<string, { folder: any, path: string, parentId: string | null }>} */
     const folderInfo = new Map();
@@ -440,7 +438,7 @@ function checkTriggerHealth( input ) {
         };
 
         if ( finding.fix ) {
-            finding.fix.bulk = finding.fix.safe === true && !finding.needsLook && finding.package == null;
+            finding.fix.bulk = finding.fix.safe === true && !finding.needsLook && finding.package == null && finding.level === 'default';
         }
 
         findings.push( finding );
@@ -497,16 +495,18 @@ function checkTriggerHealth( input ) {
         // 2: /who reports a different name than the zone-in message.
         const missingTargets = [];
         const aliasNotes = [];
+        let learnedAlias = false;
         alternatives.forEach( alt => {
             const targets = [ ...( zoneIndex.aliases.get( alt.toLowerCase() ) ?? [] ) ];
             const eventPrefix = /^(.+?):\s+\S.*$/.exec( alt );
-            if ( eventPrefix && zoneIndex.names.has( eventPrefix[ 1 ].toLowerCase() ) && !targets.some( t => t.toLowerCase() === eventPrefix[ 1 ].toLowerCase() ) ) {
-                targets.push( zoneIndex.names.get( eventPrefix[ 1 ].toLowerCase() ) );
+            if ( eventPrefix && zoneIndex.names.has( eventPrefix[ 1 ].toLowerCase() ) && !targets.some( t => t.to.toLowerCase() === eventPrefix[ 1 ].toLowerCase() ) ) {
+                targets.push( { to: zoneIndex.names.get( eventPrefix[ 1 ].toLowerCase() ), seed: true } );
             }
 
-            targets.forEach( target => {
+            targets.forEach( ( { to: target, seed } ) => {
                 if ( !covers( operator, alternatives, target ) && !missingTargets.some( m => m.toLowerCase() === target.toLowerCase() ) ) {
                     missingTargets.push( target );
+                    learnedAlias = learnedAlias || !seed;
                     aliasNotes.push( `${alt}" as "${target}` );
                 }
             } );
@@ -514,8 +514,9 @@ function checkTriggerHealth( input ) {
 
         if ( missingTargets.length > 0 ) {
             add( 'zoneAlias', subject, key,
-                `The ${label} says "${alternatives.join( '|' )}", but /who calls ${aliasNotes.map( n => `"${n}"` ).join( ' and ' )}. After a /who this stops firing until you zone again.`,
+                `The ${label} says "${alternatives.join( '|' )}", but /who reports ${aliasNotes.map( n => `"${n}"` ).join( ' and ' )}. After a /who this stops firing until you zone again.${learnedAlias ? ' This name was learned from your own /who lines, so check it first.' : ''}`,
                 {
+                    needsLook: learnedAlias,
                     detail: `Operator ${operatorName}, value "${value}". The name is not a substring of the other name, so ${operatorName} cannot match it.`,
                     fix: {
                         label: `Add "${missingTargets.join( '|' )}"`,
@@ -550,7 +551,7 @@ function checkTriggerHealth( input ) {
             const others = [];
             alternatives.forEach( alt => zoneIndex.otherZonesContaining( alt ).forEach( z => !others.includes( z ) && others.push( z ) ) );
 
-            let reason = `The ${label} needs the zone name to be exactly "${alternatives.join( '|' )}". In an instance, /who reports the name with a number added, so it stops matching.`;
+            let reason = `The ${label} needs the zone name to be exactly "${alternatives.join( '|' )}". Contains is more forgiving: it also matches event and difficulty variants and ignores case.`;
             if ( others.length > 0 ) {
                 reason += ` Switching to Contains would also match ${others.length} other zone${others.length === 1 ? '' : 's'}, such as ${others.slice( 0, 3 ).map( o => `"${o}"` ).join( ', ' )}.`;
             }
@@ -576,7 +577,7 @@ function checkTriggerHealth( input ) {
             checkCondition( condition, index, subject, { target: 'folderCondition', folderId } );
             const count = triggerIdsByFolder.get( folderId )?.length ?? 0;
             for ( let i = before; i < findings.length; i++ ) {
-                findings[ i ].reason = `Folder condition: ${findings[ i ].reason} Affects ${count} trigger${count === 1 ? '' : 's'} in this folder.`;
+                findings[ i ].reason = `${findings[ i ].reason} Affects ${count} trigger${count === 1 ? '' : 's'} in this folder.`;
             }
         } );
     } );
@@ -601,16 +602,16 @@ function checkTriggerHealth( input ) {
         }
 
         // 5: nothing to look for. Triggers with no actions, or with hotkeys, have nothing to start from a phrase.
-        const captureMethod = trigger.captureMethod ?? 'Any match';
+        const captureMethod = trigger.captureMethod;
         const runsFromPhrases = actions.some( a => a.actionType != null ) && !( trigger.hotkeys?.length > 0 );
-        if ( !runsFromPhrases ) {
-            // Nothing to report.
-        } else if ( phrases.length === 0 ) {
-            add( 'noPhrase', subject, 'phrases', 'This trigger will never fire: it has no phrase to look for.' );
-        } else if ( usablePhrases.length === 0 ) {
-            add( 'noPhrase', subject, 'phrases', `This trigger will never fire: ${phrases.length === 1 ? 'its only phrase is' : 'all of its phrases are'} empty.` );
-        } else if ( captureMethod !== 'Any match' && captureMethod !== 'Sequential' ) {
-            add( 'noPhrase', subject, 'method', `This trigger will never fire: its capture method is "${captureMethod}", which Nag does not run.` );
+        if ( runsFromPhrases ) {
+            if ( phrases.length === 0 ) {
+                add( 'noPhrase', subject, 'phrases', 'This trigger will never fire: it has no phrase to look for.' );
+            } else if ( usablePhrases.length === 0 ) {
+                add( 'noPhrase', subject, 'phrases', `This trigger will never fire: ${phrases.length === 1 ? 'its only phrase is' : 'all of its phrases are'} empty.` );
+            } else if ( captureMethod !== 'Any match' && captureMethod !== 'Sequential' ) {
+                add( 'noPhrase', subject, 'method', captureMethod ? `This trigger will never fire: its capture method is "${captureMethod}", which Nag does not run.` : 'This trigger will never fire: it has no capture method.' );
+            }
         }
 
         // 4, 9, 10, 13: phrases.
@@ -731,7 +732,7 @@ function checkTriggerHealth( input ) {
 
         // 12: class restrictions nobody matches.
         const classes = ( trigger.classLevels ?? [] ).map( c => c?.class?.trim() ).filter( c => c );
-        if ( classes.length > 0 && characterClasses.size > 0 && !classes.some( c => characterClasses.has( c ) ) ) {
+        if ( classes.length > 0 && characterClasses.size > 0 && !hasClasslessCharacter && !classes.some( c => characterClasses.has( c ) ) ) {
             add( 'classUnused', subject, 'classes', `Limited to ${classes.join( ', ' )}; none of your characters is that class, so it is skipped.` );
         }
     } );

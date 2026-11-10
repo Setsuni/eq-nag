@@ -4,6 +4,8 @@ const eqZones = require( './models/everquest-zones' );
 
 const maxZones = 300;
 const maxPairs = 300;
+const maxPending = 100;
+const confirmations = 2;
 const maxNameLength = 80;
 
 /** Zone-in names that /who reports under a different name. */
@@ -35,18 +37,19 @@ function cleanName( name ) {
 
 class ZoneKnowledgeStore extends Store {
 
-    /** @type {{ version: number, zones: string[], pairs: { from: string, to: string }[] }} */
+    /** @type {{ version: number, zones: string[], pairs: { from: string, to: string }[], pending: { from: string, to: string, count: number }[] }} */
     #data;
 
     constructor() {
         super( {
             configName: 'zone-knowledge',
-            defaults: { version: 1, zones: [], pairs: [] },
+            defaults: { version: 1, zones: [], pairs: [], pending: [] },
         } );
 
         this.#data = this.parseDataFile();
         this.#data.zones = Array.isArray( this.#data.zones ) ? this.#data.zones : [];
         this.#data.pairs = Array.isArray( this.#data.pairs ) ? this.#data.pairs : [];
+        this.#data.pending = Array.isArray( this.#data.pending ) ? this.#data.pending : [];
     }
 
     /**
@@ -66,12 +69,12 @@ class ZoneKnowledgeStore extends Store {
     /**
      * Returns the seeded and learned zone knowledge.
      *
-     * @returns {{ zones: string[], pairs: { from: string, to: string }[] }}
+     * @returns {{ zones: string[], pairs: { from: string, to: string, seed?: boolean }[] }}
      */
     getKnowledge() {
         return {
             zones: [ ...this.#data.zones ],
-            pairs: [ ...seedPairs, ...this.#data.pairs ],
+            pairs: [ ...seedPairs.map( p => ( { ...p, seed: true } ) ), ...this.#data.pairs ],
         };
     }
 
@@ -96,11 +99,11 @@ class ZoneKnowledgeStore extends Store {
     }
 
     /**
-     * Remembers that /who reports the zone-in name as another name.
+     * Remembers that /who reports the zone-in name as another name. A pair is only learned once it was seen twice.
      *
      * @param {string} from The name in the zone-in message.
      * @param {string} to The name /who reports, without an instance number.
-     * @returns {boolean} Returns true if it was added.
+     * @returns {boolean} Returns true if it was learned.
      */
     recordPair( from, to ) {
         const a = cleanName( from );
@@ -114,7 +117,23 @@ class ZoneKnowledgeStore extends Store {
             return false;
         }
 
-        this.#data.pairs.push( { from: a, to: b } );
+        let pending = this.#data.pending.find( known );
+        if ( !pending ) {
+            pending = { from: a, to: b, count: 0 };
+            this.#data.pending.push( pending );
+            if ( this.#data.pending.length > maxPending ) {
+                this.#data.pending.splice( 0, this.#data.pending.length - maxPending );
+            }
+        }
+
+        pending.count++;
+        if ( pending.count < confirmations ) {
+            this.storeDataFile( this.#data );
+            return false;
+        }
+
+        this.#data.pending.splice( this.#data.pending.indexOf( pending ), 1 );
+        this.#data.pairs.push( { from: pending.from, to: pending.to } );
         if ( this.#data.pairs.length > maxPairs ) {
             this.#data.pairs.splice( 0, this.#data.pairs.length - maxPairs );
         }

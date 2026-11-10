@@ -1991,6 +1991,10 @@ function executeTriggerAction( trigger, action, timestamp, res, deltaTime, simul
     } else if ( action.actionType === ActionTypes.ClearVariable ) {
         /* --== Clear Variable ==-- */
 
+        if ( action.variableName === 'CurrentZone' ) {
+            lastEnteredZone = null;
+        }
+
         if ( res.result.groups && res.result.groups[ action.variableName ] ) {
             clearStoredVariable( action.variableName, res.result.groups[ action.variableName ] );
         } else if ( trigger._conditionResults && trigger._conditionResults[ action.variableName ] ) {
@@ -3689,8 +3693,10 @@ function loadCachedStoredVariables( callback ) {
 
 
 
-/** The zone name from the last zone-in message, used to learn which name /who reports for it. */
+/** The zone name from the last zone-in message, and when it was seen, used to learn which name /who reports for it. */
 let lastEnteredZone = null;
+let lastEnteredZoneAt = 0;
+const zoneKnowledgeWindowMs = 10 * 60 * 1000;
 
 /**
  * Tells the main process which zone names were seen, and when /who reports a zone under another name than the zone-in message.
@@ -3707,8 +3713,9 @@ function reportZoneKnowledge( res ) {
 
     if ( res.phraseId === 'PhraseEnterZoneX' ) {
         lastEnteredZone = name;
+        lastEnteredZoneAt = Date.now();
         ipcRenderer.send( 'zone-knowledge:record', { zone: name } );
-    } else if ( res.phraseId === 'PhraseCharInZone' && lastEnteredZone && lastEnteredZone.toLowerCase() !== name.toLowerCase() ) {
+    } else if ( res.phraseId === 'PhraseCharInZone' && lastEnteredZone && Date.now() - lastEnteredZoneAt < zoneKnowledgeWindowMs && lastEnteredZone.toLowerCase() !== name.toLowerCase() ) {
         ipcRenderer.send( 'zone-knowledge:record', { zone: name, from: lastEnteredZone, to: name } );
     }
 }
@@ -3724,7 +3731,7 @@ function reportZoneKnowledge( res ) {
 
 /**
  * Saves the given value in the store.
- *
+ * 
  * @param {string} key The key of the stored variable.
  * @param {any} value The value to store.
  * @param {boolean} restricted If true, the value must be used as a condition in a trigger before being saved.
