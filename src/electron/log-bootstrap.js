@@ -75,6 +75,7 @@ let mainWinRef = undefined;
 
 /** @type {number} The duration to wait between checking for activity on a log file. */
 const checkInterval = 5 * 1000;
+const maxBackupRetryInterval = 5 * 60 * 1000;
 
 /** @type {number} The duration to wait for no log file updates before closing the log file watcher. */
 const killTime = 5 * 60 * 1000;
@@ -753,6 +754,8 @@ class LogBootstrapper {
             }
         };
 
+        let backupFailures = 0;
+
         const waitForLogFile = async () => {
             const current = characterDatabase.find( characterId );
             if ( !current ) {
@@ -787,19 +790,32 @@ class LogBootstrapper {
             }
             // First, let's rename the log file with a timestamp.
             const logFilePath = FsUtilities.Path.prependFilename( current.logFile, ArchiveFilePrefix );
+            let renamed = false;
             try {
                 await fsp.rename( current.logFile, logFilePath );
+                renamed = true;
+                log.info( `LogBootstrap > Log file renamed to: ${logFilePath}` );
+
+                // Queue the archive as soon as the rename succeeded, whatever happens next.
+                this.#addToArchive( logFilePath, fileSize );
+
                 await fsp.writeFile( current.logFile, '' );
             } catch ( error ) {
-                log.error( `LogBootstrap > Log file backup failed for: ${current.logFile}`, error );
-                waitForLogFile().then( () => { } );
+                // Log the first failure only, and retry less often while it keeps failing.
+                if ( backupFailures === 0 ) {
+                    log.error( `LogBootstrap > Log file backup failed for: ${current.logFile}`, error );
+                }
+                const delay = Math.min( checkInterval * Math.pow( 2, backupFailures ), maxBackupRetryInterval );
+                backupFailures++;
+                if ( renamed ) {
+                    logWatchers[ characterId ].logSize = 0;
+                }
+                setTimeout( () => waitForLogFile().then( () => { } ), delay );
                 return;
             }
-            
-            log.info( `LogBootstrap > Log file renamed to: ${logFilePath}` );
-            logWatchers[ characterId ].logSize = 0;
 
-            this.#addToArchive( logFilePath, fileSize );
+            backupFailures = 0;
+            logWatchers[ characterId ].logSize = 0;
             
             waitForLogFile().then( () => { } );
         }
