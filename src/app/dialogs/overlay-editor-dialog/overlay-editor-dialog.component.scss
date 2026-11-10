@@ -121,6 +121,7 @@ mat-radio-group.horizontal {
 }
 
 .preview-panel {
+    position: relative;
     flex: none;
     box-sizing: border-box;
     width: 100%;
@@ -180,6 +181,12 @@ mat-radio-group.horizontal {
 
 .editor-body {
     padding: 10px 20px 20px 20px;
+
+    fieldset > mat-form-field,
+    fieldset > app-link-button {
+        display: block;
+        width: 100%;
+    }
 }
 
 .slider-row {
@@ -226,7 +233,9 @@ mat-slider {
     background-color: #1a1a1a;
 
     button {
+        flex: none;
         margin: 0 4px;
+        white-space: nowrap;
     }
 
     .unsaved {

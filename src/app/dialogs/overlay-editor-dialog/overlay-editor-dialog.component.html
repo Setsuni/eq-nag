@@ -11,7 +11,7 @@
 
     <div class="editor-info">
         <p class="type-line"><span class="type-chip" [ngClass]="typeClass">{{typeLabel}}</span> {{typeDescription}}</p>
-        <p class="how-to"><mat-icon class="material-icons-outlined">info</mat-icon> This overlay is showing on your screen with a box around it. Drag the box to move it and drag its corners to resize it, then press <strong>Save</strong>. <strong>Cancel</strong> puts everything back.</p>
+        <p class="how-to"><mat-icon class="material-icons-outlined">info</mat-icon><span>This overlay is showing on your screen with a box around it. Drag the box to move it and drag its corners to resize it, then press <strong>Save</strong>. <strong>Cancel</strong> puts everything back.</span></p>
     </div>
 
     <div class="preview-panel" *ngIf="model.overlayType === 'Alert' || model.overlayType === 'Timer'">
@@ -57,7 +57,7 @@
                     <input matInput type="text" [(ngModel)]="model.name" (ngModelChange)="broadcastModel()" />
                 </mat-form-field>
 
-                <app-link-button (click)="enterDescription = true" *ngIf="!enterDescription" style="margin-top: 5px; margin-bottom: 5px;">Add a description ...</app-link-button>
+                <app-link-button (click)="enterDescription = true" *ngIf="!enterDescription" style="margin-top: 5px; margin-bottom: 18px;">Add a description ...</app-link-button>
 
                 <mat-form-field *ngIf="enterDescription" floatLabel="always">
                     <mat-label>Description</mat-label>
