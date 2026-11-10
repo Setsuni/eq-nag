@@ -103,6 +103,8 @@ const __dirname = path.dirname( __filename );
 var mainWindow, logWatcherWindow, testWindow;
 var enableDevMode = false;
 const updateCheckInterval = 10 * 60 * 1000;
+/** @type {NodeJS.Timeout | undefined} */
+var updateCheckTimer = undefined;
 const winManager = new WindowManager(__dirname);
 const userPreferences = new UserPreferencesStore( {} );
 const dkpDatabase = new DkpDatabaseStore();
@@ -125,7 +127,8 @@ autoUpdater.logger = log;
 var nagProcessId = undefined;
 const allowMultipleInstances = false;
 const fs = await import( 'fs' );
-var doUpdateCheck = true;
+// Portable and test builds ship without app-update.yml, so the updater has nothing to check against.
+var doUpdateCheck = !process.env.PORTABLE_EXECUTABLE_DIR && fs.existsSync( path.join( process.resourcesPath, 'app-update.yml' ) );
 
 
 const configRootPath = path.join( __dirname, 'config.json' );
@@ -292,7 +295,7 @@ function createWindow() {
     mainWindow.webContents.once( 'dom-ready', () => {
         sendTick();
         checkForUpdates();
-        setInterval( () => {
+        updateCheckTimer = setInterval( () => {
             checkForUpdates();
         }, updateCheckInterval );
 
@@ -811,9 +814,10 @@ autoUpdater.on( 'update-downloaded', () => {
 
     }
 
-    if ( updateCheckInterval > 0 ) {
+    if ( updateCheckTimer ) {
         // Once an update is loaded, stop checking for updates.
-        clearInterval( updateCheckInterval );
+        clearInterval( updateCheckTimer );
+        updateCheckTimer = undefined;
     }
 } );
 
