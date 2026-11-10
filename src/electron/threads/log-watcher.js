@@ -2157,7 +2157,7 @@ function parseLogEntries( raw, simulating, padTime ) {
                         // duration is greater than the reset delay specified by the 
                         // user.
                         let timeSinceLastUpdate = Math.abs( ( new Date() ) - counters[ key ].lastUpdate ) / 1000;
-                        if ( timeSinceLastUpdate >= counters[ key ].resetDelay ) {
+                        if ( counters[ key ].resetDelay > 0 && timeSinceLastUpdate >= counters[ key ].resetDelay ) {
                             counters[ key ].value = 0;
                             counterChanged( key );
                             // If the timer is reset, no need to check the reset 
