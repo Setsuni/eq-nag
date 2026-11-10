@@ -124,7 +124,8 @@ autoUpdater.logger = log;
 var nagProcessId = undefined;
 const allowMultipleInstances = false;
 const fs = await import( 'fs' );
-var doUpdateCheck = true;
+// Portable and test builds ship without app-update.yml, so the updater has nothing to check against.
+var doUpdateCheck = !process.env.PORTABLE_EXECUTABLE_DIR && fs.existsSync( path.join( process.resourcesPath, 'app-update.yml' ) );
 
 
 const configRootPath = path.join( __dirname, 'config.json' );
