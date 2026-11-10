@@ -572,9 +572,9 @@ function parseMatchesToLiteral( value, matches, deltaTime ) {
             let key = namedResults[ m ][ 1 ];
 
             if ( key === 'deltaTime' ) {
-                value = value.replace( RegExp( `\\\${${key}}`, 'g' ), deltaTime );
+                value = value.replace( RegExp( `\\\${${getEscapedString( key )}}`, 'g' ), () => deltaTime );
             } else if ( matches.groups[ key ] != null ) {
-                value = value.replace( RegExp( `\\\${${key}}`, 'g' ), matches.groups[ key ] );
+                value = value.replace( RegExp( `\\\${${getEscapedString( key )}}`, 'g' ), () => matches.groups[ key ] );
             }
         }
     }
@@ -602,9 +602,9 @@ function parseMatchesToLiteral( value, matches, deltaTime ) {
             let index = +indexedResults[ i ][ indexedResults[ i ].length - 1 ];
             if ( matches[ index ] != null ) {
                 if ( indexedResults[ i ][ 1 ] === '$' || indexedResults[ i ][ 1 ] === '#' ) {
-                    value = value.replace( RegExp( `(#|\\$)\\{${index}\\}`, 'g' ), matches[ index ] );
+                    value = value.replace( RegExp( `(#|\\$)\\{${index}\\}`, 'g' ), () => matches[ index ] );
                 } else {
-                    value = value.replace( RegExp( `\\{${index}\\}`, 'g' ), matches[ index ] );
+                    value = value.replace( RegExp( `\\{${index}\\}`, 'g' ), () => matches[ index ] );
                 }
             }
         }
