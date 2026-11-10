@@ -253,10 +253,10 @@ class FileMonitor {
      * @param {(value: any) => void} resolve The function to call when the operation is complete.
      * @param {(reason: any) => void} reject The function to call when the operation fails.
      * @param {number} position The position to start reading from.
-     * @param {string} danglyBits Any dangling bits from the previous read.
+     * @param {Buffer} danglyBits Any dangling bytes from the previous read.
      * @param {number} bytesRead The number of bytes read so far.
      */
-    async #doBackfind( onChunkRead, resolve, reject, position = null, danglyBits = '', bytesRead = 0 ) {
+    async #doBackfind( onChunkRead, resolve, reject, position = null, danglyBits = Buffer.alloc( 0 ), bytesRead = 0 ) {
         
         /** @type {fs.promises.FileHandle} */
         let file;
@@ -279,13 +279,22 @@ class FileMonitor {
 
                 let data = await file.read( Buffer.alloc( myChunkSize ), 0, myChunkSize, start );
                 bytesRead += data.bytesRead;
-                let read = data.buffer.toString( 'utf-8', 0, data.bytesRead );
-                let lines = read.split( /\r\n|\r|\n/gmi );
+                const chunk = data.buffer.subarray( 0, data.bytesRead );
+                const firstBreak = chunk.findIndex( c => c === 0x0A || c === 0x0D );
+                let lines = [];
 
-                if ( position < stats.size ) {
-                    lines[ lines.length - 1 ] += danglyBits;
+                // The dangling partial line is kept as bytes, so a multibyte character split across chunks is decoded whole.
+                if ( firstBreak < 0 ) {
+                    danglyBits = Buffer.concat( [ chunk, danglyBits ] );
+                } else {
+                    let body = chunk.subarray( firstBreak );
+                    if ( position < stats.size ) {
+                        body = Buffer.concat( [ body, danglyBits ] );
+                    }
+                    lines = body.toString( 'utf-8' ).split( /\r\n|\r|\n/gmi );
+                    lines.shift();
+                    danglyBits = Buffer.from( chunk.subarray( 0, firstBreak ) );
                 }
-                danglyBits = lines.shift() ?? '';
 
                 let moreToRead = onChunkRead( lines );
 
