@@ -6,6 +6,8 @@ const ThreadUtilities = require( './threading' );
 const { nagLog } = require( './nag-console' );
 const fsp = fs.promises;
 const chunkSize = 1024 * 1024 * 384; // Max chunk possible is 512MB, but we'll use 384MB to be safe.
+const backfindChunkSize = 1024 * 1024 * 16;
+const maxBackfindBytes = 1024 * 1024 * 50; // Backfind never searches further back than this.
 const maxReadErrors = 5;
 // Set a maximum read size of 5500 lines.
 const lineReadLengthLimit = 22000;
@@ -251,10 +253,10 @@ class FileMonitor {
      * @param {(value: any) => void} resolve The function to call when the operation is complete.
      * @param {(reason: any) => void} reject The function to call when the operation fails.
      * @param {number} position The position to start reading from.
-     * @param {string} danglyBits Any dangling bits from the previous read.
+     * @param {Buffer} danglyBits Any dangling bytes from the previous read.
      * @param {number} bytesRead The number of bytes read so far.
      */
-    async #doBackfind( onChunkRead, resolve, reject, position = null, danglyBits = '', bytesRead = 0 ) {
+    async #doBackfind( onChunkRead, resolve, reject, position = null, danglyBits = Buffer.alloc( 0 ), bytesRead = 0 ) {
         
         /** @type {fs.promises.FileHandle} */
         let file;
@@ -266,7 +268,7 @@ class FileMonitor {
 
             const parse = async () => {
                 
-                let myChunkSize = stats.size < chunkSize ? stats.size : chunkSize;
+                let myChunkSize = stats.size < backfindChunkSize ? stats.size : backfindChunkSize;
                 position = ( position === null || position === undefined ) ? stats.size : position;
                 let start = stats.size - myChunkSize - bytesRead;
 
@@ -277,19 +279,28 @@ class FileMonitor {
 
                 let data = await file.read( Buffer.alloc( myChunkSize ), 0, myChunkSize, start );
                 bytesRead += data.bytesRead;
-                let read = data.buffer.toString( 'utf-8', 0, bytesRead );
-                let lines = read.split( /\r\n|\r|\n/gmi );
+                const chunk = data.buffer.subarray( 0, data.bytesRead );
+                const firstBreak = chunk.findIndex( c => c === 0x0A || c === 0x0D );
+                let lines = [];
 
-                if ( position < stats.size ) {
-                    lines[ lines.length - 1 ] += danglyBits;
+                // The dangling partial line is kept as bytes, so a multibyte character split across chunks is decoded whole.
+                if ( firstBreak < 0 ) {
+                    danglyBits = Buffer.concat( [ chunk, danglyBits ] );
+                } else {
+                    let body = chunk.subarray( firstBreak );
+                    if ( position < stats.size ) {
+                        body = Buffer.concat( [ body, danglyBits ] );
+                    }
+                    lines = body.toString( 'utf-8' ).split( /\r\n|\r|\n/gmi );
+                    lines.shift();
+                    danglyBits = Buffer.from( chunk.subarray( 0, firstBreak ) );
                 }
-                danglyBits = lines.shift() ?? '';
 
                 let moreToRead = onChunkRead( lines );
 
                 position -= data.bytesRead;
 
-                if ( moreToRead && position > 0 ) {
+                if ( moreToRead && position > 0 && bytesRead < maxBackfindBytes ) {
                     this.#readErrorCount = 0;
                     setTimeout( () => parse(), readDelayMs );
                 } else {
