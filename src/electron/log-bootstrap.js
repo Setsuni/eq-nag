@@ -114,6 +114,9 @@ class LogBootstrapper {
     /** @type {BrowserWindow} */
     #logBackupWindow = null;
 
+    /** @type {Set<string>} The files being archived by the open backup window. */
+    #archiveInFlight = new Set();
+
     /** @type {boolean} */
     #isDev = false;
 
@@ -583,6 +586,15 @@ class LogBootstrapper {
 
 
     /**
+     * Returns true if the given file is waiting for, or being processed by, an archive.
+     *
+     * @param {string} logFile The full path to the log file.
+     */
+    #isQueuedForArchive( logFile ) {
+        return this.#archiveInFlight.has( logFile ) || this.#filesForArchive.some( f => f.logFile === logFile );
+    }
+
+    /**
      * Queues rotated log files that a previous run left behind before they were archived.
      * Only files named exactly like a rotation of this character's log file are touched.
      * 
@@ -600,9 +612,11 @@ class LogBootstrapper {
             const names = await fsp.readdir( dir );
             for ( const name of names ) {
                 const fullPath = path.join( dir, name );
-                if ( isRotatedLogName( name, logFileName ) && !this.#filesForArchive.some( f => f.logFile === fullPath ) ) {
+                if ( isRotatedLogName( name, logFileName ) && !this.#isQueuedForArchive( fullPath ) ) {
                     const stats = await FsUtilities.statOrNull( fullPath );
-                    if ( stats?.isFile() ) {
+
+                    // Check again right before adding, another watcher may have queued it while waiting for the stats.
+                    if ( stats?.isFile() && !this.#isQueuedForArchive( fullPath ) ) {
                         log.info( `LogBootstrap > Queueing leftover rotated log for archive: ${fullPath}` );
                         this.#addToArchive( fullPath, stats.size );
                     }
@@ -650,7 +664,9 @@ class LogBootstrapper {
 
         if ( this.#logBackupWindow == null ) {
 
-            this.#logBackupWindow = startLogBackup( this.#filesForArchive.map( f => f.logFile ), this.#userPreferences.everquestInstallFolder, this.#isDev, null, this.#userPreferences.logMaintenanceHistory?.length ?? 0 );
+            const archiveFiles = this.#filesForArchive.map( f => f.logFile );
+            this.#logBackupWindow = startLogBackup( archiveFiles, this.#userPreferences.everquestInstallFolder, this.#isDev, null, this.#userPreferences.logMaintenanceHistory?.length ?? 0 );
+            archiveFiles.forEach( f => this.#archiveInFlight.add( f ) );
 
             // Reset the archive files.
             this.#filesForArchive = [];
@@ -658,6 +674,7 @@ class LogBootstrapper {
             this.#logBackupWindow.on( 'closed', () => {
                 this.#userPreferences.addLogMaintenanceHistory( new Date(), 'Backup by Size', true );
                 this.#logBackupWindow = null;
+                archiveFiles.forEach( f => this.#archiveInFlight.delete( f ) );
             } );
 
         } else if ( this.#filesForArchive?.length > 0 ) {
