@@ -10,7 +10,7 @@
     </div>
 
     <ng-container *ngIf="step === 0">
-        <h3>Which characters should Nag watch?</h3>
+        <h3 tabindex="-1">Which characters should Nag watch?</h3>
 
         <p class="loading" *ngIf="scanning"><mat-spinner diameter="28"></mat-spinner><span>Looking for your EverQuest logs.</span></p>
 
@@ -35,7 +35,7 @@
     </ng-container>
 
     <ng-container *ngIf="step === 1">
-        <h3>Where should alerts appear?</h3>
+        <h3 tabindex="-1">Where should alerts appear?</h3>
         <p class="hint">Drag the boxes onto the monitor you want. The game is behind them.</p>
 
         <div class="monitor" [style.width.px]="previewWidth" [style.height.px]="previewHeight">
@@ -59,7 +59,7 @@
     </ng-container>
 
     <ng-container *ngIf="step === 2">
-        <h3>See an alert</h3>
+        <h3 tabindex="-1">See an alert</h3>
         <p class="hint">Press Test. A timer and a text appear on your overlays for {{testSeconds}} seconds.</p>
 
         <div class="row">
@@ -69,7 +69,7 @@
     </ng-container>
 
     <ng-container *ngIf="step === 3">
-        <h3>Optional extras</h3>
+        <h3 tabindex="-1">Optional extras</h3>
         <p class="hint">Each one is a single switch. You can change them any time.</p>
 
         <div class="extra">

@@ -55,7 +55,15 @@ export interface SetupPreviewBox {
 export class SetupWizardComponent implements OnInit {
 
     public readonly stepLabels: string[] = [ 'Your characters', 'Place your overlays', 'Try it', 'Extras' ];
-    public step: number = 0;
+    private _step: number = 0;
+    public get step(): number {
+        return this._step;
+    }
+    public set step( value: number ) {
+        this._step = value;
+        // Keep keyboard and screen reader focus in the dialog when the step content is swapped.
+        window.setTimeout( () => this.elementRef.nativeElement.querySelector( 'h3' )?.focus() );
+    }
     public busy: boolean = false;
 
     public scanning: boolean = true;
@@ -109,7 +117,8 @@ export class SetupWizardComponent implements OnInit {
         @Inject( MAT_DIALOG_DATA ) public data: {},
         private ipcService: IpcService,
         private snackBar: MatSnackBar,
-        private ngZone: NgZone ) {
+        private ngZone: NgZone,
+        private elementRef: ElementRef<HTMLElement> ) {
         
     }
 
