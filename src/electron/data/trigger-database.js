@@ -2182,7 +2182,7 @@ class TriggerDatabaseStore extends Store {
     getTriggerFullName( triggerId ) {
         // let trigger = this.getTrigger( triggerId );
         let trigger = this.find( triggerId );
-        return trigger ? this.getFolderFullName( trigger.folderId, this.getFolders() ) + trigger.name : '';
+        return trigger ? ( this.getFolderFullName( trigger.folderId, this.getFolders() ) || '' ) + trigger.name : '';
     }
 
 
@@ -2205,7 +2205,7 @@ class TriggerDatabaseStore extends Store {
         for ( let i = 0; i < folders?.length; i++ ) {
 
             if ( folders[ i ].folderId === folderId ) {
-                return folders[ i ].name;
+                return `${folders[ i ].name} / `;
             } else {
                 let fullFolderIds = this._recGetFolderIds( folderId, folders[ i ].children );
                 if ( fullFolderIds ) {
