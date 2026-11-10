@@ -77,9 +77,16 @@
     <p>Which triggers cost the most time while Nag reads your log. Counts are always on. Timing is measured only while a measurement runs, so it costs nothing the rest of the time.</p>
 
     <div class="perf-actions">
-        <button mat-flat-button color="accent" *ngIf="!perf.measuring" (click)="startMeasuring()"><mat-icon>timer</mat-icon> Measure for 10 minutes</button>
-        <button mat-flat-button color="warn" *ngIf="perf.measuring" (click)="stopMeasuring()"><mat-icon>stop</mat-icon> Stop measuring</button>
-        <span class="perf-state" *ngIf="perf.measuring">Measuring {{elapsedLabel}} of {{durationLabel}}. Play as usual; the result shows here when it ends.</span>
+        <mat-form-field class="perf-character" appearance="outline" *ngIf="characters.length > 1">
+            <mat-label>Character</mat-label>
+            <mat-select [value]="characterId" (selectionChange)="selectCharacter($event.value)" [disabled]="perf.measuring">
+                <mat-option *ngFor="let c of characters" [value]="c.characterId">{{c.name}}{{c.watching ? '' : ' (not running)'}}</mat-option>
+            </mat-select>
+        </mat-form-field>
+        <button mat-flat-button color="accent" *ngIf="!perf.measuring" (click)="startMeasuring()" [disabled]="!canMeasure"><mat-icon>timer</mat-icon> Measure for 10 minutes</button>
+        <button mat-flat-button color="warn" *ngIf="perf.measuring" (click)="stopMeasuring()" [disabled]="finishing"><mat-icon>stop</mat-icon> {{finishing ? 'Finishing…' : 'Stop measuring'}}</button>
+        <span class="perf-state" *ngIf="perf.measuring && !finishing">Measuring {{elapsedLabel}} of {{durationLabel}}. Play as usual; the result shows here when it ends.</span>
+        <span class="perf-state" *ngIf="finishing">Finishing: collecting the result, one moment.</span>
         <span class="perf-state" *ngIf="!perf.measuring && perf.last">Last measurement: {{perf.last.startedAt | date:'MMM d, h:mm a'}} to {{perf.last.endedAt | date:'h:mm a'}} &middot; {{perf.last.lineCount | number}} lines &middot; {{msPerLine}} of trigger time per line</span>
         <span class="perf-state" *ngIf="!perf.measuring && !perf.last">No measurement yet. Press the button, play for a while, and the result appears here.</span>
     </div>

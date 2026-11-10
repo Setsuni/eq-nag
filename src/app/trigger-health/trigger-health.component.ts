@@ -1,7 +1,7 @@
 import { Component, NgZone, OnDestroy, OnInit } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { IpcService } from '../ipc.service';
-import { PerfReport, PerfRow, PerfState, TriggerPerfService } from './trigger-perf.service';
+import { PerfCharacter, PerfFinished, PerfReport, PerfRow, PerfState, TriggerPerfService } from './trigger-perf.service';
 import { HealthChangeResult, HealthFinding, HealthReport, HealthSeverity, TriggerHealthService } from './trigger-health.service';
 
 interface HealthRow {
@@ -40,6 +40,10 @@ export class TriggerHealthComponent implements OnInit, OnDestroy {
 
     public tab: 'findings' | 'perf' = 'findings';
     public perf: PerfState = { measuring: false, last: null };
+    public characters: PerfCharacter[] = [];
+    public characterId: string | undefined;
+    /** True from the Stop click until the report arrives. */
+    public finishing: boolean = false;
     public perfPage: number = 0;
     public readonly pageSize: number = 25;
     public plainWords: PlainWord[] = [];
@@ -72,6 +76,11 @@ export class TriggerHealthComponent implements OnInit, OnDestroy {
         return this.advanced && this.tab === 'perf';
     }
 
+    /** False when the chosen character has a stored result but no running log watcher. */
+    public get canMeasure(): boolean {
+        return this.characters.find( c => c.characterId === this.characterId )?.watching !== false;
+    }
+
     public get pageCount(): number {
         return Math.max( 1, Math.ceil( ( this.perf.last?.rows.length ?? 0 ) / this.pageSize ) );
     }
@@ -94,7 +103,13 @@ export class TriggerHealthComponent implements OnInit, OnDestroy {
             }
         } );
 
-        this.perfService.finished$.subscribe( () => this.refreshPerf() );
+        this.perfService.finished$.subscribe( ( event: PerfFinished ) => {
+            this.finishing = false;
+            if ( !event.saved && event.characterId === this.characterId ) {
+                this.snackBar.open( 'Nothing was read from the log during the measurement, so the previous result is kept.', 'Close', { duration: 6000 } );
+            }
+            this.refreshPerf();
+        } );
         this.refreshPerf();
     }
 
@@ -113,19 +128,36 @@ export class TriggerHealthComponent implements OnInit, OnDestroy {
      * Starts a ten minute trigger measurement.
      */
     public async startMeasuring(): Promise<void> {
-        const result = await this.perfService.start();
+        const result = await this.perfService.start( this.characterId );
         if ( result?.started ) {
             await this.refreshPerf();
         } else {
-            this.snackBar.open( 'No character is being watched right now. Start EverQuest logging for a character first.', 'Close', { duration: 6000 } );
+            this.snackBar.open( 'This character is not being watched right now. Start EverQuest logging for it first.', 'Close', { duration: 6000 } );
         }
+    }
+
+    /**
+     * Shows the measurement of another character.
+     */
+    public selectCharacter( characterId: string ): void {
+        this.characterId = characterId;
+        this.perfPage = 0;
+        this.refreshPerf();
     }
 
     /**
      * Ends the measurement early; the result arrives a moment later.
      */
     public stopMeasuring(): void {
-        this.perfService.stop();
+        this.finishing = true;
+        this.perfService.stop( this.characterId );
+        // The log watcher always answers; this only guards against one that closed in the meantime.
+        setTimeout( () => this.ngZone.run( () => {
+            if ( this.finishing ) {
+                this.finishing = false;
+                this.refreshPerf();
+            }
+        } ), 15000 );
     }
 
     public openTrigger( triggerId: string ): void {
@@ -136,11 +168,15 @@ export class TriggerHealthComponent implements OnInit, OnDestroy {
         return row.triggerId;
     }
 
+    /** Formats a time with the same units everywhere: microseconds below a millisecond. */
     public formatMs( ms: number ): string {
-        if ( !ms ) {
-            return '–';
+        if ( !( ms > 0 ) ) {
+            return '0 µs';
         }
-        return `${ms >= 10 ? ms.toFixed( 0 ) : ms >= 1 ? ms.toFixed( 1 ) : ms >= 0.01 ? ms.toFixed( 2 ) : ms.toFixed( 3 )} ms`;
+        if ( ms < 1 ) {
+            return `${Math.max( 1, Math.round( ms * 1000 ) )} µs`;
+        }
+        return `${ms >= 10 ? ms.toFixed( 0 ) : ms.toFixed( 1 )} ms`;
     }
 
     public formatShare( percent: number ): string {
@@ -151,9 +187,11 @@ export class TriggerHealthComponent implements OnInit, OnDestroy {
      * Reads the measurement state and the last report.
      */
     private async refreshPerf(): Promise<void> {
-        const state = await this.perfService.get();
+        const [ state, characters ] = await Promise.all( [ this.perfService.get( this.characterId ), this.perfService.characters() ] );
         this.ngZone.run( () => {
             this.perf = state ?? { measuring: false, last: null };
+            this.characters = characters ?? [];
+            this.characterId = this.perf.characterId ?? this.characterId;
             this.setPerfReport( this.perf.last );
             if ( this.perf.measuring ) {
                 this.startPerfTimer();

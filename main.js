@@ -906,23 +906,6 @@ ipcMain.on( 'console:command',
                 } else {
                     event.sender.send( 'console:success', { label: 'Text Ping', message: `Ping received: ${commands.slice( 1 ).join( ' ' )}`, timestamp: new Date() } );
                 }
-            } else if ( commands[ 0 ] === 'trigger-perf' ) {
-                // Temporary text view of the trigger performance data until the health check page exists.
-                const reply = ( label, message, payload ) => event.sender.send( 'console:success', { label: label, message: message, timestamp: new Date(), payload: payload } );
-                if ( commands[ 1 ] === 'start' ) {
-                    reply( 'Trigger Performance', logBootstrap.startTriggerPerf( commands[ 2 ] ).started ? 'Measuring triggers for 10 minutes.' : 'No log watcher is running.' );
-                } else if ( commands[ 1 ] === 'stop' ) {
-                    logBootstrap.stopTriggerPerf( commands[ 2 ] );
-                    reply( 'Trigger Performance', 'Stopping the measurement.' );
-                } else if ( commands[ 1 ] === 'counters' ) {
-                    const counters = await logBootstrap.getTriggerCounters( commands[ 2 ] );
-                    const top = Object.values( counters ?? {} ).sort( ( a, b ) => b.checked - a.checked ).slice( 0, 10 );
-                    reply( 'Trigger Counters', top.map( c => `${c.name}: checked ${c.checked}, fired ${c.fired}` ).join( '\n' ) || 'No data.' );
-                } else {
-                    const state = logBootstrap.getTriggerPerf( commands[ 2 ] );
-                    const top = ( state.last?.rows ?? [] ).slice( 0, 10 ).map( r => `${r.sharePercent.toFixed( 1 )}% ${r.name}: checked ${r.checked}, fired ${r.fired}, max ${r.maxMs.toFixed( 2 )} ms${r.hints.length > 0 ? ' [' + r.hints.map( h => h.code ).join( ', ' ) + ']' : ''}` );
-                    reply( 'Trigger Performance', ( state.measuring ? 'Measuring until ' + new Date( state.endsAt ).toLocaleTimeString() + '.\n' : '' ) + ( top.join( '\n' ) || 'No finished measurement.' ), state.last );
-                }
             } else if ( commands[ 0 ] === 'chat' ) {
                 if ( commands[ 1 ] === 'create' ) {
                     logBootstrap.sendToCombatWatcher( 'chat-room:start-chat-room', null );
