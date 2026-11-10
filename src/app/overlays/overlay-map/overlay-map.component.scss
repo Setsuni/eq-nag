@@ -1,5 +1,5 @@
 .map-wrap {
-    margin-bottom: 20px;
+    margin: 20px 0;
 }
 
 .map-area {
@@ -20,9 +20,11 @@
 
     .monitor-label {
         position: absolute;
-        left: 6px;
-        top: 4px;
+        left: 0;
+        top: -17px;
         font-size: 12px;
+        line-height: 14px;
+        white-space: nowrap;
         color: #ffffffa8;
     }
 }

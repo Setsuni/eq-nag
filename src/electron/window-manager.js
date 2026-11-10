@@ -483,7 +483,7 @@ class WindowManager {
                 modal: false,
                 show: false,
                 width: 520,
-                height: 340,
+                height: 390,
                 frame: false,
                 resizable: false,
                 movable: true,

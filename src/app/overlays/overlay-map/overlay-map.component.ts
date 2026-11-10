@@ -168,6 +168,12 @@ export class OverlayMapComponent implements OnInit {
         this.overlayMoved.emit( { overlayId: box.overlay.overlayId, displayId: target.id, x: x, y: y } );
     }
 
+    public onPointerCancel(): void {
+        this.dragStart = null;
+        this.dragId = null;
+        this.dragOffset = { x: 0, y: 0 };
+    }
+
     private dragOffsetFor( box: MapBox ): { x: number, y: number } {
         return this.dragId === box.overlay.overlayId ? this.dragOffset : { x: 0, y: 0 };
     }

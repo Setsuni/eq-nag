@@ -56,17 +56,22 @@ export class OverlayEditorDialogComponent implements OnInit {
     public showColoredBackground: boolean = false;
     private _baseline: string = null;
     
+    /** The weights offered for the current font; a font Nag does not list uses the Roboto weights. */
+    public get fontWeights(): number[] {
+        return availableFonts[ this.model?.fontFamily ] ?? availableFonts[ 'Roboto' ];
+    }
+
+    public get isListedFont(): boolean {
+        return availableFonts[ this.model?.fontFamily ] != null;
+    }
+
     public get maxFontWeightIndex(): number {
-        if ( availableFonts[ this.model?.fontFamily ] != null ) {
-            return availableFonts[ this.model.fontFamily ].length - 1;
-        } else {
-            return 1;
-        }
+        return this.fontWeights.length - 1;
     }
 
     public get fontWeight(): string {
-        if ( this.fontWeightIndex >= 0 && availableFonts[ this.model.fontFamily ] != null ) {
-            return `${availableFonts[ this.model.fontFamily ][ this.fontWeightIndex ]}`;
+        if ( this.fontWeightIndex >= 0 ) {
+            return `${this.fontWeights[ this.fontWeightIndex ]}`;
         } else {
             return null;
         }
@@ -191,7 +196,7 @@ export class OverlayEditorDialogComponent implements OnInit {
                 this.ipcService.getOverlayWindow( this.overlayId ).subscribe( overlay => {
                     
                     this.ipcService.enableOverlayEditMode( this.overlayId );
-                    this._noChangesModel = Object.assign( new OverlayWindowModel(), overlay );
+                    this._noChangesModel = JSON.parse( JSON.stringify( overlay ) );
                     this.model = overlay;
                     this.enterDescription = this.model.description?.length > 0;
 
@@ -204,11 +209,13 @@ export class OverlayEditorDialogComponent implements OnInit {
                     this.model.fontTransparency = this.model.fontTransparency ?? 1;
                     this.model.backgroundTransparency = this.model.backgroundTransparency ?? 0;
                     this.model.borderTransparency = this.model.borderTransparency ?? 0;
-                    this.model.fontFamily = availableFonts[ this.model.fontFamily ] ? this.model.fontFamily : 'Roboto';
+                    this.model.fontFamily = this.model.fontFamily ? this.model.fontFamily : 'Roboto';
+                    this.model.textBorderIntensity = this.model.textBorderIntensity ?? 1;
+                    this.model.textGlowIntensity = this.model.textGlowIntensity ?? 1;
                     this.model.fontSize = this.model.fontSize > 0 ? this.model.fontSize : 14;
                     this.model.lineHeight = this.model.lineHeight > 0 ? this.model.lineHeight : 90;
                     this.model.fontWeight = this.model.fontWeight > 100 ? this.model.fontWeight : 400;
-                    this.fontWeightIndex = Math.max( 0, availableFonts[ this.model.fontFamily ].indexOf( this.model.fontWeight ) );
+                    this.fontWeightIndex = Math.max( 0, this.fontWeights.indexOf( this.model.fontWeight ) );
                     this.fontTransparency = Math.round( this.model.fontTransparency * 100 );
                     this.backgroundTransparency = Math.round( this.model.backgroundTransparency * 100 );
                     this.borderTransparency = Math.round( this.model.borderTransparency * 100 );
@@ -216,7 +223,7 @@ export class OverlayEditorDialogComponent implements OnInit {
                     this.textGlowColor = ColorUtility.FromHex( this.model.textGlowColor ).toHexString( 1 );
                     this.textBorderIntensity = ColorUtility.FromHex( this.model.textBorderColor ).a * 100;
                     this.textGlowIntensity = ColorUtility.FromHex( this.model.textGlowColor ).a * 100;
-                    this.dotGroupHeaderWeightIndex = Math.max( 0, availableFonts[ this.model.fontFamily ].indexOf( this.model.groupHeaderWeight ) );
+                    this.dotGroupHeaderWeightIndex = Math.max( 0, this.fontWeights.indexOf( this.model.groupHeaderWeight ) );
                     window.setTimeout( () => this._baseline = JSON.stringify( this.model ) );
                 } );
 
@@ -249,7 +256,7 @@ export class OverlayEditorDialogComponent implements OnInit {
      * Sets the font family and broadcasts the model.
      */
     public onChangeFontFamily(): void {
-        let fi: number = availableFonts[ this.model.fontFamily ].indexOf( this.model.fontWeight );
+        let fi: number = this.fontWeights.indexOf( this.model.fontWeight );
         this.fontWeightIndex = -1;
         this.dotGroupHeaderWeightIndex = -1;
 
@@ -259,8 +266,8 @@ export class OverlayEditorDialogComponent implements OnInit {
         } else {
 
             for ( let i = 100; i < 500; i += 100 ) {
-                let lfi: number = availableFonts[ this.model.fontFamily ].indexOf( this.model.fontWeight - i );
-                let ufi: number = availableFonts[ this.model.fontFamily ].indexOf( this.model.fontWeight + i );
+                let lfi: number = this.fontWeights.indexOf( this.model.fontWeight - i );
+                let ufi: number = this.fontWeights.indexOf( this.model.fontWeight + i );
                 if ( lfi > -1 ) {
                     this.fontWeightIndex = lfi;
                     this.dotGroupHeaderWeightIndex = lfi;
@@ -395,8 +402,8 @@ export class OverlayEditorDialogComponent implements OnInit {
      * Broadcasts the model to the overlay.
      */
     public broadcastModel(): void {
-        this.model.fontWeight = availableFonts[ this.model.fontFamily ][ this.fontWeightIndex ];
-        this.model.groupHeaderWeight = availableFonts[ this.model.fontFamily ][ this.dotGroupHeaderWeightIndex ];
+        this.model.fontWeight = this.fontWeights[ this.fontWeightIndex ];
+        this.model.groupHeaderWeight = this.fontWeights[ this.dotGroupHeaderWeightIndex ];
         this.model.textBorderColor = ColorUtility.FromHex( this.textBorderColor ).toHexString( this.model.textBorderIntensity );
         this.model.textGlowColor = ColorUtility.FromHex( this.textGlowColor ).toHexString( this.model.textGlowIntensity );
         this.ipcService.broadcastOverlayModel( this.model );

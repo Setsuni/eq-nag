@@ -68,6 +68,7 @@
                     <mat-form-field floatLabel="always">
                         <mat-label>Font</mat-label>
                         <mat-select class="font-ddl" [(ngModel)]="model.fontFamily" name="ddlFontFamily" disableOptionCentering (selectionChange)="onChangeFontFamily()" style="max-width: unset;">
+                            <mat-option class="font-option" *ngIf="!isListedFont" [value]="model.fontFamily" [style.font-family]="model.fontFamily" style="font-size: 16px;"><small>{{model.fontFamily}} (not in list)</small></mat-option>
                             <mat-option class="font-option" value="Roboto" style="font-family: Roboto, sans-serif; font-size: 16px;"><small>Roboto</small></mat-option>
                             <mat-option class="font-option" value="Red Rose" style="font-family: 'Red Rose', sans-serif; font-size: 16px;"><small>Red Rose</small></mat-option>
                             <mat-option class="font-option" value="Oswald" style="font-family: Oswald, sans-serif; font-size: 16px;"><small>Oswald</small></mat-option>

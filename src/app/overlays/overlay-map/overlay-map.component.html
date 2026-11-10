@@ -17,7 +17,7 @@
             (pointerdown)="onPointerDown( $event, box )"
             (pointermove)="onPointerMove( $event )"
             (pointerup)="onPointerUp( $event, box )"
-            (pointercancel)="onPointerUp( $event, box )">
+            (pointercancel)="onPointerCancel()">
             <span class="box-label">{{box.overlay.name}}</span>
         </div>
     </div>
