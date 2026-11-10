@@ -6,7 +6,7 @@ div.tab-content {
     position: fixed;
     left: 0;
     right: 0;
-    bottom: 0;
+    bottom: var(--nag-console-height, 24px);
     top: 176px;
     padding: 27px 13px 20px 13px;
 
