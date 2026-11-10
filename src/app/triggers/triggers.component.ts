@@ -90,6 +90,28 @@ export class TriggersComponent implements OnInit {
         this._tableDataSource = new TableVirtualScrollDataSource( this._filteredRecords.slice( 0, this._indexRecords ) );
 
         this.dataSourceTest.next( this._filteredRecords.slice( 0, this._indexRecords ) );
+        setTimeout( () => this.loadMoreRows(), 50 );
+    }
+
+    /**
+     * Renders more rows while the list is scrolled near its end, or is too short to scroll.
+     */
+    private loadMoreRows(): void {
+        if ( this._indexRecords >= this._maxRecords || !this.triggersTable ) {
+            return;
+        }
+
+        let table = ( this.triggersTable as any )._elementRef as ElementRef<HTMLTableElement>;
+        let viewport = this.triggerScroller.elementRef.nativeElement;
+        if ( viewport.offsetParent === null || table.nativeElement.clientHeight - viewport.scrollTop - viewport.clientHeight > 300 ) {
+            return;
+        }
+
+        this._indexRecords = Math.min( this._indexRecords + 20, this._maxRecords );
+        this._tableDataSource = new TableVirtualScrollDataSource( this._filteredRecords.slice( 0, this._indexRecords ) );
+        this.dataSourceTest.next( this._filteredRecords.slice( 0, this._indexRecords ) );
+        this.triggersTable.renderRows();
+        setTimeout( () => this.loadMoreRows(), 50 );
     }
 
     private _tableDataSource: TableVirtualScrollDataSource<TriggerModel> = new TableVirtualScrollDataSource<TriggerModel>([]);
@@ -118,6 +140,7 @@ export class TriggersComponent implements OnInit {
     private folderFindings: Record<string, HealthFinding[]> = {};
     private summaryCache = new WeakMap<TriggerModel, TriggerSummary>();
     private folderPathCache: Record<string, string> = {};
+    private findingsTimeoutId: number | undefined;
 
     @Output() public openHealth: EventEmitter<void> = new EventEmitter<void>();
     
@@ -140,22 +163,7 @@ export class TriggersComponent implements OnInit {
     ngOnInit() {
 
         this.triggerScroller.elementScrolled().subscribe( e => {
-            this.ngZone.run( () => {
-                
-                let elRef = ( this.triggersTable as any )._elementRef as ElementRef<HTMLTableElement>;
-                let remainingScroll = elRef.nativeElement.clientHeight - this.triggerScroller.elementRef.nativeElement.scrollTop - this.triggerScroller.elementRef.nativeElement.clientHeight;
-                if ( remainingScroll <= 0 ) {
-                
-                    this._indexRecords += 10;
-                    this._indexRecords = this._indexRecords > this._maxRecords ? this._maxRecords : this._indexRecords;
-                
-                    this._tableDataSource = new TableVirtualScrollDataSource( this._filteredRecords.slice( 0, this._indexRecords ) );
-                    this.dataSourceTest.next( this._filteredRecords.slice( 0, this._indexRecords ) );
-                
-                    this.triggersTable.renderRows();
-
-                }
-            } );
+            this.ngZone.run( () => this.loadMoreRows() );
         } );
 
         this.ipcService.tickReceived().subscribe( tick => {
@@ -170,7 +178,10 @@ export class TriggersComponent implements OnInit {
             
         } );
 
-        this.healthService.summary$.subscribe( summary => this.healthCount = summary?.defaultCount ?? 0 );
+        this.healthService.summary$.subscribe( summary => {
+            this.healthCount = summary?.defaultCount ?? 0;
+            this.refreshFindings( summary?.checkedAt );
+        } );
         this.healthService.report$.subscribe( report => this.updateFindings( report?.findings ?? [] ) );
         this.ipcService.getDeathRecapPreferences().subscribe( recapPrefs => this.deathRecapPreferences = recapPrefs ?? null );
         this.ipcService.getAppIsDev().subscribe( isDev => this.isDev = isDev );
@@ -766,6 +777,8 @@ export class TriggersComponent implements OnInit {
 
         this.ipcService.updateTrigger( trigger ).subscribe( updated => {
             if ( !updated ) {
+                trigger.enabled = !trigger.enabled;
+                this.updateFolderCounts();
                 this.snackBar.open( 'Could not update trigger!', 'Dismiss', { duration: 5000 } );
             }
         } );
@@ -2000,7 +2013,15 @@ export class TriggersComponent implements OnInit {
             trigger.enabled = enabled;
         } );
         this.updateFolderCounts();
-        this.ipcService.updateTriggers( this.triggers ).subscribe( failed => this.processing = false );
+        this.ipcService.updateTriggers( this.triggers ).subscribe( failed => {
+            this.processing = false;
+            if ( failed?.length > 0 ) {
+                let failedIds = new Set( failed.map( f => f.triggerId ) );
+                triggers.filter( trigger => failedIds.has( trigger.triggerId ) ).forEach( trigger => trigger.enabled = !enabled );
+                this.updateFolderCounts();
+                this.snackBar.open( 'Could not update some triggers!', 'Dismiss', { duration: 5000 } );
+            }
+        } );
     }
 
 
@@ -2114,7 +2135,7 @@ export class TriggersComponent implements OnInit {
         this.triggers.forEach( trigger => {
             let counts = own[ trigger.folderId ] ??= { total: 0, enabled: 0 };
             counts.total++;
-            if ( trigger.enabled !== false ) {
+            if ( trigger.enabled ) {
                 counts.enabled++;
             }
         } );
@@ -2132,6 +2153,18 @@ export class TriggersComponent implements OnInit {
         };
         this.triggerFolders.forEach( folder => sum( folder ) );
         this.folderCounts = result;
+    }
+
+    /**
+     * Re-reads the health report shortly after the summary changed, so the row chips match the toolbar badge.
+     * 
+     * @param checkedAt The time of the check the latest summary came from.
+     */
+    private refreshFindings( checkedAt: string | undefined ): void {
+        clearTimeout( this.findingsTimeoutId );
+        if ( checkedAt && checkedAt !== this.healthService.report$.value?.summary.checkedAt ) {
+            this.findingsTimeoutId = window.setTimeout( () => this.healthService.check().subscribe(), 400 );
+        }
     }
 
     /**
@@ -2241,15 +2274,16 @@ export class TriggersComponent implements OnInit {
     }
 
     private buildTriggerSummary( trigger: TriggerModel ): TriggerSummary {
-        let phrases = ( trigger.capturePhrases ?? [] ).filter( phrase => phrase.phrase );
+        let phrases = ( trigger.capturePhrases ?? [] ).filter( phrase => phrase.phrase?.trim() );
         let whenKind: TriggerSummary[ 'whenKind' ] = 'none';
         let when = '';
         if ( phrases.length === 1 ) {
             whenKind = phrases[ 0 ].useRegEx ? 'pattern' : 'phrase';
-            when = phrases[ 0 ].phrase.length > 90 ? `${phrases[ 0 ].phrase.substring( 0, 90 )}…` : phrases[ 0 ].phrase;
+            let text = phrases[ 0 ].phrase.trim();
+            when = text.length > 90 ? `${text.substring( 0, 90 )}…` : text;
         } else if ( phrases.length > 1 ) {
             whenKind = 'many';
-            when = `any of ${phrases.length} phrases`;
+            when = trigger.captureMethod === 'Sequential' ? `these ${phrases.length} phrases, in order` : `any of ${phrases.length} phrases`;
         }
 
         let labels = ( trigger.actions ?? [] ).map( action => this.getActionLabel( action ) );
@@ -2258,6 +2292,9 @@ export class TriggersComponent implements OnInit {
         let zone = ( trigger.conditions ?? [] ).find( condition => condition.variableName === 'CurrentZone' && condition.variableValue && ( condition.operatorType === OperatorTypes.Equals || condition.operatorType === OperatorTypes.Contains ) );
         if ( zone ) {
             then += ` · only in ${zone.variableValue.split( '|' ).join( ' or ' )}`;
+        }
+        if ( ( trigger.conditions?.length ?? 0 ) > ( zone ? 1 : 0 ) ) {
+            then += ' · with conditions';
         }
 
         return { whenKind, when, then };
