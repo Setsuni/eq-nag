@@ -267,6 +267,18 @@ test( 'an unlinked action with one phrase can be linked', () => {
     assert.equal( only( run( [ t ] ), 'actionUnlinked' ).length, 0 );
 } );
 
+test( 'an unlinked action is named by its type, numbered only when the type repeats', () => {
+    const t = trigger( 'Soandso Names' );
+    t.actions[ 0 ].phrases = [];
+    t.actions.push( { actionId: 'n2', actionType: 3, phrases: [] } );
+    let reasons = only( run( [ t ] ), 'actionUnlinked' ).map( f => f.reason );
+    assert.ok( reasons.some( r => r.includes( '"Display Text action"' ) ) );
+    assert.ok( reasons.some( r => r.includes( '"Timer action"' ) ) );
+    t.actions.push( { actionId: 'n3', actionType: 3, phrases: [] } );
+    reasons = only( run( [ t ] ), 'actionUnlinked' ).map( f => f.reason );
+    assert.ok( reasons.some( r => r.includes( '"Timer action 2"' ) ) );
+} );
+
 test( 'an unlinked action with several phrases has no fix', () => {
     const t = trigger( 'Soandso Many', { capturePhrases: [ phrase( 'one' ), phrase( 'two' ) ] } );
     t.actions[ 0 ].phrases = [];
