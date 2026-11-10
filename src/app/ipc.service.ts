@@ -961,8 +961,18 @@ export class IpcService {
         } );
     }
 
-    public showCharacterLogFolder( characterId: string ): void {
-        window.api.ipc.send( 'character:show-log-folder', characterId );
+    public showCharacterLogFolder( characterId: string ): Observable<string> {
+        return new Observable<string>( ( observer: Observer<string> ) => {
+            window.api.ipc.invoke<string>( 'character:show-log-folder', characterId )
+                .then( result => this.ngZone.run( () => {
+                    observer.next( result );
+                    observer.complete();
+                } ) )
+                .catch( () => this.ngZone.run( () => {
+                    observer.next( 'folderMissing' );
+                    observer.complete();
+                } ) );
+        } );
     }
 
     public changeCombatCharacter( characterId: string ): void {

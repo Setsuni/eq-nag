@@ -45,6 +45,20 @@ div.tab-content {
     flex: 1 1 auto;
 }
 
+.dps-off-notice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 1em 16px;
+    padding: 6px 8px 6px 16px;
+    border-left: 3px solid #69f0ae;
+    background-color: #2b2b2b;
+
+    span:not(.spacer) {
+        opacity: 0.85;
+    }
+}
+
 .dps-layout {
     display: flex;
     flex-flow: row wrap;

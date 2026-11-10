@@ -1,7 +1,7 @@
 <mat-toolbar>
     <span>DPS meter</span>
     <span class="spacer"></span>
-    <mat-slide-toggle [(ngModel)]="meterOn" name="meterOn">Show the DPS meter</mat-slide-toggle>
+    <mat-slide-toggle [(ngModel)]="meterOn" name="meterOn" [disabled]="!settingsLoaded">Show the DPS meter</mat-slide-toggle>
     <mat-form-field class="toolbar-field">
         <mat-label>Combat character</mat-label>
         <mat-select [(ngModel)]="combatCharacterId" name="combatCharacterId" >
@@ -16,9 +16,10 @@
 </mat-toolbar>
 <div class="tab-content no-scroller">
 
-    <div class="empty-state" *ngIf="dpsMeterShow === false">
-        <h2>The DPS meter is off</h2>
-        <p>Turn it on to see damage and healing for your fights while you play.</p>
+    <div class="dps-off-notice" *ngIf="dpsMeterShow === false">
+        <mat-icon class="material-icons-outlined">info</mat-icon>
+        <span>The DPS meter is off. Turn it on to see damage and healing for your fights while you play.</span>
+        <span class="spacer"></span>
         <button mat-button color="accent" (click)="turnOnDpsMeter()">Turn on DPS meter</button>
     </div>
 
@@ -27,13 +28,13 @@
         <fieldset>
             <legend><span class="title">When the meter shows</span></legend>
 
-            <mat-checkbox [(ngModel)]="onlyInCombat" name="onlyInCombat">Only show during a fight</mat-checkbox>
-            <mat-checkbox [(ngModel)]="onlyWhenFocused" name="onlyWhenFocused">Only show when Nag or EverQuest is in front</mat-checkbox>
-            <mat-checkbox [(ngModel)]="highlightMyName" name="highlightMyName">Highlight my name</mat-checkbox>
+            <mat-checkbox [(ngModel)]="onlyInCombat" name="onlyInCombat" [disabled]="!settingsLoaded">Only show during a fight</mat-checkbox>
+            <mat-checkbox [(ngModel)]="onlyWhenFocused" name="onlyWhenFocused" [disabled]="!settingsLoaded">Only show when Nag or EverQuest is in front</mat-checkbox>
+            <mat-checkbox [(ngModel)]="highlightMyName" name="highlightMyName" [disabled]="!settingsLoaded">Highlight my name</mat-checkbox>
 
             <mat-form-field class="min-damage">
                 <mat-label>Ignore fights under this much damage</mat-label>
-                <input matInput type="number" min="0" [(ngModel)]="minimumDamage" name="minimumDamage" />
+                <input matInput type="number" min="0" [(ngModel)]="minimumDamage" name="minimumDamage" [disabled]="!settingsLoaded" />
                 <mat-hint>0 shows every fight.</mat-hint>
             </mat-form-field>
         </fieldset>

@@ -992,7 +992,11 @@ export class CharactersListComponent implements OnInit {
      * @param character The character to show the log folder for.
      */
     public openLogFolder( character: CharacterModel ): void {
-        this.ipcService.showCharacterLogFolder( character.characterId );
+        this.ipcService.showCharacterLogFolder( character.characterId ).subscribe( result => {
+            if ( result === 'folderMissing' ) {
+                this.snackBar.open( 'That folder no longer exists.', 'Dismiss', { duration: 4000 } );
+            }
+        } );
     }
 
 

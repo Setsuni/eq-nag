@@ -30,6 +30,7 @@ export class CombatStatisticsComponent implements OnInit {
 
     public dpsMeterShow: boolean | undefined = undefined;
     private dpsMeterSettings: DpsMeterSettings = new DpsMeterSettings();
+    public settingsLoaded: boolean = false;
 
     public readonly previewRows: IPreviewRow[] = [
         { name: 'Soandso', dps: 412, total: '18.9k', mine: true },
@@ -45,6 +46,9 @@ export class CombatStatisticsComponent implements OnInit {
         return this.dpsMeterSettings.encounterMinimumDamage;
     }
     public set minimumDamage( value: number ) {
+        if ( !this.settingsLoaded ) {
+            return;
+        }
         this.dpsMeterSettings.encounterMinimumDamage = Number( value ) || 0;
         this.ipcService.updateSetting( SettingsKeys.dpsMeterSettings, this.dpsMeterSettings, 500 );
     }
@@ -53,6 +57,9 @@ export class CombatStatisticsComponent implements OnInit {
         return !this.dpsMeterSettings.keepOnScreen;
     }
     public set onlyWhenFocused( value: boolean ) {
+        if ( !this.settingsLoaded ) {
+            return;
+        }
         this.dpsMeterSettings.keepOnScreen = !value;
         this.ipcService.updateSetting( SettingsKeys.dpsMeterSettings, this.dpsMeterSettings, 0 );
     }
@@ -61,6 +68,9 @@ export class CombatStatisticsComponent implements OnInit {
         return this.dpsMeterSettings.showOnlyInCombat;
     }
     public set onlyInCombat( value: boolean ) {
+        if ( !this.settingsLoaded ) {
+            return;
+        }
         this.dpsMeterSettings.showOnlyInCombat = value;
         this.ipcService.updateSetting( SettingsKeys.dpsMeterSettings, this.dpsMeterSettings, 0 );
     }
@@ -69,6 +79,9 @@ export class CombatStatisticsComponent implements OnInit {
         return this.dpsMeterSettings.highlightMyName;
     }
     public set highlightMyName( value: boolean ) {
+        if ( !this.settingsLoaded ) {
+            return;
+        }
         this.dpsMeterSettings.highlightMyName = value;
         this.ipcService.updateSetting( SettingsKeys.dpsMeterSettings, this.dpsMeterSettings, 0 );
     }
@@ -77,6 +90,9 @@ export class CombatStatisticsComponent implements OnInit {
         return this.dpsMeterShow !== false;
     }
     public set meterOn( value: boolean ) {
+        if ( !this.settingsLoaded ) {
+            return;
+        }
         this.dpsMeterSettings.show = value;
         this.dpsMeterShow = value;
         this.ipcService.updateSetting( SettingsKeys.dpsMeterSettings, this.dpsMeterSettings, 0 );
@@ -91,6 +107,7 @@ export class CombatStatisticsComponent implements OnInit {
         this.ipcService.watchSetting<DpsMeterSettings>( SettingsKeys.dpsMeterSettings ).subscribe( data => {
             this.dpsMeterSettings = Object.assign( new DpsMeterSettings(), data );
             this.dpsMeterShow = this.dpsMeterSettings.show;
+            this.settingsLoaded = true;
         } );
         this.ipcService.getCharacters().subscribe( characters => {
             this.characterOptions = characters?.length > 0 ? characters
@@ -135,6 +152,9 @@ export class CombatStatisticsComponent implements OnInit {
     }
 
     public turnOnDpsMeter(): void {
+        if ( !this.settingsLoaded ) {
+            return;
+        }
         this.dpsMeterSettings.show = true;
         this.dpsMeterShow = true;
         this.ipcService.updateSetting( SettingsKeys.dpsMeterSettings, this.dpsMeterSettings, 0 );
