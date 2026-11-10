@@ -559,15 +559,16 @@ function parseMatchesToLiteral( value, matches, deltaTime ) {
 
     // Everything is replaced in a single pass so that captured text is inserted literally and never expanded again.
     //
-    // \${(.[^}]*)}                  Your ${SpellBeingCast} spell is interrupted.
+    // \${([^{}$]+)}                 Your ${SpellBeingCast} spell is interrupted.
     //                                  Group 1.	SpellBeingCast
+    //                                  A name cannot contain { } or $, so unterminated text like ${ is ${2} still substitutes ${2}.
     //                                  A name of digits only is an indexed result, as in ${1}.
     //
     // (:?#|\$)?{([0-9]+?)}           This is a test #{1} so that testing can #{2}.
     //                                  Group 1.	#
     //                                  Group 2.	1
     //                                  Having alternate syntax including ${1} and {1}.
-    return value.replace( /\${(.[^}]*)}|(:?#|\$)?{([0-9]+?)}/g, ( full, name, prefix, digits ) => {
+    return value.replace( /\${([^{}$]+)}|(:?#|\$)?{([0-9]+?)}/g, ( full, name, prefix, digits ) => {
         // ex: matches.groups.player == 'Soandso'
         //  when given the phrase
         //      ${target} has been slain by ${player}!
