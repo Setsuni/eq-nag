@@ -6,6 +6,8 @@ const ThreadUtilities = require( './threading' );
 const { nagLog } = require( './nag-console' );
 const fsp = fs.promises;
 const chunkSize = 1024 * 1024 * 384; // Max chunk possible is 512MB, but we'll use 384MB to be safe.
+const backfindChunkSize = 1024 * 1024 * 16;
+const maxBackfindBytes = 1024 * 1024 * 50; // Backfind never searches further back than this.
 const maxReadErrors = 5;
 // Set a maximum read size of 5500 lines.
 const lineReadLengthLimit = 22000;
@@ -266,7 +268,7 @@ class FileMonitor {
 
             const parse = async () => {
                 
-                let myChunkSize = stats.size < chunkSize ? stats.size : chunkSize;
+                let myChunkSize = stats.size < backfindChunkSize ? stats.size : backfindChunkSize;
                 position = ( position === null || position === undefined ) ? stats.size : position;
                 let start = stats.size - myChunkSize - bytesRead;
 
@@ -277,7 +279,7 @@ class FileMonitor {
 
                 let data = await file.read( Buffer.alloc( myChunkSize ), 0, myChunkSize, start );
                 bytesRead += data.bytesRead;
-                let read = data.buffer.toString( 'utf-8', 0, bytesRead );
+                let read = data.buffer.toString( 'utf-8', 0, data.bytesRead );
                 let lines = read.split( /\r\n|\r|\n/gmi );
 
                 if ( position < stats.size ) {
@@ -289,7 +291,7 @@ class FileMonitor {
 
                 position -= data.bytesRead;
 
-                if ( moreToRead && position > 0 ) {
+                if ( moreToRead && position > 0 && bytesRead < maxBackfindBytes ) {
                     this.#readErrorCount = 0;
                     setTimeout( () => parse(), readDelayMs );
                 } else {
