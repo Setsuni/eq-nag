@@ -38,7 +38,7 @@
         <ng-container matColumnDef="assignCount">
             <th mat-header-cell *matHeaderCellDef style="padding-right: 15px; text-align: right;"> Use Count </th>
             <td mat-cell *matCellDef="let element; let i = index" style="padding-right: 15px; text-align: right;">
-                <ng-template [ngIf]="element.overlayId === damageDealtOverlayId || element.overlayId === this.damageTakenOverlayId" [ngIfElse]="normalOverlay">FCT</ng-template>
+                <ng-template [ngIf]="element.overlayId === damageDealtOverlayId || element.overlayId === this.damageTakenOverlayId" [ngIfElse]="normalOverlay">&ndash;</ng-template>
                 <ng-template #normalOverlay>{{overlayAssignCounts[element.overlayId] ?? 0}}</ng-template>
             </td>
         </ng-container>

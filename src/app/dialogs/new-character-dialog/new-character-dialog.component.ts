@@ -42,7 +42,9 @@ export class NewCharacterDialogComponent implements OnInit {
         } );
         this.ipcService.getEqInstallFolder().subscribe( folder => {
             this.eqFolder = folder;
-            this.populateCharacterOptions();
+            if ( this.eqFolder != null ) {
+                this.populateCharacterOptions();
+            }
 
             if (this.eqFolder == undefined) {
                 this.panel = 'missingInstallFolder';
