@@ -195,7 +195,14 @@ export class TriggersComponent implements OnInit {
     private requireFolderSelect( title?: string, description?: string ): Observable<void> {
         let obs = new Observable<void>( sub => {
             
-            if ( !this.selectedFolderId ) {
+            if ( !this.selectedFolderId && !( this.triggerFolders?.length > 0 ) ) {
+                this.dialogService.showConfirmationDialog( 'Triggers live in folders. Create a folder first.', null, null, null, 'narrow', null, { 'Yes': 'Create a folder', 'No': 'Cancel' } ).subscribe( confirmed => {
+                    if ( confirmed ) {
+                        this.addTriggerFolderDialog();
+                    }
+                    sub.complete();
+                } );
+            } else if ( !this.selectedFolderId ) {
                 this.dialogService.showSelectTriggerFolderDialog( null, title, description ).subscribe( folderId => {
                     if ( this.selectedFolderId !== folderId ) {
                         this.expandParents( folderId );

@@ -20,6 +20,12 @@
 </mat-toolbar>
 <div class="tab-content no-scroller">
 
+    <div class="empty-state" *ngIf="dpsMeterShow === false">
+        <h2>The DPS meter is off</h2>
+        <p>Turn it on to see damage and healing for your fights while you play.</p>
+        <button mat-button color="accent" (click)="turnOnDpsMeter()">Turn on DPS meter</button>
+    </div>
+
     <fieldset>
         <legend><span class="title">Log Synchronization</span></legend>
         <div class="fieldset-section">
