@@ -47,7 +47,7 @@ function sanitizeReport( report ) {
  * Checks the counters a log watcher sent and returns a clean copy of them.
  *
  * @param {any} counters The counters by trigger id.
- * @returns {Record<string, {name: string, checked: number, fired: number}>|null}
+ * @returns {Record<string, {name: string, fired: number}>|null}
  */
 function sanitizeCounters( counters ) {
     if ( !counters || typeof counters !== 'object' || Array.isArray( counters ) ) {
@@ -56,8 +56,8 @@ function sanitizeCounters( counters ) {
     const result = Object.create( null );
     for ( const id of Object.keys( counters ).slice( 0, maxRows ) ) {
         const c = counters[ id ];
-        if ( c && typeof c.name === 'string' && Number.isFinite( c.checked ) && Number.isFinite( c.fired ) ) {
-            result[ id.slice( 0, maxTextLength ) ] = { name: c.name.slice( 0, maxTextLength ), checked: c.checked, fired: c.fired };
+        if ( c && typeof c.name === 'string' && Number.isFinite( c.fired ) ) {
+            result[ id.slice( 0, maxTextLength ) ] = { name: c.name.slice( 0, maxTextLength ), fired: c.fired };
         }
     }
     return result;

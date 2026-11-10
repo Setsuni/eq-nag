@@ -218,7 +218,7 @@ class LogBootstrapper {
      * Asks a log watcher for its always-on trigger counters.
      *
      * @param {string|undefined} characterId The character id; the first running log watcher if omitted.
-     * @returns {Promise<Record<string, {name: string, checked: number, fired: number}>|null>}
+     * @returns {Promise<Record<string, {name: string, fired: number}>|null>} How often each trigger fired since the watcher started.
      */
     getTriggerCounters( characterId ) {
         const watcher = this.#findLogWatcher( characterId );
