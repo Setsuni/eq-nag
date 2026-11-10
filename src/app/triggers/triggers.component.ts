@@ -204,6 +204,10 @@ export class TriggersComponent implements OnInit {
                 } );
             } else if ( !this.selectedFolderId ) {
                 this.dialogService.showSelectTriggerFolderDialog( null, title, description ).subscribe( folderId => {
+                    if ( !folderId ) {
+                        sub.complete();
+                        return;
+                    }
                     if ( this.selectedFolderId !== folderId ) {
                         this.expandParents( folderId );
                         this.toggleSelectedFolder( folderId );
