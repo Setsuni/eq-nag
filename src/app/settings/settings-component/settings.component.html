@@ -222,9 +222,8 @@
                         <button mat-button (click)="speakPhrase(exampleSpeech, 1.75)"><mat-icon>play_circle_outline</mat-icon> Fast</button>
                         <button mat-button (click)="speakPhrase(exampleSpeech, 2.25)"><mat-icon>play_circle_outline</mat-icon> Very Fast</button>
                         <mat-form-field style="width: 100%">
-                            <mat-label></mat-label>
+                            <mat-label>Example speech</mat-label>
                             <input matInput type="text" [(ngModel)]="exampleSpeech" name="txtExampleSpeech" />
-                            <mat-hint>Example speech</mat-hint>
                         </mat-form-field>
                     </div>
                 </div>

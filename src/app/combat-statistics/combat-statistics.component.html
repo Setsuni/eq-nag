@@ -1,13 +1,13 @@
 <mat-toolbar>
     <span>Combat Statistics</span>
     <span class="spacer"></span>
-    <mat-form-field>
+    <mat-form-field class="toolbar-field">
         <mat-label>Combat character</mat-label>
         <mat-select [(ngModel)]="combatCharacterId" name="combatCharacterId" >
             <mat-select-trigger>
                 {{getCombatName()}}<small style="float: right; margin-right: 0.5em;">{{getCombatServer()}}</small>
             </mat-select-trigger>
-            <mat-option [value]="null">Auto</mat-option>
+            <mat-option value="auto">Auto</mat-option>
             <mat-option *ngFor="let option of characterOptions" [value]="option.characterId">{{option.name}}<small style="float: right;">{{option.server}}</small></mat-option>
         </mat-select>
     </mat-form-field>

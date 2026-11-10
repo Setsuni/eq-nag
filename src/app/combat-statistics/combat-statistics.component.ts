@@ -31,11 +31,11 @@ export class CombatStatisticsComponent implements OnInit, AfterViewChecked {
     public characterOptions: CharacterOptionModel[] = [];
     private _combatCharacterId: string | null = null;
     public get combatCharacterId(): string {
-        return this._combatCharacterId || '';
+        return this._combatCharacterId || 'auto';
     }
     public set combatCharacterId( value: string | null ) {
-        this._combatCharacterId = value;
-        this.ipcService.changeCombatCharacter( value );
+        this._combatCharacterId = value === 'auto' || !value ? null : value;
+        this.ipcService.changeCombatCharacter( this._combatCharacterId );
     }
 
     public connectedPeers: IConnectedPeer[] = [];

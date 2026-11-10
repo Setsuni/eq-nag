@@ -17,11 +17,10 @@
                 <ng-template [ngIf]="action.actionType == actionTypes.Countdown || action.actionType == actionTypes.DotTimer || action.actionType == actionTypes.Timer">
 
                     <mat-form-field *ngIf="action.overlayId == null">
-                        <mat-label>{{action.displayText}}</mat-label>
+                        <mat-label>{{action.displayText}} timer overlay</mat-label>
                         <mat-select [(ngModel)]="action.overlayId" name="ddlTimerOverlay_{{i}}">
                             <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                         </mat-select>
-                        <mat-hint>This is the timer overlay</mat-hint>
                     </mat-form-field>
 
                     <mat-form-field *ngIf="action.ifEndingSoon && action.endingSoonDisplayText && action.endingSoonTextOverlayId == null">
