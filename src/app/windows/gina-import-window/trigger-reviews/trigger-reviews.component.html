@@ -25,7 +25,7 @@
 
                     <div *ngFor="let trigger of triggers">
                         <mat-form-field style="width: 100%;">
-                            <mat-label></mat-label>
+                            <mat-label>Zone</mat-label>
                             <input matInput [(ngModel)]="trigger.zoneName" [formControl]="trigger.zoneNameInputControl" [matAutocomplete]="auto" />
                             <mat-autocomplete autoActiveFirstOption #auto="matAutocomplete">
                                 <mat-option *ngFor="let option of trigger.zoneNameFilteredOptions | async" [value]="option">
@@ -156,10 +156,10 @@
                                 
                                     <div class="field-list">
                                         <div class="field-line"><label>Capture Phrase</label><span>{{triggerDup.phrase}}</span></div>
-                                        <div class="field-line" *ngIf="action.actionType === actionTypes.DisplayText"><label>Display Text</label><span>{{action.displayText}}</span></div>
+                                        <div class="field-line" *ngIf="action.actionType === actionTypes.DisplayText"><label>Show text</label><span>{{action.displayText}}</span></div>
                                         <div class="field-line" *ngIf="action.actionType === actionTypes.Clipboard"><label>Clipboard Text</label><span>{{action.displayText}}</span></div>
                                         <div class="field-line" *ngIf="action.actionType === actionTypes.Speak"><label>Text to Speech</label><span>{{action.displayText}}</span><button mat-icon-button (click)="onSpeak.emit(action.displayText)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
-                                        <div class="field-line" *ngIf="action.actionType === actionTypes.PlayAudio"><label>Play Audio</label><span>{{getAudioFilename(action.audioFileId)}}</span><button mat-icon-button (click)="onPlayAudioFileId.emit(action.audioFileId)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
+                                        <div class="field-line" *ngIf="action.actionType === actionTypes.PlayAudio"><label>Play sound</label><span>{{getAudioFilename(action.audioFileId)}}</span><button mat-icon-button (click)="onPlayAudioFileId.emit(action.audioFileId)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
                                     </div>
 
                                 </fieldset>
@@ -190,9 +190,9 @@
 
                                     <div class="field-list">
                                         <div class="field-line" *ngIf="action.endingDuration > 0"><label>Notify when timer is ending</label><span>{{getDurationLabel(action.endingDuration)}}</span></div>
-                                        <div class="field-line" *ngIf="action.endingSoonDisplayText"><label>Display Text</label><span>{{action.endingSoonDisplayText}}</span></div>
+                                        <div class="field-line" *ngIf="action.endingSoonDisplayText"><label>Show text</label><span>{{action.endingSoonDisplayText}}</span></div>
                                         <div class="field-line" *ngIf="action.endingSoonSpeak"><label>Text to Speech</label><span>{{action.endingSoonSpeakPhrase}}</span><button mat-icon-button (click)="onSpeak.emit(action.endingSoonSpeakPhrase)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
-                                        <div class="field-line" *ngIf="action.endingPlayAudio"><label>Play Audio</label><span>{{getAudioFilename(action.endingPlayAudioFileId)}}</span><button mat-icon-button (click)="onPlayAudioFileId.emit(action.endingPlayAudioFileId)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
+                                        <div class="field-line" *ngIf="action.endingPlayAudio"><label>Play sound</label><span>{{getAudioFilename(action.endingPlayAudioFileId)}}</span><button mat-icon-button (click)="onPlayAudioFileId.emit(action.endingPlayAudioFileId)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
                                     </div>
 
                                 </fieldset>
@@ -202,9 +202,9 @@
 
                                     <div class="field-list">
                                         <div class="field-line" *ngIf="action.notifyWhenEnded"><label>Notify when timer ends</label><span>Yes</span></div>
-                                        <div class="field-line" *ngIf="action.endedDisplayText"><label>Display Text</label><span>{{action.endedDisplayText}}</span></div>
+                                        <div class="field-line" *ngIf="action.endedDisplayText"><label>Show text</label><span>{{action.endedDisplayText}}</span></div>
                                         <div class="field-line" *ngIf="action.endedSpeak"><label>Text to Speech</label><span>{{action.endedSpeakPhrase}}</span><button mat-icon-button (click)="onSpeak.emit(action.endedSpeakPhrase)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
-                                        <div class="field-line" *ngIf="action.endedPlayAudio"><label>Play Audio</label><span>{{getAudioFilename(action.endedPlayAudioFileId)}}</span><button mat-icon-button (click)="onPlayAudioFileId.emit(action.endedPlayAudioFileId)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
+                                        <div class="field-line" *ngIf="action.endedPlayAudio"><label>Play sound</label><span>{{getAudioFilename(action.endedPlayAudioFileId)}}</span><button mat-icon-button (click)="onPlayAudioFileId.emit(action.endedPlayAudioFileId)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
                                     </div>
 
                                 </fieldset>
@@ -233,10 +233,10 @@
                                     
                                         <div class="field-list">
                                             <div class="field-line"><label>Capture Phrase</label><span>{{action.phrase}}</span></div>
-                                            <div class="field-line" *ngIf="action.actionType === actionTypes.DisplayText"><label>Display Text</label><span>{{action.displayText}}</span></div>
+                                            <div class="field-line" *ngIf="action.actionType === actionTypes.DisplayText"><label>Show text</label><span>{{action.displayText}}</span></div>
                                             <div class="field-line" *ngIf="action.actionType === actionTypes.Clipboard"><label>Clipboard Text</label><span>{{action.displayText}}</span></div>
                                             <div class="field-line" *ngIf="action.actionType === actionTypes.Speak"><label>Text to Speech</label><span>{{action.displayText}}</span><button mat-icon-button (click)="onSpeak.emit(action.displayText)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
-                                            <div class="field-line" *ngIf="action.actionType === actionTypes.PlayAudio"><label>Play Audio</label><span>{{getAudioFilename(action.audioFileId)}}</span><button mat-icon-button (click)="onPlayAudioFileId.emit(action.audioFileId)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
+                                            <div class="field-line" *ngIf="action.actionType === actionTypes.PlayAudio"><label>Play sound</label><span>{{getAudioFilename(action.audioFileId)}}</span><button mat-icon-button (click)="onPlayAudioFileId.emit(action.audioFileId)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
                                         </div>
         
                                     </fieldset>
@@ -267,9 +267,9 @@
 
                                         <div class="field-list">
                                             <div class="field-line" *ngIf="action.endingDuration > 0"><label>Notify when timer is ending</label><span>{{getDurationLabel(action.endingDuration)}}</span></div>
-                                            <div class="field-line" *ngIf="action.endingSoonDisplayText"><label>Display Text</label><span>{{action.endingSoonDisplayText}}</span></div>
+                                            <div class="field-line" *ngIf="action.endingSoonDisplayText"><label>Show text</label><span>{{action.endingSoonDisplayText}}</span></div>
                                             <div class="field-line" *ngIf="action.endingSoonSpeak"><label>Text to Speech</label><span>{{action.endingSoonSpeakPhrase}}</span><button mat-icon-button (click)="onSpeak.emit(action.endingSoonSpeakPhrase)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
-                                            <div class="field-line" *ngIf="action.endingPlayAudio"><label>Play Audio</label><span>{{getAudioFilename(action.endingPlayAudioFileId)}}</span><button mat-icon-button (click)="onPlayAudioFileId.emit(action.endingPlayAudioFileId)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
+                                            <div class="field-line" *ngIf="action.endingPlayAudio"><label>Play sound</label><span>{{getAudioFilename(action.endingPlayAudioFileId)}}</span><button mat-icon-button (click)="onPlayAudioFileId.emit(action.endingPlayAudioFileId)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
                                         </div>
 
                                     </fieldset>
@@ -279,9 +279,9 @@
 
                                         <div class="field-list">
                                             <div class="field-line" *ngIf="action.notifyWhenEnded"><label>Notify when timer ends</label><span>Yes</span></div>
-                                            <div class="field-line" *ngIf="action.endedDisplayText"><label>Display Text</label><span>{{action.endedDisplayText}}</span></div>
+                                            <div class="field-line" *ngIf="action.endedDisplayText"><label>Show text</label><span>{{action.endedDisplayText}}</span></div>
                                             <div class="field-line" *ngIf="action.endedSpeak"><label>Text to Speech</label><span>{{action.endedSpeakPhrase}}</span><button mat-icon-button (click)="onSpeak.emit(action.endedSpeakPhrase)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
-                                            <div class="field-line" *ngIf="action.endedPlayAudio"><label>Play Audio</label><span>{{getAudioFilename(action.endedPlayAudioFileId)}}</span><button mat-icon-button (click)="onPlayAudioFileId.emit(action.endedPlayAudioFileId)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
+                                            <div class="field-line" *ngIf="action.endedPlayAudio"><label>Play sound</label><span>{{getAudioFilename(action.endedPlayAudioFileId)}}</span><button mat-icon-button (click)="onPlayAudioFileId.emit(action.endedPlayAudioFileId)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
                                         </div>
 
                                     </fieldset>
@@ -373,37 +373,33 @@
             <div *ngFor="let action of triggerReviewModel.nagTrigger?.actions;let i = index">
 
                 <mat-form-field *ngIf="action.actionType == actionTypes.DisplayText">
-                    <mat-label></mat-label>
+                    <mat-label>{{action.displayText}} text overlay</mat-label>
                     <mat-select [(ngModel)]="action.overlayId" name="ddlAlertOverlay_{{i}}">
                         <mat-option *ngFor="let option of alertOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                     </mat-select>
-                    <mat-hint>{{action.displayText}} text overlay.</mat-hint>
                 </mat-form-field>
 
                 <ng-template [ngIf]="action.actionType == actionTypes.Countdown || action.actionType == actionTypes.DotTimer || action.actionType == actionTypes.Timer">
 
                     <mat-form-field>
-                        <mat-label></mat-label>
+                        <mat-label>{{action.displayText}} timer overlay</mat-label>
                         <mat-select [(ngModel)]="action.overlayId" name="ddlTimerOverlay_{{i}}">
                             <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                         </mat-select>
-                        <mat-hint>{{action.displayText}} timer overlay.</mat-hint>
                     </mat-form-field>
 
                     <mat-form-field *ngIf="action.ifEndingSoon && action.endingSoonDisplayText">
-                        <mat-label></mat-label>
+                        <mat-label>{{action.displayText}} ending soon text overlay</mat-label>
                         <mat-select [(ngModel)]="action.endingSoonTextOverlayId" name="ddlEndingSoonOverlay_{{i}}">
                             <mat-option *ngFor="let option of alertOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                         </mat-select>
-                        <mat-hint>{{action.displayText}} ending soon text overlay.</mat-hint>
                     </mat-form-field>
 
                     <mat-form-field *ngIf="action.notifyWhenEnded && action.endedDisplayText">
-                        <mat-label></mat-label>
+                        <mat-label>{{action.displayText}} ended text overlay</mat-label>
                         <mat-select [(ngModel)]="action.endedTextOverlayId" name="ddlEndedOverlay_{{i}}">
                             <mat-option *ngFor="let option of alertOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                         </mat-select>
-                        <mat-hint>{{action.displayText}} ended text overlay.</mat-hint>
                     </mat-form-field>
 
                 </ng-template>

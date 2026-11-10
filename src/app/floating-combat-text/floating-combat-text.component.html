@@ -153,7 +153,7 @@
     
                                 <h4 class="header-glow">Overlay</h4>
                                 <mat-form-field style="width: calc(100% - 3px);" [ngClass]="{'input-error': group.overlayId == null}">
-                                    <mat-label></mat-label>
+                                    <mat-label>Overlay</mat-label>
                                     <mat-select [(ngModel)]="group.overlayId" name="overlayId_{{i}}">
                                         <mat-option *ngFor="let option of fctOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                                     </mat-select>
@@ -193,9 +193,8 @@
                                         </mat-slider>
 
                                         <mat-form-field style="width: 192px; margin-left: 15px; width: 100%;" *ngIf="group.thresholdType === 'value'">
-                                            <mat-label></mat-label>
+                                            <mat-label>Threshold value</mat-label>
                                             <input matInput class="no-spinner" [(ngModel)]="group.thresholdValue" name="thresholdValue_{{i}}" type="number" />
-                                            <mat-hint>Threshold value</mat-hint>
                                         </mat-form-field>
                                     </div>
                                 </div>
@@ -232,9 +231,8 @@
                                         </mat-slider>
                                         
                                         <mat-form-field style="width: 192px; margin-left: 15px; width: 100%;" *ngIf="group.thresholdType === 'value'">
-                                            <mat-label></mat-label>
+                                            <mat-label>Threshold value</mat-label>
                                             <input matInput class="no-spinner" [(ngModel)]="group.thresholdValue" name="thresholdValue_{{i}}" type="number" />
-                                            <mat-hint>Threshold value</mat-hint>
                                         </mat-form-field>
                                     </div>
                                 </div>

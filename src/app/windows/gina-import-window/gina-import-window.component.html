@@ -135,24 +135,21 @@
                                                 <legend>Trigger Info</legend>
                                             
                                                 <mat-form-field>
-                                                    <mat-label></mat-label>
+                                                    <mat-label>Trigger name</mat-label>
                                                     <input matInput [(ngModel)]="selectedTrigger.Name" name="txtTriggerName" [readOnly]="true" />
-                                                    <mat-hint>Trigger Name</mat-hint>
                                                 </mat-form-field>
                                                 
                                                 <mat-form-field>
-                                                    <mat-label></mat-label>
+                                                    <mat-label>Search text</mat-label>
                                                     <input matInput [(ngModel)]="selectedTrigger.TriggerText" name="txtTriggerText" [readOnly]="true" />
                                                     <mat-hint *ngIf="selectedTrigger.EnableRegex == 'True'">Uses regex</mat-hint>
-                                                    <mat-hint *ngIf="selectedTrigger.EnableRegex != 'True'">Search Text</mat-hint>
                                                 </mat-form-field>
 
                                                 <!-- <mat-checkbox [checked]="selectedTrigger.EnableRegex == 'True'" (click)="$event.preventDefault()">Use Regex</mat-checkbox> -->
 
                                                 <mat-form-field [style.marginTop]="(selectedTrigger.EnableRegex == 'True' ? '10px' : null)">
-                                                    <mat-label></mat-label>
+                                                    <mat-label>Comments</mat-label>
                                                     <textarea matInput [(ngModel)]="selectedTrigger.Comments" name="txtTriggerComments" style="height: 85px;" [readOnly]="true"></textarea>
-                                                    <mat-hint>Comments</mat-hint>
                                                 </mat-form-field>
                                             </fieldset>
 
@@ -160,10 +157,10 @@
                                                 <legend>Basic properties</legend>
                                             
                                                 <div class="field-list">
-                                                    <div class="field-line" *ngIf="selectedTrigger.UseText == 'True'"><label>Display Text</label><span>{{selectedTrigger.DisplayText}}</span></div>
+                                                    <div class="field-line" *ngIf="selectedTrigger.UseText == 'True'"><label>Show text</label><span>{{selectedTrigger.DisplayText}}</span></div>
                                                     <div class="field-line" *ngIf="selectedTrigger.CopyToClipboard == 'True'"><label>Clipboard Text</label><span>{{selectedTrigger.ClipboardText}}</span></div>
                                                     <div class="field-line" *ngIf="selectedTrigger.UseTextToVoice == 'True'"><label>Text to Speech</label><span>{{selectedTrigger.TextToVoiceText}}</span><button mat-icon-button (click)="speakPhrase(selectedTrigger.TextToVoiceText)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
-                                                    <div class="field-line" *ngIf="selectedTrigger.PlayMediaFile == 'True'"><label>Play Audio</label><span>{{selectedTrigger.MediaFileName}}</span><button mat-icon-button (click)="playAudioFile(selectedTrigger.MediaFileName)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
+                                                    <div class="field-line" *ngIf="selectedTrigger.PlayMediaFile == 'True'"><label>Play sound</label><span>{{selectedTrigger.MediaFileName}}</span><button mat-icon-button (click)="playAudioFile(selectedTrigger.MediaFileName)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
                                                 </div>
 
                                             </fieldset>
@@ -192,9 +189,9 @@
 
                                                 <div class="field-list">
                                                     <div class="field-line" *ngIf="selectedTrigger.UseTimerEnding == 'True'"><label>Notify when timer is ending</label><span>{{getDurationLabel(selectedTrigger.TimerEndingTime)}}</span></div>
-                                                    <div class="field-line" *ngIf="selectedTrigger.TimerEndingTrigger?.UseText == 'True'"><label>Display Text</label><span>{{selectedTrigger.TimerEndingTrigger.DisplayText}}</span></div>
+                                                    <div class="field-line" *ngIf="selectedTrigger.TimerEndingTrigger?.UseText == 'True'"><label>Show text</label><span>{{selectedTrigger.TimerEndingTrigger.DisplayText}}</span></div>
                                                     <div class="field-line" *ngIf="selectedTrigger.TimerEndingTrigger?.UseTextToVoice == 'True'"><label>Text to Speech</label><span>{{selectedTrigger.TimerEndingTrigger.TextToVoiceText}}</span><button mat-icon-button (click)="speakPhrase(selectedTrigger.TimerEndingTrigger.TextToVoiceText)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
-                                                    <div class="field-line" *ngIf="selectedTrigger.TimerEndingTrigger?.PlayMediaFile == 'True'"><label>Play Audio</label><span>{{selectedTrigger.TimerEndingTrigger.MediaFileName}}</span><button mat-icon-button (click)="playAudioFile(selectedTrigger.TimerEndingTrigger.MediaFileName)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
+                                                    <div class="field-line" *ngIf="selectedTrigger.TimerEndingTrigger?.PlayMediaFile == 'True'"><label>Play sound</label><span>{{selectedTrigger.TimerEndingTrigger.MediaFileName}}</span><button mat-icon-button (click)="playAudioFile(selectedTrigger.TimerEndingTrigger.MediaFileName)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
                                                 </div>
 
                                             </fieldset>
@@ -204,9 +201,9 @@
 
                                                 <div class="field-list">
                                                     <div class="field-line" *ngIf="selectedTrigger.UseTimerEnded == 'True'"><label>Notify when timer ends</label><span>Yes</span></div>
-                                                    <div class="field-line" *ngIf="selectedTrigger.TimerEndedTrigger?.UseText == 'True'"><label>Display Text</label><span>{{selectedTrigger.TimerEndedTrigger.DisplayText}}</span></div>
+                                                    <div class="field-line" *ngIf="selectedTrigger.TimerEndedTrigger?.UseText == 'True'"><label>Show text</label><span>{{selectedTrigger.TimerEndedTrigger.DisplayText}}</span></div>
                                                     <div class="field-line" *ngIf="selectedTrigger.TimerEndedTrigger?.UseTextToVoice == 'True'"><label>Text to Speech</label><span>{{selectedTrigger.TimerEndedTrigger.TextToVoiceText}}</span><button mat-icon-button (click)="speakPhrase(selectedTrigger.TimerEndedTrigger.TextToVoiceText)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
-                                                    <div class="field-line" *ngIf="selectedTrigger.TimerEndedTrigger?.PlayMediaFile == 'True'"><label>Play Audio</label><span>{{selectedTrigger.TimerEndedTrigger.MediaFileName}}</span><button mat-icon-button (click)="playAudioFile(selectedTrigger.TimerEndedTrigger.MediaFileName)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
+                                                    <div class="field-line" *ngIf="selectedTrigger.TimerEndedTrigger?.PlayMediaFile == 'True'"><label>Play sound</label><span>{{selectedTrigger.TimerEndedTrigger.MediaFileName}}</span><button mat-icon-button (click)="playAudioFile(selectedTrigger.TimerEndedTrigger.MediaFileName)"><mat-icon [inline]="true">play_arrow</mat-icon></button></div>
                                                 </div>
 
                                             </fieldset>
@@ -237,15 +234,13 @@
                                             <fieldset style="margin-top: 20px;">
                                                 <legend class="full-width">General</legend>
                                                 <mat-form-field>
-                                                    <mat-label></mat-label>
+                                                    <mat-label>Trigger name</mat-label>
                                                     <input matInput name="txtTriggerName" type="text" [(ngModel)]="nTrigger.name" required />
-                                                    <mat-hint>Trigger Name</mat-hint>
                                                 </mat-form-field>
                             
                                                 <mat-form-field>
-                                                    <mat-label></mat-label>
+                                                    <mat-label>Comments</mat-label>
                                                     <textarea matInput name="txtComments" [(ngModel)]="nTrigger.comments" rows="5"></textarea>
-                                                    <mat-hint>Comments</mat-hint>
                                                 </mat-form-field>
                                             </fieldset>
                                             
@@ -310,37 +305,33 @@
                                                 <div *ngFor="let action of nTrigger.actions;let i = index">
 
                                                     <mat-form-field *ngIf="action.overlayId == null && action.actionType == actionTypes.DisplayText">
-                                                        <mat-label></mat-label>
+                                                        <mat-label>{{action.displayText}} text overlay</mat-label>
                                                         <mat-select [(ngModel)]="action.overlayId" name="ddlAlertOverlay_{{i}}">
                                                             <mat-option *ngFor="let option of alertOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                                                         </mat-select>
-                                                        <mat-hint>{{action.displayText}} text overlay.</mat-hint>
                                                     </mat-form-field>
 
                                                     <ng-template [ngIf]="action.actionType == actionTypes.Countdown || action.actionType == actionTypes.DotTimer || action.actionType == actionTypes.Timer || action.actionType == actionTypes.Stopwatch|| action.actionType == actionTypes.BeneficialTimer">
 
                                                         <mat-form-field *ngIf="action.overlayId == null">
-                                                            <mat-label></mat-label>
+                                                            <mat-label>{{action.displayText}} timer overlay</mat-label>
                                                             <mat-select [(ngModel)]="action.overlayId" name="ddlTimerOverlay_{{i}}">
                                                                 <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                                                             </mat-select>
-                                                            <mat-hint>{{action.displayText}} timer overlay.</mat-hint>
                                                         </mat-form-field>
 
                                                         <mat-form-field *ngIf="action.ifEndingSoon && action.endingSoonDisplayText && action.endingSoonTextOverlayId == null">
-                                                            <mat-label></mat-label>
+                                                            <mat-label>{{action.displayText}} ending soon text overlay</mat-label>
                                                             <mat-select [(ngModel)]="action.endingSoonTextOverlayId" name="ddlEndingSoonOverlay_{{i}}">
                                                                 <mat-option *ngFor="let option of alertOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                                                             </mat-select>
-                                                            <mat-hint>{{action.displayText}} ending soon text overlay.</mat-hint>
                                                         </mat-form-field>
 
                                                         <mat-form-field *ngIf="action.notifyWhenEnded && action.endedDisplayText && action.endedTextOverlayId == null">
-                                                            <mat-label></mat-label>
+                                                            <mat-label>{{action.displayText}} ended text overlay</mat-label>
                                                             <mat-select [(ngModel)]="action.endedTextOverlayId" name="ddlEndedOverlay_{{i}}">
                                                                 <mat-option *ngFor="let option of alertOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                                                             </mat-select>
-                                                            <mat-hint>{{action.displayText}} ended text overlay.</mat-hint>
                                                         </mat-form-field>
 
                                                     </ng-template>

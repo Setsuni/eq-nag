@@ -76,9 +76,9 @@ const LogTypes = {
 var getActionLabel = ( actionType ) => {
     switch ( actionType ) {
         case ActionTypes.DisplayText:
-            return 'Display Text';
+            return 'Show text';
         case ActionTypes.PlayAudio:
-            return 'Play Audio';
+            return 'Play sound';
         case ActionTypes.Speak:
             return 'Speak';
         case ActionTypes.Timer:
