@@ -1,5 +1,6 @@
 import { Component, ElementRef, HostListener, Inject, NgZone, OnInit, ViewChild } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActionTypes, CharacterModel, DpsMeterSettings, OverlayWindowModel, Rectangle, SettingsKeys, TriggerAction } from 'src/app/core.model';
 import { IpcService } from 'src/app/ipc.service';
 import { customAlphabet } from 'nanoid';
@@ -8,7 +9,8 @@ const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 const nanoid = customAlphabet( alphabet, 16 );
 
 const recentDays = 60;
-const previewWidth = 480;
+const previewMaxWidth = 820;
+const previewMaxHeight = 300;
 const sampleSeconds = 8;
 
 export interface SetupCharacterOption {
@@ -16,14 +18,28 @@ export interface SetupCharacterOption {
     server: string;
     logFile: string;
     thj: boolean;
+    p99: boolean;
+    takp: boolean;
+    daybreak: boolean;
     added: boolean;
     checked: boolean;
     modified: number | null;
     lastPlayed: string;
 }
 
+export interface SetupPreviewDisplay {
+    id: number;
+    name: string;
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+    bounds: Electron.Rectangle;
+}
+
 export interface SetupPreviewBox {
     overlay: OverlayWindowModel;
+    display: SetupPreviewDisplay;
     kind: 'timer' | 'text';
     left: number;
     top: number;
@@ -47,8 +63,9 @@ export class SetupWizardComponent implements OnInit {
     public characterOptions: SetupCharacterOption[] = [];
 
     public previewBoxes: SetupPreviewBox[] = [];
+    public previewDisplays: SetupPreviewDisplay[] = [];
     public previewHeight: number = 0;
-    public previewWidth: number = previewWidth;
+    public previewWidth: number = 0;
     public groupedTimers: boolean = false;
     public canChooseGrouping: boolean = false;
 
@@ -73,6 +90,7 @@ export class SetupWizardComponent implements OnInit {
     private _displaySize: { width: number, height: number } = { width: 1920, height: 1080 };
     private _displayId: number = null;
     private _displayOrigin: { x: number, y: number } = { x: 0, y: 0 };
+    private _previewOrigin: { x: number, y: number } = { x: 0, y: 0 };
     private _scale: number = 1;
 
     private _fctOutId: string;
@@ -90,8 +108,9 @@ export class SetupWizardComponent implements OnInit {
         public dialogRef: MatDialogRef<SetupWizardComponent>,
         @Inject( MAT_DIALOG_DATA ) public data: {},
         private ipcService: IpcService,
+        private snackBar: MatSnackBar,
         private ngZone: NgZone ) {
-
+        
     }
 
     ngOnInit() {
@@ -109,6 +128,14 @@ export class SetupWizardComponent implements OnInit {
         this.ipcService.getDamageReceivedOverlayId().subscribe( id => this._fctInId = id );
 
         this.scanForCharacters( null );
+
+        // Skipping, or closing the dialog any other way, counts as finishing setup.
+        this.dialogRef.beforeClosed().subscribe( completed => {
+            if ( completed !== true ) {
+                this.ipcService.saveSetupCompleted( true );
+                this.snackBar.open( 'Setup skipped. You can run setup again from Settings.', 'Dismiss', { duration: 5000 } );
+            }
+        } );
 
     }
 
@@ -181,9 +208,10 @@ export class SetupWizardComponent implements OnInit {
                 name: option.name,
                 server: option.server,
                 logFile: option.logFile,
-                p99: false,
+                p99: option.p99,
+                takp: option.takp,
                 thj: option.thj,
-                daybreak: true,
+                daybreak: option.daybreak,
             } );
             return this.ipcService.createCharacter( model );
         } );
@@ -263,7 +291,7 @@ export class SetupWizardComponent implements OnInit {
     onMouseMove( event: MouseEvent ): void {
         if ( this._drag ) {
             const box = this._drag.box;
-            box.left = this.clamp( this._drag.originLeft + event.clientX - this._drag.startX, 0, previewWidth - box.width );
+            box.left = this.clamp( this._drag.originLeft + event.clientX - this._drag.startX, 0, this.previewWidth - box.width );
             box.top = this.clamp( this._drag.originTop + event.clientY - this._drag.startY, 0, this.previewHeight - box.height );
             this._movedIds.add( box.overlay.overlayId );
         }
@@ -271,6 +299,9 @@ export class SetupWizardComponent implements OnInit {
 
     @HostListener( 'document:mouseup' )
     onMouseUp(): void {
+        if ( this._drag ) {
+            this.settleBox( this._drag.box );
+        }
         this._drag = null;
     }
 
@@ -377,6 +408,9 @@ export class SetupWizardComponent implements OnInit {
                     server: option.server,
                     logFile: option.logFile,
                     thj: option.thj === true,
+                    p99: ( option as any ).p99 === true,
+                    takp: ( option as any ).takp === true,
+                    daybreak: ( option as any ).daybreak === true,
                     added: option.characterId?.length > 0,
                     checked: option.characterId?.length > 0 || ( modified != null && now - modified < recentDays * 86400000 ),
                     modified: modified,
@@ -418,36 +452,79 @@ export class SetupWizardComponent implements OnInit {
     }
 
     /**
-     * Loads the default overlays and lays them out on the preview monitor.
+     * Loads the default overlays and lays them out on a scaled map of all displays.
      *
      * @param done Called once the boxes are ready.
      */
     private loadPreview( done: () => void ): void {
-        this._scale = previewWidth / this._displaySize.width;
-        this.previewHeight = Math.round( this._displaySize.height * this._scale );
         this._movedIds.clear();
 
-        this.ipcService.getOverlayWindows().subscribe( overlays => {
-            const ids = [ this._detrimentalId, this._benficialId, this._alertId ];
+        this.ipcService.getAllDisplays().subscribe( displays => {
+            const hasDisplays = displays?.length > 0;
+            const list: Electron.Rectangle[] = hasDisplays
+                ? displays.map( d => d.bounds )
+                : [ { x: this._displayOrigin.x, y: this._displayOrigin.y, width: this._displaySize.width, height: this._displaySize.height } ];
+            const ids: number[] = hasDisplays ? displays.map( d => d.id ) : [ this._displayId ];
 
-            this.previewBoxes = ids.map( id => overlays?.find( o => o.overlayId === id ) )
-                .filter( overlay => overlay != null && ( overlay.displayId == null || overlay.displayId === this._displayId ) )
-                .map( overlay => <SetupPreviewBox>{
-                    overlay: overlay,
-                    kind: overlay.overlayType === 'Alert' ? 'text' : 'timer',
-                    left: this.clamp( ( overlay.x - this._displayOrigin.x ) * this._scale, 0, previewWidth ),
-                    top: this.clamp( ( overlay.y - this._displayOrigin.y ) * this._scale, 0, this.previewHeight ),
-                    width: Math.max( 40, Math.round( overlay.windowWidth * this._scale ) ),
-                    height: Math.max( 24, Math.round( overlay.windowHeight * this._scale ) ),
-                } );
+            const minX = Math.min( ...list.map( r => r.x ) );
+            const minY = Math.min( ...list.map( r => r.y ) );
+            const totalWidth = Math.max( ...list.map( r => r.x + r.width ) ) - minX;
+            const totalHeight = Math.max( ...list.map( r => r.y + r.height ) ) - minY;
 
-            this.previewBoxes.forEach( box => {
-                box.left = this.clamp( box.left, 0, previewWidth - box.width );
-                box.top = this.clamp( box.top, 0, this.previewHeight - box.height );
+            this._scale = Math.min( previewMaxWidth / totalWidth, previewMaxHeight / totalHeight );
+            this._previewOrigin = { x: minX, y: minY };
+            this.previewWidth = Math.round( totalWidth * this._scale );
+            this.previewHeight = Math.round( totalHeight * this._scale );
+            this.previewDisplays = list.map( ( r, i ) => <SetupPreviewDisplay>{
+                id: ids[ i ],
+                name: ids.length > 1 ? `Display ${i + 1}${ids[ i ] === this._displayId ? ' (main)' : ''}` : 'Main display',
+                left: Math.round( ( r.x - minX ) * this._scale ),
+                top: Math.round( ( r.y - minY ) * this._scale ),
+                width: Math.round( r.width * this._scale ),
+                height: Math.round( r.height * this._scale ),
+                bounds: r,
             } );
 
-            done();
+            this.ipcService.getOverlayWindows().subscribe( overlays => {
+                const overlayIds = [ this._detrimentalId, this._benficialId, this._alertId ];
+
+                this.previewBoxes = overlayIds.map( id => overlays?.find( o => o.overlayId === id ) )
+                    .filter( overlay => overlay != null )
+                    .map( overlay => <SetupPreviewBox>{
+                        overlay: overlay,
+                        display: null,
+                        kind: overlay.overlayType === 'Alert' ? 'text' : 'timer',
+                        left: this.clamp( ( overlay.x - minX ) * this._scale, 0, this.previewWidth ),
+                        top: this.clamp( ( overlay.y - minY ) * this._scale, 0, this.previewHeight ),
+                        width: Math.max( 40, Math.round( overlay.windowWidth * this._scale ) ),
+                        height: Math.max( 24, Math.round( overlay.windowHeight * this._scale ) ),
+                    } );
+
+                this.previewBoxes.forEach( box => this.settleBox( box ) );
+
+                done();
+            } );
         } );
+    }
+
+    /**
+     * Puts the box fully inside the display its center is on, or the closest one.
+     *
+     * @param box The box to settle.
+     */
+    private settleBox( box: SetupPreviewBox ): void {
+        const centerX = box.left + box.width / 2;
+        const centerY = box.top + box.height / 2;
+        const distance = ( d: SetupPreviewDisplay ) => {
+            const dx = Math.max( d.left - centerX, 0, centerX - ( d.left + d.width ) );
+            const dy = Math.max( d.top - centerY, 0, centerY - ( d.top + d.height ) );
+            return dx * dx + dy * dy;
+        };
+        const display = this.previewDisplays.reduce( ( best, d ) => distance( d ) < distance( best ) ? d : best, this.previewDisplays[ 0 ] );
+
+        box.display = display;
+        box.left = this.clamp( box.left, display.left, Math.max( display.left, display.left + display.width - box.width ) );
+        box.top = this.clamp( box.top, display.top, Math.max( display.top, display.top + display.height - box.height ) );
     }
 
     /**
@@ -461,8 +538,10 @@ export class SetupWizardComponent implements OnInit {
             let changed = false;
 
             if ( this._movedIds.has( overlay.overlayId ) ) {
-                overlay.x = Math.round( box.left / this._scale ) + this._displayOrigin.x;
-                overlay.y = Math.round( box.top / this._scale ) + this._displayOrigin.y;
+                overlay.x = Math.round( box.left / this._scale ) + this._previewOrigin.x;
+                overlay.y = Math.round( box.top / this._scale ) + this._previewOrigin.y;
+                overlay.displayId = box.display.id;
+                overlay.displayBounds = box.display.bounds;
                 changed = true;
             }
 

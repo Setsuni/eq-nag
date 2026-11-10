@@ -538,7 +538,9 @@ class CharacterDatabaseStore extends Store {
         if ( fs.existsSync( logsPath ) ) {
             var files = await fs.promises.readdir( logsPath );
             for ( const file of files ) {
-                let results = /eqlog_(?<Character>.*)_(?<Server>[a-z]*)\.txt$/gi.exec( file );
+                const p99Results = /eqlog_(?<Character>.*)_(?<Server>P1999[a-z]*|project1999)\.txt$/i.exec( file );
+                const takpResults = /eqlog_(?<Character>.*)_(?<Server>pq\.proj)\.txt$/i.exec( file );
+                let results = p99Results ?? takpResults ?? /eqlog_(?<Character>.*)_(?<Server>[a-z]*)\.txt$/gi.exec( file );
                 if ( results != null && results?.groups?.Character != null && results?.groups?.Server != null ) {
                     const thj = results.groups.Server === 'thj';
                     const key = thj ? 'The Heroe\'s Journey' : results.groups.Server.toUpperCase();
@@ -551,7 +553,9 @@ class CharacterDatabaseStore extends Store {
                     option.server = key;
                     option.logFile = `${logsPath}\\${file}`;
                     option.thj = thj === true;
-                    option.daybreak = thj === false && results.groups.Server !== 'p99';
+                    option.p99 = p99Results != null;
+                    option.takp = takpResults != null;
+                    option.daybreak = thj === false && option.p99 === false && option.takp === false;
                     option.characterId = this.findCharacterIdByLogFile( option.logFile );
                     option.modified = await fs.promises.stat( option.logFile ).then( stats => stats.mtimeMs, () => null );
                     

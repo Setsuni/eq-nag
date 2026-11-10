@@ -126,9 +126,10 @@ export class NewCharacterDialogComponent implements OnInit {
      */
     selectModel( e: MatSelectChange, p99: boolean = false, daybreak: boolean = false ): void {
         this.model = e.value;
-        this.model.p99 = p99 === true;
+        this.model.p99 = p99 === true || e.value.p99 === true;
+        this.model.takp = e.value.takp === true;
         this.model.thj = e.value.thj === true;
-        this.model.daybreak = daybreak === true || this.server?.service === 'Daybreak';
+        this.model.daybreak = e.value.daybreak ?? ( daybreak === true || this.server?.service === 'Daybreak' );
 
         // console.log( 'Selected model:', this.model );
         // console.log( 'Selected server:', this.server );

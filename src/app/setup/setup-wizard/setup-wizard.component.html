@@ -36,14 +36,15 @@
 
     <ng-container *ngIf="step === 1">
         <h3>Where should alerts appear?</h3>
-        <p class="hint">Drag the boxes. This is your main monitor; the game is behind them.</p>
+        <p class="hint">Drag the boxes onto the monitor you want. The game is behind them.</p>
 
         <div class="monitor" [style.width.px]="previewWidth" [style.height.px]="previewHeight">
+            <div class="display" *ngFor="let d of previewDisplays" [style.left.px]="d.left" [style.top.px]="d.top" [style.width.px]="d.width" [style.height.px]="d.height"><span class="display-name">{{d.name}}</span></div>
             <div class="overlay-box" *ngFor="let box of previewBoxes" [class.text]="box.kind === 'text'"
                 [style.left.px]="box.left" [style.top.px]="box.top" [style.width.px]="box.width" [style.height.px]="box.height"
                 (mousedown)="startDrag($event, box)">
                 <span class="overlay-name">{{box.overlay.name}}</span>
-                <span class="sample-timer" *ngIf="box.kind === 'timer'">Sample timer &middot; 1:42</span>
+                <span class="sample-timer" *ngIf="box.kind === 'timer'">Sample timer</span>
                 <span class="sample-text" *ngIf="box.kind === 'text'">Sample text</span>
             </div>
         </div>
