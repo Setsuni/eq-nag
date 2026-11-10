@@ -1,5 +1,4 @@
 const StringUtilities = require( '../utilities/string' );
-const { getActionLabel } = require( './models/trigger' );
 
 // Numeric values mirror OperatorTypes, TriggerConditionTypes and ActionTypes in core.model.ts.
 const OP_IS_NULL = 0;
@@ -33,6 +32,25 @@ const CHECKS = {
     classUnused: { number: 12, severity: 'info', level: 'advanced' },
     slowPhrase: { number: 13, severity: 'cost', level: 'advanced' },
 };
+
+/**
+ * The action type names of getActionLabel in models/trigger. That module is not required here because it and the
+ * string utilities require each other, which prints a circular dependency warning.
+ */
+const ACTION_LABELS = [
+    'Display Text', 'Play Audio', 'Speak', 'Timer', 'Countdown', 'Store Variable', 'Dot Timer', 'Clear Variable',
+    'Counter', 'Clipboard', 'Beneficial Timer', 'Display Death Recap', 'Screen Glow', 'Clear All', 'Stopwatch', 'List',
+];
+
+/**
+ * Returns the name of an action type.
+ *
+ * @param {number} actionType The action type.
+ * @returns {string}
+ */
+function actionLabel( actionType ) {
+    return ACTION_LABELS[ actionType ] ?? 'Unknown';
+}
 
 /**
  * Removes a trailing instance number, the way /who adds one to a zone name.
@@ -691,7 +709,7 @@ function checkTriggerHealth( input ) {
 
                 if ( !Array.isArray( action.phrases ) || !action.phrases.some( id => usableIds.has( id ) ) ) {
                     const sameType = actions.filter( a => a.actionType === action.actionType );
-                    const actionName = action.name || `${getActionLabel( action.actionType )} action${sameType.length > 1 ? ` ${sameType.indexOf( action ) + 1}` : ''}`;
+                    const actionName = action.name || `${actionLabel( action.actionType )} action${sameType.length > 1 ? ` ${sameType.indexOf( action ) + 1}` : ''}`;
                     const onlyOnePhrase = phrases.length === 1 && usablePhrases.length === 1 && usablePhrases[ 0 ].phraseId != null;
                     add( 'actionUnlinked', subject, action.actionId ?? `#${index}`,
                         `This trigger will never fire: the action "${shorten( actionName, 40 )}" is not linked to any phrase of the trigger.`,
