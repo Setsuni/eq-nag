@@ -2,6 +2,7 @@
 const { ipcRenderer } = require( 'electron' );
 const fs = require( 'fs' );
 const crypto = require( 'crypto' );
+const { StaleLineTracker, staleLineMs } = require( '../utilities/stale-lines' );
 const { Trigger, TriggerAction, ActionTypes, TriggerConditionTypes, OperatorTypes, CharacterClassLevel, TriggerSubAction, TriggerFolder, TriggerCondition, CapturePhrase, Phrase, TriggerParseHistoryModel, getActionLabel, LogTypes, ErrorMessages } = require( '../data/models/trigger' );
 const { QuickShareAuthorListTypes, SimulationProgress, NConditionalModel, VConditionalOperationModel, SConditionalModel, LConditionalOperationModel, SConditionalOperationModel } = require( '../data/models/common' );
 const { PhraseParse, LogTrigger, LogList } = require( './log.model' );
@@ -163,6 +164,17 @@ let onTriggerGenCompleteHandlers = [];
 let triggerGenComplete = false;
     
 let rgxTimestamp = /^\[(.*?)\]\s*/i;
+
+/** True while a line read from the live log file is being parsed. */
+let parsingLiveLine = false;
+/** True while the live line being parsed is stale (older than staleLineMs): its attention actions are muted. */
+let parsingStaleLine = false;
+const staleTracker = new StaleLineTracker( {
+    onCatchingUp: () => log( `Nag is catching up: alerts for lines older than ${staleLineMs / 1000} s are muted.` ),
+    onCaughtUp: () => log( 'Nag has caught up: alerts are no longer muted.' ),
+} );
+/** The log file the stale line tracker has learned its clock offset for. */
+let staleTrackerLogPath = null;
 const rgxRandomRoll = /^\*\*A Magic Die is rolled by (?<player>.+?)\. It could have been any number from (?<min>\d+) to (?<max>\d+), but this time it turned up a (?<roll>\d+)\./;
 
 /** @type {LogList[]} */
@@ -218,13 +230,24 @@ function toLowerCached( value ) {
  */
 function startParsingLogFile( logPath, startLogPosition ) {
     
+    if ( logPath !== staleTrackerLogPath ) {
+        staleTracker.reset();
+        staleTrackerLogPath = logPath;
+    }
+
     fileMonitor.monitorLines( ( lines ) => {
         // let start = performance.now();
 
         lines.forEach( line => {
             if ( line && line.length > 0 ) {
                 const perfStart = perf.enabled ? perf.now() : 0;
-                parseLogEntries( line );
+                parsingLiveLine = true;
+                try {
+                    parseLogEntries( line );
+                } finally {
+                    parsingLiveLine = false;
+                    parsingStaleLine = false;
+                }
                 perf.enabled && perf.record( 'log-watcher: line', perfStart );
             }
         } );
@@ -1907,6 +1930,29 @@ function generateTriggerFns() {
 
 
 /**
+ * Tracks whether the live log is being caught up and logs when that starts and ends.
+ * Every line is still parsed while catching up; only its attention actions are muted.
+ *
+ * @param {Date} timestamp The log timestamp of the live line being parsed.
+ */
+function updateCatchUp( timestamp ) {
+    staleTracker.update( timestamp );
+    parsingStaleLine = staleTracker.stale;
+}
+
+/**
+ * Returns true if a timer started by the stale live line being parsed has already run out, so it is not created.
+ *
+ * @param {TriggerAction} action The timer action, with its final duration in seconds.
+ */
+function timerExpiredOnArrival( action ) {
+    return parsingStaleLine && action.actionType !== ActionTypes.Stopwatch && !action.repeatTimer && action.duration > 0 && staleTracker.lagMs / 1000 >= action.duration;
+}
+
+/** The actions that get the user's attention, which are not run for stale log lines. */
+const attentionActionTypes = [ ActionTypes.PlayAudio, ActionTypes.Speak, ActionTypes.DisplayText, ActionTypes.ScreenGlow, ActionTypes.Clipboard ];
+
+/**
  * Parses the given log entry.
  * 
  * @param {string} raw The raw log entry.
@@ -1953,6 +1999,16 @@ function parseLogEntries( raw, simulating, padTime ) {
             timestamp = new Date( timestamp.getTime() + ( padTime * 1000 ) );
     
         let log = raw.replace( rgxTimestamp, '' );
+
+        if ( parsingLiveLine ) {
+            updateCatchUp( timestamp );
+
+            // From here on the line's time is a wall clock time: the learned clock offset (a time zone or DST mismatch)
+            // is removed once, so nothing downstream converts it again.
+            if ( staleTracker.clockOffsetMs !== 0 ) {
+                timestamp = new Date( timestamp.getTime() + staleTracker.clockOffsetMs );
+            }
+        }
 
         if ( !simulating && log.startsWith( '**A Magic Die' ) ) {
             const randomRoll = rgxRandomRoll.exec( log );
@@ -2281,6 +2337,10 @@ function parseLogEntries( raw, simulating, padTime ) {
  * @param {{instanceId?: string} | undefined} options
  */
 function executeTriggerAction( trigger, action, timestamp, res, deltaTime, simulating, options ) {
+
+    if ( parsingStaleLine && attentionActionTypes.includes( action.actionType ) ) {
+        return;
+    }
 
     if ( action.actionType === ActionTypes.DisplayText ) {
         /* --== Display Text ==-- */
@@ -3286,6 +3346,10 @@ function displayBeneficialTimerComponent( res, timestamp, action, trigger, spell
     // reset the trigger.
     trigger._reset();
 
+    if ( timerExpiredOnArrival( comp.action ) ) {
+        return comp.instanceId;
+    }
+
     ipcRenderer.send( 'overlay:send:component', comp );
 
     if ( comp.action.endEarlyPhrases?.length > 0 ) {
@@ -3456,6 +3520,10 @@ function displayDotTimerComponent( res, timestamp, action, deltaTime, trigger ) 
 
     // reset the trigger.
     trigger._reset();
+
+    if ( timerExpiredOnArrival( comp.action ) ) {
+        return comp.instanceId;
+    }
 
     ipcRenderer.send( 'overlay:send:component', comp );
 
@@ -3751,7 +3819,7 @@ function displayTimerCountdownComponent(res, timestamp, action, deltaTime, trigg
     // reset the trigger.
     trigger._reset();
 
-    if ( comp.action.duration > 0 || comp.action.actionType === ActionTypes.Stopwatch ) {
+    if ( ( comp.action.duration > 0 || comp.action.actionType === ActionTypes.Stopwatch ) && !timerExpiredOnArrival( comp.action ) ) {
         // Timers with zero duration are non-sensical, or "undefined" if you like.
         ipcRenderer.send( 'overlay:send:component', comp );
 

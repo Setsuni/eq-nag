@@ -13,6 +13,9 @@ const maxReadErrors = 5;
 const lineReadLengthLimit = 22000;
 const averageLineLength = 100;
 const maxReadSize = lineReadLengthLimit * averageLineLength;
+// The number of bytes at the start of the log used to tell whether the file was replaced.
+const headPrintSize = 128;
+const tooSmallLogIntervalMs = 30000;
 
 let readDelayMs = 200;
 let readErrorDelayMs = 1000;
@@ -376,14 +379,8 @@ class FileMonitor {
      * @param {(value: any) => void} resolve The function to call when the operation is complete.
      * @param {(reason: any) => void} reject The function to call when the operation fails.
      * @param {number} position The position to start reading from.
-     * @param {string[]} prevLines The previous lines read.
      */
-    async #doMonitorLines( onChunkRead, resolve, reject, position = 0, prevLines = [] ) {
-
-        // Ensure prevLines is an array.
-        if ( !Array.isArray( prevLines ) ) {
-            prevLines = [];
-        }
+    async #doMonitorLines( onChunkRead, resolve, reject, position = 0 ) {
 
         /** @type {fs.promises.FileHandle} */
         let file;
@@ -393,8 +390,60 @@ class FileMonitor {
             let stats = await this.checkFile();
             file = await fsp.open( this.filePath, 'r' );
 
-            let emptyReadCount = 0;
-            let readCount = 0;
+            let checkFirstLine = true;
+            let backlogLogged = false;
+            let tooSmallLoggedAt = 0;
+            /** @type {Buffer | null} */
+            let headPrint = null;
+
+            /**
+             * Returns true if the log was replaced by another file (a new file at the same path, or the same file
+             * overwritten from the start), which a smaller size alone does not reveal.
+             */
+            const logWasReplaced = async () => {
+                try {
+                    const opened = await file.stat();
+                    if ( opened.ino !== stats.ino ) {
+                        return true;
+                    }
+
+                    const head = Buffer.alloc( headPrintSize );
+                    const headRead = await file.read( head, 0, headPrintSize, 0 );
+                    const current = head.subarray( 0, headRead.bytesRead );
+
+                    if ( headPrint === null ) {
+                        headPrint = current;
+                        return false;
+                    }
+
+                    const shared = Math.min( headPrint.length, current.length );
+                    if ( current.length < headPrint.length || !current.subarray( 0, shared ).equals( headPrint.subarray( 0, shared ) ) ) {
+                        return true;
+                    }
+
+                    headPrint = current;
+                } catch ( error ) {
+                    // The next pass checks again.
+                }
+                return false;
+            };
+
+            /** Schedules the next read, or finishes monitoring if it was asked to stop. */
+            const next = async () => {
+                if ( !this.#stopMonitor ) {
+                    setTimeout( () => parse(), readDelayMs );
+                    return;
+                }
+
+                await file.close();
+                this.#monitoring = false;
+
+                if ( this.#onStopped ) {
+                    this.#onStopped( position );
+                }
+
+                resolve();
+            };
 
             const parse = async () => {
 
@@ -409,45 +458,75 @@ class FileMonitor {
 
                 stats = await this.checkFile();
 
+                if ( stats.size >= position && position > 0 && await logWasReplaced() ) {
+                    sendLog( `File Monitor > ${this.filePath} was replaced, reading it from the start.` );
+
+                    headPrint = null;
+                    position = 0;
+
+                    file?.close();
+                    file = await fsp.open( this.filePath, 'r' );
+                    stats = await this.checkFile();
+                }
+
                 if ( stats.size < position ) {
                     sendLog( `File Monitor > ${this.filePath} exists, resetting read position.` );
 
                     this.#readErrorCount++;
                     position = 0;
+                    headPrint = null;
 
                     stats = await this.waitForLogFile();
                     file?.close();
                     file = await fsp.open( this.filePath, 'r' );
 
-                    setTimeout( () => parse(), readDelayMs );
+                    await next();
                     return;
                 }
 
                 const readSize = stats.size - position;
                 if ( readSize > 0 && readSize < 26 ) {
-                    sendLog( {
-                        label: 'File Monitor',
-                        message: `File size is too small: ${readSize} bytes.`,
-                        payload: { readSize, position, stats },
-                    } );
-                    setTimeout( () => parse(), readDelayMs );
-                    return;
-                } else if ( readSize > maxReadSize ) {
-                    sendLog( {
-                        label: 'File Monitor',
-                        message: `Read size is too large: ${readSize} bytes.`,
-                        payload: { readSize, position, stats },
-                    } );
-                    position = stats.size;
-                    setTimeout( () => parse(), readDelayMs );
+                    if ( Date.now() - tooSmallLoggedAt >= tooSmallLogIntervalMs ) {
+                        tooSmallLoggedAt = Date.now();
+                        sendLog( {
+                            label: 'File Monitor',
+                            message: `File size is too small: ${readSize} bytes.`,
+                            payload: { readSize, position, stats },
+                        } );
+                    }
+                    await next();
                     return;
                 }
 
-                try {
-                    let data = await file.read( Buffer.alloc( readSize ), 0, readSize, position );
-                    let bytesRead = data.bytesRead;
+                const backlog = readSize > maxReadSize;
+                if ( backlog && !backlogLogged ) {
+                    sendLog( {
+                        label: 'File Monitor',
+                        message: `Read size is too large: ${readSize} bytes, reading it in chunks.`,
+                        payload: { readSize, position, stats },
+                    } );
+                }
+                backlogLogged = backlog;
 
-                    if ( bytesRead === 0 && readSize > 0 ) {
+                try {
+                    const requestSize = backlog ? maxReadSize : readSize;
+                    let data = await file.read( Buffer.alloc( requestSize ), 0, requestSize, position );
+                    let bytesRead = data.bytesRead;
+                    let partialLineOnly = false;
+
+                    if ( bytesRead > 0 ) {
+                        // Only consume whole lines.  Bytes after the last line break (a line still being written, or a
+                        // split multibyte character) stay unread and are read again, complete, on the next pass.
+                        const lastBreak = data.buffer.lastIndexOf( 0x0A, bytesRead - 1 );
+                        if ( lastBreak >= 0 ) {
+                            bytesRead = lastBreak + 1;
+                        } else if ( !backlog ) {
+                            bytesRead = 0;
+                            partialLineOnly = true;
+                        }
+                    }
+
+                    if ( bytesRead === 0 && readSize > 0 && !partialLineOnly ) {
                         // No data read, try again.
                         nagLog( `No data read, trying again.`, 'File Monitor', { position, readSize, bytesRead } );
                         
@@ -457,67 +536,33 @@ class FileMonitor {
 
                         this.#readErrorCount++;
 
-                        setTimeout( () => parse(), readDelayMs );
+                        await next();
                         return;
                     }
 
                     position += bytesRead;
                     let read = data.buffer.toString( 'utf-8', 0, bytesRead );
 
-                    readCount += 1;
-                    if ( read.length === 0 && prevLines.length > 0 ) {
-                        emptyReadCount += 1;
-                    } else {
-                        emptyReadCount = 0;
-                    }
-                    
                     let lines = read.split( /\r\n|\r|\n/gmi ).filter( l => l?.length > 0 );
-                    
+
                     if ( lines.length > 0 ) {
 
-                        if ( !lines[ 0 ].match( /^\[(.*?)\]\s*/i ) ) {
-                            if ( prevLines?.length > 0 ) {
-                                // If the first line is incomplete, append it to the last line of the previous read.
-                                lines[ 0 ] = prevLines[ prevLines.length - 1 ] + lines[ 0 ];
-                            } else {
-                                // If there are no previous lines, we ignore the first line.
-                                lines.shift();
-                            }
+                        if ( checkFirstLine && !lines[ 0 ].match( /^\[(.*?)\]\s*/i ) ) {
+                            // Monitoring started in the middle of a line, so the first line is partial.
+                            lines.shift();
                         }
+                        checkFirstLine = false;
 
-                        let incompleteLine = undefined;
-                        if ( !lines[ lines.length - 1 ].match( /^\[(.*?)\]\s*/i ) ) {
-                            // If the last line is incomplete, we ignore it for now.
-                            incompleteLine = lines.pop();
+                        if ( lines.length > 0 ) {
+                            onChunkRead( lines );
                         }
-    
-                        onChunkRead( lines );
-
-                        if ( incompleteLine ) {
-                            // If there was an incomplete line, we add it to the prevLines array.  This will be prepended to the next read's first line.
-                            lines.push( incompleteLine );
-                            incompleteLine = undefined;
-                        }
-                        prevLines = lines;
-    
-                        readCount = 0;
-                        emptyReadCount = 0;
                     }
-                    
+
                     if ( !this.#stopMonitor ) {
                         this.#readErrorCount = 0;
-                        setTimeout( () => parse(), readDelayMs );
-    
-                    } else {
-                        await file.close();
-                        this.#monitoring = false;
-    
-                        if ( this.#onStopped ) {
-                            this.#onStopped( position );
-                        }
-    
-                        resolve();
                     }
+
+                    await next();
 
                 } catch ( error ) {
 
@@ -536,7 +581,7 @@ class FileMonitor {
                         this.#monitoring = false;
                         reject( error );
                     } else {
-                        setTimeout( () => this.#doMonitorLines( onChunkRead, resolve, reject, position, prevLines ), readErrorDelayMs );
+                        setTimeout( () => this.#doMonitorLines( onChunkRead, resolve, reject, position ), readErrorDelayMs );
                     }
                 }
                 
@@ -562,7 +607,7 @@ class FileMonitor {
                 this.#monitoring = false;
                 reject( error );
             } else {
-                setTimeout( () => this.#doMonitorLines( onChunkRead, resolve, reject, position, prevLines ), readErrorDelayMs );
+                setTimeout( () => this.#doMonitorLines( onChunkRead, resolve, reject, position ), readErrorDelayMs );
             }
         }
 
