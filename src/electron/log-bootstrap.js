@@ -195,6 +195,26 @@ class LogBootstrapper {
     }
 
     /**
+     * Lists the characters Nag reads logs for, with whether each is being read now and when its log file last changed.
+     *
+     * @param {CharacterDatabaseStore} characterDatabase The character database.
+     * @returns {Promise<{characterId: string, name: string, class: string|null, watching: boolean, lastLineAt: number|null}[]>}
+     */
+    async getWatchStatus( characterDatabase ) {
+        return Promise.all( Object.keys( logWatchers ).map( async id => {
+            const character = characterDatabase.find( id );
+            const stats = await FsUtilities.statOrNull( logWatchers[ id ].logFile );
+            return {
+                characterId: id,
+                name: character?.name ?? id,
+                class: character?.class ?? null,
+                watching: logWatchers[ id ].window != null,
+                lastLineAt: stats?.mtimeMs ?? null,
+            };
+        } ) );
+    }
+
+    /**
      * Starts a ten minute trigger measurement.
      *
      * @param {string|undefined} characterId The character id; the first running log watcher if omitted.
@@ -307,6 +327,8 @@ class LogBootstrapper {
         ipcMain.handle( 'trigger-perf:get', ( event, characterId ) => $this.getTriggerPerf( idArg( characterId ) ) );
         ipcMain.handle( 'trigger-perf:counters', ( event, characterId ) => $this.getTriggerCounters( idArg( characterId ) ) );
         ipcMain.handle( 'trigger-perf:characters', () => $this.getTriggerPerfCharacters( id => characterDatabase.find( id )?.name ) );
+
+        ipcMain.handle( 'app:status:watching', () => $this.getWatchStatus( characterDatabase ) );
 
         // Only a log watcher window may report; the character is the one that watcher belongs to.
         ipcMain.on( 'trigger-perf:result', ( event, data ) => {

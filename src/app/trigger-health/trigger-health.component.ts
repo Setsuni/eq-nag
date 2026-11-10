@@ -267,7 +267,7 @@ export class TriggerHealthComponent implements OnInit, OnDestroy {
      */
     public check(): void {
         this.busy = true;
-        this.healthService.check().subscribe( () => this.busy = false );
+        this.healthService.check().subscribe( { next: () => this.busy = false, error: () => this.busy = false } );
     }
 
     /**

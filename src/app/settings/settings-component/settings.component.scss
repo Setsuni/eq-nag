@@ -1,22 +1,29 @@
+$color-light: #ffffffde;
+$color-green: #69f0ae;
+$color-orange: #f0c669;
+$color-red: #f06969;
+$option-odd: #202020;
+$option-selected: #242424;
+$bg-label-dark: #151515;
+
 div.tab-content {
-    overflow-y: scroll;
     position: fixed;
     left: 0;
     right: 0;
     bottom: var(--nag-console-height, 24px);
     top: 176px;
+    padding: 0;
+    overflow: hidden;
 
-    > fieldset:not(:first-child) {
-        margin-top: 50px;
-    }
-    > .help-row + fieldset {
-        margin-top: 24px;
+    .settings-shell {
+        display: flex;
+        height: 100%;
     }
     .help-row {
         display: flex;
         align-items: center;
         gap: 12px;
-        margin: 0 2px;
+        margin: 24px 2px 0;
         padding: 10px 14px;
         border: 1px solid rgba(255, 255, 255, 0.2);
         border-radius: 4px;
@@ -33,62 +40,237 @@ div.tab-content {
             vertical-align: -2px;
         }
     }
-    fieldset {
-        p {
-            font-weight: 300;
-            color: #eeeeee;
-        }
-        .card-property {
-            margin-left: -12px;
-            margin-right: -12px;
-        }
-    }
-}
-
-.header-glow {
-    text-shadow: 0 0 7px #000000, 0 0 10px #000, 0 0 21px #000, 0 0 42px #000, 0 0 82px #000, 0 0 92px #020202, 0 0 102px #000, 0 0 151px #000;
-}
-
-h2 {
-    &.header-glow {
-        margin-top: -15px;
-        font-size: 21px;
+    p {
         font-weight: 300;
+        color: #eeeeee;
     }
-    &.sub-header {
-        font-weight: 100;
-        opacity: 0.9;
-        margin-top: -16px;
-        padding-bottom: 6px;
-        font-size: 22px;
-        padding-bottom: 4px;
-        position: relative;
-        padding-right: 11px;
-        text-align: right;
+}
 
-        &.half-width {
-            width: calc(50% - 11px);
-        }
-        &.full-width {
-            width: calc(100% - 11px);
-        }
+.settings-nav {
+    flex: 0 0 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 16px 8px;
+    overflow-y: auto;
+    border-right: 1px solid rgba(255, 255, 255, 0.12);
+}
 
-        &::before {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 18px;
-            z-index: -1;
-            background-color: #0000002e;
+.nav-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 10px 12px;
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    color: $color-light;
+    background: none;
+    border: none;
+    border-left: 3px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.06);
+    }
+    &.on {
+        color: $color-light;
+        background: $option-selected;
+        border-left-color: $color-green;
+    }
+}
+
+.nav-chip {
+    min-width: 18px;
+    padding: 1px 6px;
+    font-size: 12px;
+    text-align: center;
+    color: $bg-label-dark;
+    background: $color-orange;
+    border-radius: 9px;
+}
+
+.settings-content {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 16px 24px 24px;
+    overflow-y: auto;
+}
+
+.pane {
+    max-width: 980px;
+
+    &.pane-hidden {
+        display: none;
+    }
+}
+
+.pane-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 0 16px;
+    font-size: 20px;
+    font-weight: 400;
+
+    .spacer {
+        flex: 1 1 auto;
+    }
+    mat-slide-toggle {
+        font-size: 14px;
+    }
+}
+
+.pane-note {
+    margin: -8px 0 16px;
+    font-size: 13px;
+    color: #ffffff99;
+}
+
+.group-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 24px 0 8px;
+    font-size: 16px;
+    font-weight: 400;
+    color: $color-light;
+
+    .spacer {
+        flex: 1 1 auto;
+    }
+    &.danger {
+        color: $color-red;
+    }
+}
+
+.group {
+    padding: 4px 0 0 12px;
+
+    &.narrow {
+        max-width: 460px;
+    }
+    &.default-overlays {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 16px;
+
+        mat-form-field {
+            flex: 1 1 260px;
+            min-width: 0;
         }
     }
 }
 
-h3 {
-    &.sub-header {
-        font-weight: 100;
+.maintenance {
+    max-width: 560px;
+}
+
+.advanced-block {
+    margin-top: 32px;
+    padding-top: 4px;
+    border-top: 1px dotted #4a4455;
+}
+
+.two-columns {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    gap: 0 32px;
+}
+
+.custom-dot {
+    flex: 0 0 8px;
+    width: 8px;
+    height: 8px;
+    background: $color-orange;
+    border-radius: 50%;
+}
+
+.status-card {
+    padding: 16px;
+    background: $option-odd;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+}
+
+.status-main {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    .spacer {
+        flex: 1 1 auto;
+    }
+}
+
+.status-dot {
+    flex: 0 0 12px;
+    width: 12px;
+    height: 12px;
+    background: #888888;
+    border-radius: 50%;
+
+    &.ok {
+        background: $color-green;
+    }
+}
+
+.status-headline {
+    font-size: 16px;
+}
+
+.status-hint {
+    margin-top: 2px;
+    font-size: 12px;
+    color: #ffffff99;
+}
+
+.status-tiles {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.status-tile {
+    padding: 10px 12px;
+    background: $bg-label-dark;
+    border-radius: 4px;
+
+    .tile-label {
+        font-size: 12px;
+        color: #ffffff99;
+    }
+    .tile-value {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 4px;
+        font-size: 16px;
+
+        small {
+            font-size: 12px;
+            color: #ffffff99;
+        }
+    }
+}
+
+.health-chip {
+    padding: 2px 8px;
+    font-size: 13px;
+    color: $color-light;
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+
+    &.ok {
+        color: $bg-label-dark;
+        background: $color-green;
+    }
+    &.warn {
+        color: $bg-label-dark;
+        background: $color-orange;
     }
 }
 

@@ -1,9 +1,9 @@
-import { ChangeDetectorRef, Component, ElementRef, Input, NgZone, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, Input, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { DialogService } from 'src/app/dialogs/dialog.service';
 import { IpcService } from 'src/app/ipc.service';
 import { MatTable } from '@angular/material/table';
 import { customAlphabet } from 'nanoid';
-import { ActionTypes, AuthorModel, CapturePhrase, DeathRecapPreferences, LogMaintenanceRules, LogMaintenancePlanTypes, OverlayWindowModel, QuickShareAuthorListTypes, TriggerAction, TriggerModel, ScheduledTask, Range, SettingsKeys, SharedTriggerPermissions, DpsMeterSettings } from 'src/app/core.model';
+import { ActionTypes, AuthorModel, CapturePhrase, DeathRecapPreferences, LogMaintenanceRules, LogMaintenancePlanTypes, OverlayWindowModel, QuickShareAuthorListTypes, TriggerAction, TriggerModel, ScheduledTask, Range, SettingsKeys, SharedTriggerPermissions, DpsMeterSettings, FileReadDelays } from 'src/app/core.model';
 import { SettingsService } from '../settings-http.service';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { SetupService } from 'src/app/setup/setup.service';
@@ -16,6 +16,7 @@ import { DateUtilities } from 'src/app/utilities/date.utilities';
 import { MathUtilities } from 'src/app/utilities/math.utilities';
 import { RollTrackerSettings } from 'src/app/rolls/rolls.component';
 import { TriggerHealthComponent } from 'src/app/trigger-health/trigger-health.component';
+import { HealthSummary, TriggerHealthService } from 'src/app/trigger-health/trigger-health.service';
 
 interface IPhoneticTransform {
     id: string;
@@ -23,13 +24,50 @@ interface IPhoneticTransform {
     phoneticText?: string;
 }
 
+interface IWatchStatus {
+    characterId: string;
+    name: string;
+    class: string | null;
+    watching: boolean;
+    lastLineAt: number | null;
+}
+
+interface ISettingsSection {
+    id: string;
+    label: string;
+}
+
+const advancedStorageKey = 'nagSettingsAdvanced';
+
 @Component( {
     selector: 'app-settings',
     templateUrl: 'settings.component.html', 
     styleUrls: [ 'settings.component.scss', '../../core.scss' ],
 } )
-export class SettingsComponent implements OnInit {
-    
+export class SettingsComponent implements OnInit, OnDestroy {
+
+    public readonly sections: ISettingsSection[] = [
+        { id: 'status', label: 'Status' },
+        { id: 'characters', label: 'Characters & log' },
+        { id: 'overlays', label: 'Overlays' },
+        { id: 'sound', label: 'Sound & voice' },
+        { id: 'sharing', label: 'Sharing' },
+        { id: 'rolls', label: 'Roll tracker' },
+        { id: 'death', label: 'Death recap' },
+        { id: 'combat', label: 'Combat' },
+        { id: 'advanced', label: 'Advanced' },
+        { id: 'diagnostics', label: 'Diagnostics' },
+    ];
+    public section: string = 'status';
+    public advancedOpen: Record<string, boolean> = {};
+    public watchStatus: IWatchStatus[] = [];
+    public statusNow: number = Date.now();
+    public triggerCount: number = 0;
+    public activeTriggerCount: number = 0;
+    public healthSummary: HealthSummary | null = null;
+    private statusTimerId: any = null;
+    private statusActive: boolean = false;
+
     public phoneticTransforms: IPhoneticTransform[] = [];
     public phoneticTransformsModified: boolean = false;
     public version: string;
@@ -39,7 +77,6 @@ export class SettingsComponent implements OnInit {
     public audioVolume: number = 100;
     public voiceOptions: SpeechSynthesisVoice[] = [];
     public voiceIndex: number = null;
-    public loadingGinaConfig: boolean = false;
     public author: AuthorModel = new AuthorModel();
     public trustedAuthor: boolean = false;
     public detrimentalOverlayId: string = null;
@@ -67,6 +104,7 @@ export class SettingsComponent implements OnInit {
     public updatedSettings: string[] = [];
     public rollSettings: RollTrackerSettings | null = null;
     public rollDefaults: RollTrackerSettings | null = null;
+    private fileReadDelays: FileReadDelays | null = null;
 
     public get timerOverlays(): OverlayWindowModel[] {
         return this.overlays?.filter( m => m.overlayType === 'Timer' );
@@ -79,8 +117,7 @@ export class SettingsComponent implements OnInit {
     private overlays: OverlayWindowModel[] = [];
 
     @Input() public characterList: CharactersListComponent;
-    @ViewChild( 'combatStatisticsGroup', { static: true } ) public combatStatisticsGroup: ElementRef<HTMLFieldSetElement>;
-    @ViewChild( 'triggerHealthSection', { static: true } ) public triggerHealthSection: ElementRef<HTMLFieldSetElement>;
+    @ViewChild( 'triggerHealthSection', { static: true } ) public triggerHealthSection: ElementRef<HTMLElement>;
     @ViewChild( 'triggerHealth', { static: true } ) public triggerHealth: TriggerHealthComponent;
 
     constructor(
@@ -90,6 +127,7 @@ export class SettingsComponent implements OnInit {
         private readonly snackBar: MatSnackBar,
         private readonly setupService: SetupService,
         private readonly ngZone: NgZone,
+        private readonly healthService: TriggerHealthService,
     ) {
         speechSynthesis.onvoiceschanged = () => {
             this.voiceOptions = speechSynthesis.getVoices();
@@ -97,6 +135,14 @@ export class SettingsComponent implements OnInit {
     }
 
     ngOnInit() {
+
+        try {
+            this.advancedOpen = JSON.parse( localStorage.getItem( advancedStorageKey ) ) ?? {};
+        } catch ( error ) {
+            this.advancedOpen = {};
+        }
+
+        this.healthService.summary$.subscribe( summary => this.healthSummary = summary );
 
         this.ipcService.getAppVersion().subscribe( version => this.version = version );
         
@@ -107,7 +153,9 @@ export class SettingsComponent implements OnInit {
             this.baseSpeakingRate = data.baseSpeakingRate;
             this.voiceIndex = data.voiceIndex;
             this.overlays = data.overlays;
-            
+            this.triggerCount = data.triggers?.length ?? 0;
+            this.activeTriggerCount = data.triggers?.filter( t => t.enabled !== false ).length ?? 0;
+
             this.phoneticTransforms = [];
             if ( data.phoneticTransforms ) {
                 for ( let key of Object.keys( data.phoneticTransforms ) ) {
@@ -241,6 +289,7 @@ export class SettingsComponent implements OnInit {
             this.quickShareAuthorList = f == null ? '' : f.join( '\r\n' );
         } );
 
+        this.ipcService.getSetting<FileReadDelays>( 'fileReadDelays', false ).subscribe( f => this.fileReadDelays = f );
         this.ipcService.getSetting<boolean>( SettingsKeys.allowPrerelease ).subscribe( f => this.allowPrerelease = f );
         this.ipcService.getSetting<boolean>( SettingsKeys.enableCheckWindowPosition ).subscribe( f => this.enableCheckWindowPosition = f );
 
@@ -502,10 +551,118 @@ export class SettingsComponent implements OnInit {
 
 
     /**
-     * Brings the Trigger Health section to the top of the view.
+     * Opens the Diagnostics section and brings the Trigger Health card to the top of the view.
      */
     scrollToTriggerHealth(): void {
-        this.triggerHealthSection.nativeElement.scrollIntoView( { block: 'start' } );
+        this.selectSection( 'diagnostics' );
+        setTimeout( () => this.triggerHealthSection.nativeElement.scrollIntoView( { block: 'start' } ) );
+    }
+
+    /**
+     * Shows one section of the page.
+     */
+    selectSection( id: string ): void {
+        this.section = id;
+        this.updateStatusTimer();
+    }
+
+    /**
+     * Shows or hides the Advanced part of a section; the choice is remembered.
+     */
+    toggleAdvanced( id: string ): void {
+        this.advancedOpen = { ...this.advancedOpen, [ id ]: !this.advancedOpen[ id ] };
+        try {
+            localStorage.setItem( advancedStorageKey, JSON.stringify( this.advancedOpen ) );
+        } catch ( error ) { }
+    }
+
+    /**
+     * Tells the page whether the Settings tab is on screen, so the Status card only reads the log files then.
+     */
+    setActive( active: boolean ): void {
+        this.statusActive = active;
+        this.updateStatusTimer();
+    }
+
+    private updateStatusTimer(): void {
+        const needed = this.statusActive && this.section === 'status';
+        if ( needed && this.statusTimerId == null ) {
+            this.refreshStatus();
+            this.statusTimerId = setInterval( () => this.refreshStatus(), 3000 );
+        } else if ( !needed && this.statusTimerId != null ) {
+            clearInterval( this.statusTimerId );
+            this.statusTimerId = null;
+        }
+    }
+
+    private refreshStatus(): void {
+        window.api.ipc.invoke( 'app:status:watching' )?.then( ( status: IWatchStatus[] ) => {
+            this.ngZone.run( () => {
+                this.watchStatus = status ?? [];
+                this.statusNow = Date.now();
+            } );
+        } ).catch( () => { } );
+    }
+
+    ngOnDestroy(): void {
+        if ( this.statusTimerId != null ) {
+            clearInterval( this.statusTimerId );
+        }
+    }
+
+    /**
+     * The characters whose log is being read now.
+     */
+    get watchedCharacters(): IWatchStatus[] {
+        return this.watchStatus.filter( s => s.watching );
+    }
+
+    /**
+     * Tells whether a setting hidden behind a section's Advanced switch differs from its default.
+     */
+    customised( id: string ): boolean {
+        switch ( id ) {
+            case 'characters':
+                return this.fileReadDelays != null && ( this.fileReadDelays.readDelayMs !== 200 || this.fileReadDelays.readErrorDelayMs !== 1000 || this.fileReadDelays.flushDelayMs !== 1000 );
+            case 'overlays':
+                return this.enableCheckWindowPosition === false;
+            case 'sound':
+                return this.speechVolume !== 100 || this.audioVolume !== 100 || this.baseSpeakingRate !== 1 || this.phoneticTransforms.length > 0;
+            case 'sharing':
+                return ( this.quickShareAuthorListType != null && this.quickShareAuthorListType !== QuickShareAuthorListTypes.Disabled ) || this.sharedTriggerPermissions.disableSharedGlowEffects === true || this.sharedTriggerPermissions.disableAllGlowEffects === true;
+            case 'rolls':
+                const roll = this.rollSettings;
+                const defaults = this.rollDefaults;
+                return roll != null && defaults != null && ( [ 'closeAfterSeconds', 'topCount', 'resultSeconds', 'rerollRule', 'pasteTemplate', 'speakWinnerPhrase', 'speakTiePhrase' ] as ( keyof RollTrackerSettings )[] ).some( key => roll[ key ] !== defaults[ key ] );
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Describes how long ago the newest log file change was, or null when there is none.
+     */
+    get lastLineAge(): string | null {
+        const times = this.watchedCharacters.map( s => s.lastLineAt ).filter( t => t != null );
+        if ( times.length === 0 ) {
+            return null;
+        }
+        const seconds = Math.max( 0, Math.round( ( this.statusNow - Math.max( ...times ) ) / 1000 ) );
+        if ( seconds < 60 ) {
+            return `${seconds} s ago`;
+        } else if ( seconds < 3600 ) {
+            return `${Math.floor( seconds / 60 )} min ago`;
+        } else if ( seconds < 86400 ) {
+            return `${Math.floor( seconds / 3600 )} h ago`;
+        }
+        return `${Math.floor( seconds / 86400 )} d ago`;
+    }
+
+    /**
+     * The number of health findings worth a look, or null before the first check.
+     */
+    get healthFindings(): number | null {
+        return this.healthSummary?.defaultCount ?? null;
     }
 
 
@@ -691,18 +848,6 @@ export class SettingsComponent implements OnInit {
 
 
     
-    /**
-     * Opens the GINA import dialog.
-     */
-    openImportGinaDialog(): void {
-        this.loadingGinaConfig = true;
-        this.ipcService.showGinaImportWindow().subscribe( loaded => {
-            this.loadingGinaConfig = false;
-            if ( !loaded ) {
-                this.dialogService.showErrorDialog( 'GINA Import', 'Could not load GINA data.' );
-            }
-        } );
-    }
 
 
 
