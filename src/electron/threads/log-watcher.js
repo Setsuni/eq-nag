@@ -1982,6 +1982,10 @@ function executeTriggerAction( trigger, action, timestamp, res, deltaTime, simul
             } else {
                 saveVariable( action.variableName, res.result[ 1 ], action.onlyStoreUsedValues );
             }
+
+            if ( action.variableName === 'CurrentZone' && !simulating ) {
+                reportZoneKnowledge( res );
+            }
         }
 
     } else if ( action.actionType === ActionTypes.ClearVariable ) {
@@ -3685,9 +3689,42 @@ function loadCachedStoredVariables( callback ) {
 
 
 
+/** The zone name from the last zone-in message, used to learn which name /who reports for it. */
+let lastEnteredZone = null;
+
+/**
+ * Tells the main process which zone names were seen, and when /who reports a zone under another name than the zone-in message.
+ *
+ * @param {PhraseParse} res The match that stored the CurrentZone value.
+ */
+function reportZoneKnowledge( res ) {
+    const zone = res.result.length === 1 ? res.result[ 0 ] : res.result[ 1 ];
+    if ( typeof zone !== 'string' ) {
+        return;
+    }
+
+    const name = zone.trim().replace( /\s+\d+$/, '' );
+
+    if ( res.phraseId === 'PhraseEnterZoneX' ) {
+        lastEnteredZone = name;
+        ipcRenderer.send( 'zone-knowledge:record', { zone: name } );
+    } else if ( res.phraseId === 'PhraseCharInZone' && lastEnteredZone && lastEnteredZone.toLowerCase() !== name.toLowerCase() ) {
+        ipcRenderer.send( 'zone-knowledge:record', { zone: name, from: lastEnteredZone, to: name } );
+    }
+}
+
+
+
+
+
+
+
+
+
+
 /**
  * Saves the given value in the store.
- * 
+ *
  * @param {string} key The key of the stored variable.
  * @param {any} value The value to store.
  * @param {boolean} restricted If true, the value must be used as a condition in a trigger before being saved.

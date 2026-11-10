@@ -146,6 +146,8 @@ const installedIdSubscribers = [];
 var onCreatedHandlers = [];
 /** @type {((trigger: Trigger) => void)[]} */
 var onRemovedHandlers = [];
+/** @type {((triggerIds: string[]) => void)[]} */
+var onImportedHandlers = [];
 
 class TriggerDatabaseStore extends Store {
 
@@ -204,6 +206,24 @@ class TriggerDatabaseStore extends Store {
         } else {
             onCreatedHandlers[ i ] = fn;
         }
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Executes the given function, passing in the ids of the new triggers, after triggers are imported or installed.
+     * 
+     * @param {(triggerIds: string[]) => void} fn The callback function.
+     */
+    onTriggersImported( fn ) {
+        onImportedHandlers.push( fn );
     }
 
 
@@ -477,6 +497,7 @@ class TriggerDatabaseStore extends Store {
                 }
                 event.sender.send( 'trigger:mass-create', triggerIds );
                 sendTick();
+                onImportedHandlers.forEach( fn => fn( triggerIds ) );
             } );
 
         ipcMain.on( 'trigger:create', ( event, trigger ) => {
@@ -1695,6 +1716,7 @@ class TriggerDatabaseStore extends Store {
             this.storeDataFile( this.#data );
             
             event.sender.send( 'pkg:install', true );
+            onImportedHandlers.forEach( fn => fn( pkg.model?.triggers?.map( f => f.triggerId ) ?? [] ) );
         } );
 
     }
@@ -1775,6 +1797,7 @@ class TriggerDatabaseStore extends Store {
                 this.storeDataFile( this.#data );
     
                 resolve( true );
+                onImportedHandlers.forEach( fn => fn( quickShare.model?.triggers?.map( f => f.triggerId ) ?? [] ) );
             } );
 
         } );
@@ -2103,6 +2126,23 @@ class TriggerDatabaseStore extends Store {
             this.installPackageFolder( folder, pkgChild, folderMap );
         } );
 
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Saves the trigger data after it was changed in place.
+     */
+    save() {
+        this.processPredefinedTriggers();
+        this.storeDataFile( this.#data );
     }
 
 
