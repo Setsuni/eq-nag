@@ -21,7 +21,7 @@ export class ConditionsComponent implements OnInit {
     public storedVariables: string[] = [];
     public counters: string[] = [];
     public get storedVariableNames(): string[] {
-        return [ ...this.storedVariables, ...this.counters ].sort( ( a, b ) => ( a ?? '' ).localeCompare( b ?? '', undefined, { sensitivity: 'base' } ) );
+        return Array.from( new Set( [ ...this.storedVariables, ...this.counters ] ) ).sort( ( a, b ) => ( a ?? '' ).localeCompare( b ?? '', undefined, { sensitivity: 'base' } ) );
     }
     public conditionTableColumns = [ 'variable', 'operator', 'value', 'delete' ];
 
