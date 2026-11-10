@@ -7,8 +7,8 @@
 // round-robin from the active list, and scales each sample up by the number of
 // triggers it stands for.
 
-/** How many triggers are timed on each log line during a measurement. */
-const timedPerLine = 4;
+/** How many triggers are timed on each log line during a measurement.  The log watcher's per-trigger check compares against exactly this many indexes. */
+const timedPerLine = 2;
 
 /** How long a measurement runs before it ends by itself. */
 const measureDurationMs = 10 * 60 * 1000;
@@ -27,6 +27,10 @@ class TriggerMetrics {
     #cursor = 0;
     #count = 0;
     #timed = 0;
+
+    /** The indexes of the triggers to time on the current line, or -1; read once per line by the log watcher. */
+    first = -1;
+    second = -1;
 
     get measuring() {
         return this.#measuring;
@@ -70,34 +74,26 @@ class TriggerMetrics {
     }
 
     /**
-     * Counts a log line while measuring and picks the triggers to time on it.
+     * Counts a log line while measuring and picks the triggers to time on it into first and second.
      *
      * @param {number} count The number of active triggers.
-     * @returns {number} The index of the first trigger to time, or -1 when no trigger is timed on this line.
      */
     sampleWindow( count ) {
+        this.first = -1;
+        this.second = -1;
         if ( !this.#measuring ) {
-            return -1;
+            return;
         }
         this.#lines++;
         if ( count < 1 ) {
-            return -1;
+            return;
         }
         this.#count = count;
         this.#timed = Math.min( timedPerLine, count );
         const start = this.#cursor % count;
+        this.first = start;
+        this.second = this.#timed > 1 ? ( start + 1 ) % count : -1;
         this.#cursor = ( start + this.#timed ) % count;
-        return start;
-    }
-
-    /**
-     * Tells whether a trigger is one of those timed on the current line.
-     *
-     * @param {number} start The value sampleWindow returned for this line.
-     * @param {number} index The index of the trigger in the active list.
-     */
-    isTimed( start, index ) {
-        return ( index - start + this.#count ) % this.#count < this.#timed;
     }
 
     /**

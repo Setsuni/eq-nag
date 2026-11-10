@@ -1918,12 +1918,14 @@ function parseLogEntries( raw, simulating, padTime ) {
 
         let entryMatched = false;
         const perfTriggers = perf.enabled && ++perfTriggerSample % 10 === 0;
-        const measureStart = triggerMetrics.sampleWindow( activeTriggers.length );
+        triggerMetrics.sampleWindow( activeTriggers.length );
+        const timedFirst = triggerMetrics.first;
+        const timedSecond = triggerMetrics.second;
         activeTriggers.forEach( ( trigger, index ) => {
 
             if ( !!trigger.enabled && !trigger._profileDisabled ) {
                 const perfStart = perfTriggers ? perf.now() : 0;
-                const timed = measureStart >= 0 && triggerMetrics.isTimed( measureStart, index );
+                const timed = index === timedFirst || index === timedSecond;
                 const timerStart = timed ? process.hrtime.bigint() : 0n;
                 trigger._parse( log, ( res, deltaTime ) => {
 
