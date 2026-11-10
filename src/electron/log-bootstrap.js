@@ -755,10 +755,12 @@ class LogBootstrapper {
 
                 // Reset the archive files.
                 this.#filesForArchive = [];
+                logFiles.forEach( f => this.#archiveInFlight.add( f ) );
         
                 this.#logBackupWindow.on( 'closed', () => {
                     ipcMain.removeAllListeners( 'log:backup:critical-failure' );
                     this.#logBackupWindow = null;
+                    logFiles.forEach( f => this.#archiveInFlight.delete( f ) );
                     resolve();
                 } );
         
@@ -1289,6 +1291,13 @@ function startLogBackup( logFiles, everquestInstallFolder, isDev, daysOfWeek, ba
     if ( isDev ) {
         logBackupWindow.webContents.openDevTools( { mode: 'undocked' } );
     }
+    // If the renderer crashes the window never closes by itself, which would block every later archive.
+    logBackupWindow.webContents.on( 'render-process-gone', () => {
+        if ( !logBackupWindow.isDestroyed() ) {
+            logBackupWindow.destroy();
+        }
+    } );
+
     logBackupWindow.loadURL( `file://${__dirname}/threads/log-backup.html?logFiles=${encodeURI(JSON.stringify(logFiles))}&eqFolder=${encodeURI(everquestInstallFolder)}&daysOfWeek=${encodeURI(JSON.stringify(daysOfWeek ?? []))}&i=${backupIndex}` );
 
     return logBackupWindow;
