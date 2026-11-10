@@ -96,6 +96,10 @@
             font-size: 12px;
             line-height: 26px;
 
+            &.problems-button {
+                color: #f06969;
+            }
+
             &.view-button.selected {
                 background-color: #ffffff1a;
                 font-weight: 600;

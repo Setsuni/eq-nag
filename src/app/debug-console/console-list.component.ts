@@ -29,6 +29,11 @@ export class ConsoleListComponent implements OnInit, OnChanges {
     public triggerId: string | null = null;
     public triggerName: string | null = null;
 
+    /** Trigger errors and error messages since the last clear. */
+    public get problemCount(): number {
+        return this.histories.exceptions.length + this.consoleMessages.filter( x => x.logType === LogTypes.error ).length;
+    }
+
     public history: ( ConsoleMessageModel | TriggerParseHistoryModel | ProgressModel )[] = [];
 
     constructor(

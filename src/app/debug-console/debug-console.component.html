@@ -21,6 +21,8 @@
             <button mat-button class="color-bright-white" (click)="showEditTriggerDialog()">Edit Trigger</button>
         </div>
 
+        <button mat-button class="problems-button" *ngIf="!developer && consoleList.problemCount > 0" (click)="developer = true" matTooltip="Open the Developer log">{{consoleList.problemCount}} {{consoleList.problemCount === 1 ? 'problem' : 'problems'}} - see Developer log</button>
+
         <span style="flex: 1 1 auto;"></span>
 
         <mat-form-field>
