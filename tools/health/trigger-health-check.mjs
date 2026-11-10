@@ -93,6 +93,13 @@ test( 'zone Equals that is part of another zone needs a look and is not bulk', (
     assert.match( finding.reason, /other zone/ );
 } );
 
+test( 'event and difficulty variants of a zone do not make Equals need a look', () => {
+    const knowledge = { zones: [ 'Soandso Keep', 'Soandso Keep - Hard', 'Soandso Keep: Anniversary' ], pairs: [] };
+    const t = trigger( 'Soandso Variants', { conditions: [ condition( 1, 'Soandso Keep' ) ] } );
+    const [ finding ] = only( run( [ t ], { zoneKnowledge: knowledge } ), 'zoneEquals' );
+    assert.equal( finding.needsLook, false );
+} );
+
 test( 'Equals with an instance number is known and still flagged', () => {
     const t = trigger( 'Soandso Instance', { conditions: [ condition( 1, 'Chardok 19' ) ] } );
     const report = run( [ t ] );

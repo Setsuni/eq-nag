@@ -271,13 +271,13 @@ function buildZoneIndex( zones, knowledge ) {
             return false;
         },
 
-        /** Returns the other known zone names that contain the given name, leaving out event variants such as "Zone: Event", which /who reports as the plain zone. */
+        /** Returns the other known zone names that contain the given name, leaving out event and difficulty variants such as "Zone: Event" or "Zone - Hard", which /who reports as the plain zone. */
         otherZonesContaining( name ) {
             const lower = name.toLowerCase();
             if ( !containing.has( lower ) ) {
                 const found = [];
                 for ( const [ known, original ] of names ) {
-                    if ( known !== lower && known.includes( lower ) && !known.includes( ': ' ) ) {
+                    if ( known !== lower && known.includes( lower ) && !known.includes( ': ' ) && !known.startsWith( `${lower} - ` ) ) {
                         found.push( original );
                     }
                 }
