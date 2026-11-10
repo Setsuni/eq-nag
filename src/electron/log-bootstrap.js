@@ -11,6 +11,8 @@ const ForwardRef = require( './forward-ref' );
 const { LogMaintenancePlanTypes, LogMaintenanceRules, ArchiveFilePrefix, SimulationProgress } = require( "./data/models/common" );
 const { nagLog } = require( "./utilities/nag-console" );
 const CombatDatabase = require( "./data/combat-database" );
+const TriggerPerfStore = require( "./data/trigger-perf-store" );
+const { measureDurationMs: triggerPerfDuration } = require( "./utilities/trigger-metrics" );
 const customAlphabet = require( 'nanoid' ).customAlphabet;
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
@@ -66,6 +68,15 @@ var combatWatcher = {
     server: null,
 };
 
+/** @type {Record<string, {startedAt: number, endsAt: number}>} Trigger measurements in progress, by character id. */
+var triggerPerfActive = {};
+
+/** @type {TriggerPerfStore|null} The last finished trigger measurement report of each character. */
+var triggerPerfStore = null;
+
+/** @type {Record<string, (counters: any) => void>} Pending requests for a log watcher's trigger counters. */
+var triggerCounterRequests = {};
+
 let cwReady = false;
 /** @type {(() => void) | undefined} */
 let cwOnDomReady;
@@ -118,6 +129,85 @@ class LogBootstrapper {
 
 
     /**
+     * Finds the log watcher window of a character.
+     *
+     * @param {string|undefined} characterId The character id; the first running log watcher if omitted.
+     * @returns {{characterId: string, window: BrowserWindow}|null}
+     */
+    #findLogWatcher( characterId ) {
+        const id = characterId ?? Object.keys( logWatchers ).find( key => logWatchers[ key ].window != null );
+        const window = logWatchers[ id ]?.window;
+        return window ? { characterId: id, window: window } : null;
+    }
+
+    /**
+     * Starts a ten minute trigger measurement.
+     *
+     * @param {string|undefined} characterId The character id; the first running log watcher if omitted.
+     * @returns {{started: boolean, characterId?: string}}
+     */
+    startTriggerPerf( characterId ) {
+        const watcher = this.#findLogWatcher( characterId );
+        if ( !watcher ) {
+            return { started: false };
+        }
+        const now = Date.now();
+        triggerPerfActive[ watcher.characterId ] = { startedAt: now, endsAt: now + triggerPerfDuration };
+        watcher.window.webContents.send( 'trigger-perf:start' );
+        return { started: true, characterId: watcher.characterId };
+    }
+
+    /**
+     * Ends a trigger measurement early; the report arrives through the trigger-perf:finished event.
+     *
+     * @param {string|undefined} characterId The character id; the first running log watcher if omitted.
+     * @returns {{stopped: boolean}}
+     */
+    stopTriggerPerf( characterId ) {
+        const watcher = this.#findLogWatcher( characterId );
+        watcher?.window.webContents.send( 'trigger-perf:stop' );
+        return { stopped: watcher != null };
+    }
+
+    /**
+     * Gets the state of the trigger measurement and the last finished report.
+     *
+     * @param {string|undefined} characterId The character id; the first running log watcher if omitted.
+     * @returns {{characterId?: string, measuring: boolean, startedAt?: number, endsAt?: number, last: any}}
+     */
+    getTriggerPerf( characterId ) {
+        const id = this.#findLogWatcher( characterId )?.characterId ?? characterId;
+        const active = triggerPerfActive[ id ];
+        // A watcher that closed mid-measurement never reports; stop showing it as running shortly after it should have ended.
+        const measuring = active != null && Date.now() < active.endsAt + 30 * 1000;
+        return { characterId: id, measuring: measuring, startedAt: active?.startedAt, endsAt: active?.endsAt, last: triggerPerfStore?.get( id ) ?? null };
+    }
+
+    /**
+     * Asks a log watcher for its always-on trigger counters.
+     *
+     * @param {string|undefined} characterId The character id; the first running log watcher if omitted.
+     * @returns {Promise<Record<string, {name: string, checked: number, fired: number}>|null>}
+     */
+    getTriggerCounters( characterId ) {
+        const watcher = this.#findLogWatcher( characterId );
+        if ( !watcher ) {
+            return Promise.resolve( null );
+        }
+        return new Promise( resolve => {
+            const requestId = nanoid();
+            const done = counters => {
+                clearTimeout( timeoutId );
+                delete triggerCounterRequests[ requestId ];
+                resolve( counters );
+            };
+            const timeoutId = setTimeout( () => done( null ), 5000 );
+            triggerCounterRequests[ requestId ] = done;
+            watcher.window.webContents.send( 'trigger-perf:counters-request', requestId );
+        } );
+    }
+
+    /**
      * Begins the process of checking and running log file watchers.
      * 
      * @param {ForwardRef<BrowserWindow>} mainWindowRef The main window of the application.
@@ -152,6 +242,24 @@ class LogBootstrapper {
                 }
             }
             combatWatcher.window?.webContents.send( 'tick', tickData );
+        } );
+
+        triggerPerfStore = new TriggerPerfStore( app.getPath( 'userData' ) );
+
+        // Trigger performance: the main window starts a ten minute measurement per character and reads the last report.
+        ipcMain.handle( 'trigger-perf:start', ( event, characterId ) => $this.startTriggerPerf( characterId ) );
+        ipcMain.handle( 'trigger-perf:stop', ( event, characterId ) => $this.stopTriggerPerf( characterId ) );
+        ipcMain.handle( 'trigger-perf:get', ( event, characterId ) => $this.getTriggerPerf( characterId ) );
+        ipcMain.handle( 'trigger-perf:counters', ( event, characterId ) => $this.getTriggerCounters( characterId ) );
+
+        ipcMain.on( 'trigger-perf:result', ( event, data ) => {
+            triggerPerfStore.set( data.characterId, data.report );
+            delete triggerPerfActive[ data.characterId ];
+            mainWinRef?.reference?.webContents.send( 'trigger-perf:finished', data.characterId );
+        } );
+
+        ipcMain.on( 'trigger-perf:counters-response', ( event, data ) => {
+            triggerCounterRequests[ data.requestId ]?.( data.counters );
         } );
 
         ipcMain.on( 'log:send:raw', function ( event, data ) {
