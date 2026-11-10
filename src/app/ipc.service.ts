@@ -1,7 +1,7 @@
 import { Injectable, NgZone } from '@angular/core';
 import * as Electron from 'electron';
 import { UpdateInfo } from 'electron-updater';
-import { Observable, Observer, Subject } from 'rxjs';
+import { Observable, Observer, ReplaySubject, Subject } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
 import { DataTickModel, DkpEntryModel, TriggerModel, OverlayWindowModel, ActionTypes, FocusEffectSettings, CharacterModel, BasicError, TriggerFolder, FileModel, Tag, AuthorModel, PackageFileModel, TriggerPackageMetaModel, TriggerPackageVersion, FctStylesModel, OverlayBoundsChangedEventArgs, DialogEventArgs, QuickShareMetaModel, LogFileLocation, IpcMessage, DeathRecapPreferences, QuickShareAuthorListTypes, Progress, QuitFailureData, DuplicateTriggerAction, ScrapedSpell, ScrapedClickEffect, TriggerParseHistoryModel, SimulationProgress, FctCombatGroup, CombatTypes, StylePropertiesModel, CombatAnimations, TriggersProfileModel, ConsoleMessageModel, LogTypes, ServerCombatModel, ProgressModel, ServerConsoleMessage, ChatRoomLinkReceivedEventArgs, RenderTokenModel, TokenChangeModel, ShareFilePayload, ShareFileReadResult, ShareFileSaveResult } from './core.model';
 import { GinaConfiguration, GinaTriggerGroups } from './gina.model';
@@ -83,8 +83,7 @@ export class IpcService {
     private _onCombatGroupMigrationRequestObservers: Observer<boolean>[] = [];
     private _settingsObservableCache: Record<string, Observable<any>> = {};
     private _settingsCacheObservers: Record<string, Observer<any>[]> = {};
-    private _watchedSettings: string[] = [];
-    private _settingsWatchObservers: Record<string, Observer<any>[]> = {};
+    private _settingsWatchSubjects: Record<string, ReplaySubject<any>> = {};
     private _onChatRoomDisconnected: Observer<string>[] = [];
     private _onChatRoomConnected: Observer<string>[] = [];
     private _onChatRoomServerLog: Observer<ServerConsoleMessage>[] = [];
@@ -987,31 +986,26 @@ export class IpcService {
      * @param key The setting key.
      */
     public watchSetting<T>( key: string ): Observable<T> {
-        let obs: Observable<T> = new Observable<T>( ( observer: Observer<T> ) => {
+        return new Observable<T>( ( observer: Observer<T> ) => {
 
-            if ( !this._watchedSettings.includes( key ) ) {
-                this._watchedSettings.push( key );
+            let subject: ReplaySubject<any> = this._settingsWatchSubjects[ key ];
+
+            if ( !subject ) {
+                subject = new ReplaySubject<any>( 1 );
+                this._settingsWatchSubjects[ key ] = subject;
 
                 window.api.ipc.on( `settings:get:${key}:generic`, ( e, value: T ) => {
                     this.ngZone.run( () => {
-                        observer.next( value );
-
-                        if ( this._settingsWatchObservers[ key ]?.length > 0 ) {
-                            this._settingsWatchObservers[ key ].forEach( f => {
-                                f.next( value );
-                            } );
-                        }
+                        subject.next( value );
                     } );
                 } );
-            } else {
-                this._settingsWatchObservers[ key ].push( observer );
+
+                window.api.ipc.send( 'settings:get', { key: key, subscribe: true } );
             }
 
-            window.api.ipc.send( 'settings:get', { key: key, subscribe: true } );
+            return subject.subscribe( observer );
 
         } );
-
-        return obs;
     }
 
     /**

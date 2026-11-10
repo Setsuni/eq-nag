@@ -22,6 +22,7 @@ export class OverlaysComponent implements OnInit {
     @Input() public isDev: boolean = false;
     public overlayAssignCounts: Record<string, number> = {};
     public overlays: OverlayWindowModel[] = [];
+    public overlaysLoaded: boolean = false;
 
     /** The open "Your resolution has changed!" dialog, if any. */
     private resolutionDialog: MatDialogRef<NotificationDialogComponent> = null;
@@ -38,6 +39,7 @@ export class OverlaysComponent implements OnInit {
         this.ipcService.tickReceived().subscribe( data => {
             
             this.overlays = data.overlays;
+            this.overlaysLoaded = true;
             
             this.calculateOverlayUseCounts( data.triggers );
             
@@ -187,6 +189,31 @@ export class OverlaysComponent implements OnInit {
      */
     enableOverlayEdit( overlayId: string ): void {
         this.ipcService.showEditOverlayDialog( overlayId );
+    }
+
+
+
+
+
+
+
+
+
+    
+    /**
+     * The plain-English name of an overlay type.
+     * 
+     * @param overlayType The overlay type value.
+     */
+    getOverlayTypeLabel( overlayType: string ): string {
+        switch ( overlayType ) {
+            case 'Log': return 'Debug Log';
+            case 'Alert': return 'Text Notifications';
+            case 'Timer': return 'Timer & Countdown';
+            case 'FCT': return 'Floating Combat Text';
+            case 'Chart': return 'Chart';
+            default: return overlayType ?? '';
+        }
     }
 
 

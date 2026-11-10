@@ -1,8 +1,23 @@
+:host {
+    display: flex;
+    flex-direction: column;
+    max-height: calc(80vh - 48px);
+}
+
+mat-dialog-content {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+}
+
+mat-dialog-actions {
+    flex: 0 0 auto;
+}
+
 .tree-container {
-    max-height: 50vh;
-    min-height: 300px;
+    min-height: 200px;
     padding-top: 25px;
-    overflow-y: scroll;
 }
 
 mat-tree-node.trigger-node {

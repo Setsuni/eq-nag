@@ -8,8 +8,8 @@
                 <ng-template matStepLabel>Action Type</ng-template>
 
                 <mat-radio-group aria-label="Select an action type" [(ngModel)]="model.actionType" name="rdgActionType" required>
-                    <mat-radio-button [value]="ActionTypes.DisplayText">Display Text</mat-radio-button>
-                    <mat-radio-button [value]="ActionTypes.PlayAudio">Play Audio</mat-radio-button>
+                    <mat-radio-button [value]="ActionTypes.DisplayText">Show text</mat-radio-button>
+                    <mat-radio-button [value]="ActionTypes.PlayAudio">Play sound</mat-radio-button>
                     <mat-radio-button [value]="ActionTypes.Speak">Speak</mat-radio-button>
                     <mat-radio-button [value]="ActionTypes.Timer">Timer</mat-radio-button>
                     <mat-radio-button [value]="ActionTypes.Countdown">Countdown</mat-radio-button>
@@ -35,11 +35,10 @@
         </mat-step>
         <mat-step [stepControl]="formDisplayText.control" *ngIf="model.actionType === ActionTypes.DisplayText">
             <form #formDisplayText="ngForm">
-                <ng-template matStepLabel>Display Text</ng-template>
+                <ng-template matStepLabel>Show text</ng-template>
                 <mat-form-field style="width: 100%;">
-                    <mat-label></mat-label>
+                    <mat-label>Show text</mat-label>
                     <input matInput [(ngModel)]="model.displayText" name="txtDisplayText" required>
-                    <mat-hint>Display Text</mat-hint>
                 </mat-form-field>
                 <div>
                     <button mat-button matStepperPrevious>Back</button>
@@ -52,9 +51,8 @@
                 <ng-template matStepLabel>Duration</ng-template>
                 <p>How long should this text stay on the screen?</p>
                 <mat-form-field>
-                    <mat-label></mat-label>
+                    <mat-label>Duration</mat-label>
                     <input matInput [(ngModel)]="model.duration" name="txtDuration" type="number" required>
-                    <mat-hint>Duration</mat-hint>
                 </mat-form-field>
                 <div>
                     <button mat-button matStepperPrevious>Back</button>

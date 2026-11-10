@@ -27,6 +27,17 @@ mat-toolbar {
     mat-form-field {
         font-size: 12px;
     }
+    mat-form-field.toolbar-field {
+        ::ng-deep .mat-form-field-wrapper {
+            padding-bottom: 0;
+        }
+        ::ng-deep .mat-form-field-subscript-wrapper {
+            display: none;
+        }
+        ::ng-deep .mat-form-field-infix {
+            padding-top: 6px !important;
+        }
+    }
 }
 
 div.tab-content {
@@ -623,6 +634,20 @@ mat-icon {
         font-size: 15px;
         width: 25px;
         height: 25px;
+    }
+}
+
+.empty-state {
+    text-align: center;
+    padding: 36px 16px;
+    h2 {
+        font-weight: 300;
+        margin: 0 0 6px;
+    }
+    p {
+        margin: 0 auto 14px;
+        max-width: 480px;
+        opacity: 0.75;
     }
 }
 

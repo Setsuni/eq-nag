@@ -1,7 +1,7 @@
 import { AfterViewChecked, Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { DialogService } from '../dialogs/dialog.service';
 import { GoodbyePayloadModel, HandshakePayloadModel, IpcService } from '../ipc.service';
-import { CharacterModel, CharacterOptionModel, ServerConsoleMessage, SettingsKeys } from '../core.model';
+import { CharacterModel, CharacterOptionModel, DpsMeterSettings, ServerConsoleMessage, SettingsKeys } from '../core.model';
 import { MatSnackBar } from '@angular/material/snack-bar';
 
 export interface IConnectedPeer {
@@ -31,14 +31,17 @@ export class CombatStatisticsComponent implements OnInit, AfterViewChecked {
     public characterOptions: CharacterOptionModel[] = [];
     private _combatCharacterId: string | null = null;
     public get combatCharacterId(): string {
-        return this._combatCharacterId || '';
+        return this._combatCharacterId || 'auto';
     }
     public set combatCharacterId( value: string | null ) {
-        this._combatCharacterId = value;
-        this.ipcService.changeCombatCharacter( value );
+        this._combatCharacterId = value === 'auto' || !value ? null : value;
+        this.ipcService.changeCombatCharacter( this._combatCharacterId );
     }
 
     public connectedPeers: IConnectedPeer[] = [];
+
+    public dpsMeterShow: boolean | undefined = undefined;
+    private dpsMeterSettings: DpsMeterSettings = new DpsMeterSettings();
 
     private visible: boolean = false;
     private scheduleScroll: boolean = false;
@@ -130,6 +133,10 @@ export class CombatStatisticsComponent implements OnInit, AfterViewChecked {
 
     ngOnInit(): void {
 
+        this.ipcService.watchSetting<DpsMeterSettings>( SettingsKeys.dpsMeterSettings ).subscribe( data => {
+            this.dpsMeterSettings = Object.assign( new DpsMeterSettings(), data );
+            this.dpsMeterShow = this.dpsMeterSettings.show;
+        } );
         this.ipcService.watchSetting<Record<string, string[]>>( SettingsKeys.serverTrustedPlayers ).subscribe( data => {
             this.serverTrustedPlayers = data;
             if ( this.serverTrustServer ) {
@@ -221,8 +228,14 @@ export class CombatStatisticsComponent implements OnInit, AfterViewChecked {
             let character = this.characterOptions.find( x => x.characterId === this._combatCharacterId );
             return character ? character.server : 'Unknown';
         } else {
-            return 'Auto';
+            return '';
         }
+    }
+
+    public turnOnDpsMeter(): void {
+        this.dpsMeterSettings.show = true;
+        this.dpsMeterShow = true;
+        this.ipcService.updateSetting( SettingsKeys.dpsMeterSettings, this.dpsMeterSettings, 0 );
     }
 
     public openCombatStatsSettings(): void {

@@ -1,10 +1,8 @@
 <mat-toolbar>
     <span>Triggers</span>
     <span class="spacer"></span>
-    <mat-form-field style="width: 275px; color: #7b1fa2;">
-        <mat-label></mat-label>
-        <input matInput [(ngModel)]="searchTerm" (ngModelChange)="searchTriggers()" />
-        <mat-hint>Search for triggers by name, description, phrase, etc...</mat-hint>
+    <mat-form-field class="toolbar-field" style="width: 275px;">
+        <input matInput placeholder="Search by name, description or phrase" [(ngModel)]="searchTerm" (ngModelChange)="searchTriggers()" />
     </mat-form-field>
     <!-- <button mat-button (click)="getAllTriggerfiles()">Download All Files</button> TODO: Remove button -->
     <button mat-icon-button *ngIf="healthCount > 0" class="health-button" (click)="openHealth.emit()" [matTooltip]="healthCount + ( healthCount === 1 ? ' trigger health finding' : ' trigger health findings' )" matTooltipPosition="below" aria-label="Show trigger health">
@@ -41,7 +39,7 @@
     <mat-menu #menu="matMenu" class="trigger-main-menu" xPosition="before">
         <button mat-menu-item [matMenuTriggerFor]="autoGenMenu">
             <!-- <mat-icon>system_update_alt</mat-icon> -->
-            <span>Auto Generation</span>
+            <span>Timer from spell</span>
         </button>
         <hr />
         <button mat-menu-item [matMenuTriggerFor]="hotkeyMenu">
@@ -51,7 +49,7 @@
         <hr />
         <button mat-menu-item (click)="showSimLogEntry()">
             <!-- <mat-icon>system_update_alt</mat-icon> -->
-            <span>Simulate Log</span>
+            <span>Test with log lines</span>
         </button>
         <button mat-menu-item (click)="openDeathRecap()">
             <!-- <mat-icon>system_update_alt</mat-icon> -->
@@ -60,7 +58,7 @@
         <hr />
         <button mat-menu-item (click)="installMultiCode()">
             <!-- <mat-icon>system_update_alt</mat-icon> -->
-            <span>Install Quick Share Code</span>
+            <span>Enter a share code</span>
         </button>
         <hr />
         <button mat-menu-item (click)="importFromFile()">
@@ -95,7 +93,7 @@
                     <span>Trigger folders</span>
                     <span class="spacer"></span>
                     <button mat-icon-button class="small" class="color-red" (click)="restoreFolderHierarchy()" *ngIf="restoreFolderHierarchy != null" matTooltip="Undo changes to the folder hierarchy."><mat-icon [inline]="true">replay</mat-icon></button>
-                    <button mat-icon-button class="small" (click)="addTriggerFolderDialog()"><mat-icon [inline]="true">add</mat-icon></button>
+                    <button mat-icon-button class="small" (click)="addTriggerFolderDialog()" matTooltip="Create a folder"><mat-icon [inline]="true">create_new_folder</mat-icon></button>
                     <button mat-icon-button class="small" (click)="toggleTree()"><mat-icon *ngIf="!allExpanded" [inline]="true">unfold_more</mat-icon><mat-icon *ngIf="allExpanded" [inline]="true">unfold_less</mat-icon></button>
                 </div>
 

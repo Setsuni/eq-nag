@@ -6,9 +6,8 @@
 
     <p *ngIf="getUrl">
         <mat-form-field style="width: 100%;">
-            <mat-label></mat-label>
+            <mat-label>Allakhazam URL</mat-label>
             <input matInput type="text" [(ngModel)]="url" />
-            <mat-hint>Allakhazam URL</mat-hint>
         </mat-form-field>
 
         <button mat-button (click)="scrape()" class="t-confirm-yes" color="accent">Scrape Information</button>
@@ -67,15 +66,14 @@
         <p>Select the overlays for the different action groups.</p>
         
         <mat-form-field style="width: 100%;">
-            <mat-label></mat-label>
+            <mat-label>Recast timer overlay</mat-label>
             <mat-select [(ngModel)]="recastTimerOverlayId" name="ddlRecastTimerOverlay">
                 <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
             </mat-select>
-            <mat-hint>Recast timer overlay</mat-hint>
         </mat-form-field>
         
         <mat-form-field style="width: 100%;">
-            <mat-label></mat-label>
+            <mat-label>Effect timer overlay</mat-label>
             <mat-select [(ngModel)]="effectTimerOverlayId" name="ddlEffectTimerOverlay">
                 <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
             </mat-select>
@@ -83,11 +81,10 @@
         </mat-form-field>
         
         <mat-form-field style="width: 100%;">
-            <mat-label></mat-label>
+            <mat-label>Display text overlay</mat-label>
             <mat-select [(ngModel)]="alertOverlayId" name="ddlAlertOverlay">
                 <mat-option *ngFor="let option of alertOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
             </mat-select>
-            <mat-hint>Display text overlay</mat-hint>
         </mat-form-field>
 
     </div>

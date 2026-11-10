@@ -4,6 +4,12 @@
     align-items: center;
 }
 
+.create-hint {
+    font-size: 12px;
+    color: rgba(255,255,255,.5);
+    margin-left: 8px;
+}
+
 mat-option {
     small {
         float:right;

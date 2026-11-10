@@ -37,20 +37,30 @@ mat-form-field {
     }
 }
 
-.floating-top-right {
+// The tab content scrolls inside the editor window, so the bar is fixed under the tabs
+// with a solid background; the content below is padded to start beneath it.
+.actions-toolbar {
     position: fixed;
-    top: 115px;
-    right: 16px;
-    border-radius: 16px;
-    box-shadow: inset 0px 0px 20px 7px #000000a8; 
-    padding: 4px 8px;
-    backdrop-filter: blur(3px);
+    top: 112px;
+    left: 0;
+    right: 8px;
+    height: 44px;
     z-index: 2;
-    background-color: #0b1c0c29;  /* very subtle glow effect around the text */
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 20px;
+    background-color: #1a1a1a;
+}
+
+.runs-for {
+    margin: 0 0 8px;
+    font-size: 12px;
+    opacity: 0.75;
 }
 
 .flex-layout {
-    padding-top: 30px;
+    padding-top: 44px;
 }
 
 .spacer {

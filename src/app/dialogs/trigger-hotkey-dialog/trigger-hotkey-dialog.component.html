@@ -60,13 +60,13 @@
     <form #form="ngForm" *ngIf="!showRenderedLines">
         <div class="trigger-hotkey-inputs">
             <mat-form-field>
+                <mat-label>Name</mat-label>
                 <input matInput type="text" [(ngModel)]="model.name" name="name" required />
-                <mat-hint>Name</mat-hint>
             </mat-form-field>
     
             <mat-form-field>
+                <mat-label>Description</mat-label>
                 <textarea matInput type="text" [(ngModel)]="model.description" name="description" rows="5" required></textarea>
-                <mat-hint>Description</mat-hint>
             </mat-form-field>
         </div>
     

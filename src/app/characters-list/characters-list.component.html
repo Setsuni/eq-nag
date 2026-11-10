@@ -45,7 +45,7 @@
                         <div class="n-layout n-row">
                             <div>
                                 <mat-form-field style="width: 100%;">
-                                    <mat-label>Character Class</mat-label>
+                                    <mat-label>Character class</mat-label>
                                     <mat-select [(ngModel)]="character.class" name="ddlCharacterClass_{{i}}" (selectionChange)="updateCharacter(character)">
                                         <mat-option value="BRD">Bard</mat-option>
                                         <mat-option value="BST">Beastlord</mat-option>
@@ -160,7 +160,7 @@
                                 </mat-form-field>
     
                                 <mat-form-field style="width: 220px; margin-left: 15px;">
-                                    <mat-label>Duration Limit</mat-label>
+                                    <mat-label>Duration limit</mat-label>
                                     <input matInput [(ngModel)]="character.beneficialCastingSpeedFocusAaDurationLimit" name="extBeneficialCastingSpeedFocusAaDurationLimit_{{i}}" type="string" (change)="updateCharacter(character)" />
                                     <mat-hint>The min duration (ms) for AA spell haste.</mat-hint>
                                 </mat-form-field>
@@ -185,7 +185,7 @@
                                 <h2>Profile</h2>
                                 <div>
                                     <mat-form-field style="width: 100%;">
-                                        <mat-label></mat-label>
+                                        <mat-label>Trigger profile</mat-label>
                                         <mat-select [(ngModel)]="character.triggerProfile" name="ddlTriggerProfile_{{i}}" (selectionChange)="onTriggerProfileChanged(character)" profileId="profileId" #profileId="ngModel">
                                             <mat-select-trigger>
                                                 {{getProfileName(profileId.value)}}

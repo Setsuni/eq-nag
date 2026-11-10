@@ -7,10 +7,9 @@
 
             <div class="card-property">
                 <div class="full-width">
-                    <mat-form-field style="width: 100%;">
-                        <mat-label></mat-label>
+                    <mat-form-field style="width: 100%;" floatLabel="always">
+                        <mat-label>Counter name</mat-label>
                         <input matInput [(ngModel)]="action.displayText" name="txtCounterName" />
-                        <mat-hint>Counter name</mat-hint>
                     </mat-form-field>
                 </div>
             </div>
@@ -25,7 +24,7 @@
         </div>
 
     </mat-tab>
-    <mat-tab label="Counter Reset">
+    <mat-tab label="Counter reset">
         <div class="card-tab-content">
             
             <app-phrases [(phrases)]="action.resetCounterPhrases">

@@ -206,8 +206,19 @@ export class TriggersComponent implements OnInit {
     private requireFolderSelect( title?: string, description?: string ): Observable<void> {
         let obs = new Observable<void>( sub => {
             
-            if ( !this.selectedFolderId ) {
+            if ( !this.selectedFolderId && !( this.triggerFolders?.length > 0 ) ) {
+                this.dialogService.showConfirmationDialog( 'Triggers live in folders. Create a folder first.', null, null, null, 'narrow', null, { 'Yes': 'Create a folder', 'No': 'Cancel' }, 'No folders yet' ).subscribe( confirmed => {
+                    if ( confirmed ) {
+                        this.addTriggerFolderDialog();
+                    }
+                    sub.complete();
+                } );
+            } else if ( !this.selectedFolderId ) {
                 this.dialogService.showSelectTriggerFolderDialog( null, title, description ).subscribe( folderId => {
+                    if ( !folderId ) {
+                        sub.complete();
+                        return;
+                    }
                     if ( this.selectedFolderId !== folderId ) {
                         this.expandParents( folderId );
                         this.toggleSelectedFolder( folderId );
@@ -2127,7 +2138,7 @@ export class TriggersComponent implements OnInit {
     installMultiCode() {
         this.dialogService
             .showInputDialog(
-                'Install Quick Share',
+                'Enter a share code',
                 [ 'To install a quick share or package, paste the code below' ],
                 'Package code',
                 'Paste in the quick share or package code',

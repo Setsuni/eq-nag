@@ -144,6 +144,20 @@ button.mat-icon-button.small {
     height: 25px;
 }
 
+.empty-state {
+    text-align: center;
+    padding: 36px 16px;
+    h2 {
+        font-weight: 300;
+        margin: 0 0 6px;
+    }
+    p {
+        margin: 0 auto 14px;
+        max-width: 480px;
+        opacity: 0.75;
+    }
+}
+
 .instructions {
     mat-icon {
         font-weight: bold;
