@@ -226,7 +226,7 @@ const counterReply = w => {
     return reply.counters;
 };
 
-// Counters count the phrases actually tried and the matches, and nothing else.
+// Outside a measurement only the matches are counted; the phrases tried are counted while measuring.
 {
     const hit = makeTrigger( 'Hit', [ phrase( 'alpha beta gamma', false ) ] );
     const never = makeTrigger( 'Never', [ phrase( 'something else entirely', false ) ] );
@@ -236,9 +236,9 @@ const counterReply = w => {
     [ 'alpha beta gamma', 'delta', 'alpha beta gamma', 'epsilon', 'zeta' ].forEach( w.feed );
 
     const counters = counterReply( w );
-    check( counters[ hit.triggerId ].checked === 5 && counters[ hit.triggerId ].fired === 2, 'counters: checked on every line, fired on matches' );
-    check( counters[ never.triggerId ].checked === 5 && counters[ never.triggerId ].fired === 0, 'counters: a trigger that never matches is still checked' );
-    check( counters[ blocked.triggerId ].checked === 0 && counters[ blocked.triggerId ].fired === 0, 'counters: a trigger whose conditions fail is not checked' );
+    check( counters[ hit.triggerId ].fired === 2, 'counters: fired on matches' );
+    check( counters[ never.triggerId ].fired === 0 && counters[ blocked.triggerId ].fired === 0, 'counters: triggers that do not match have not fired' );
+    check( Object.values( counters ).every( c => c.checked === undefined ), 'counters: checked is not counted outside a measurement' );
     check( counters[ hit.triggerId ].name === 'Hit', 'counters: carry the trigger name' );
     check( w.internals.triggerMetrics.measuring === false, 'counters: no measurement runs by default' );
     check( Object.values( w.internals.triggerMetrics.counters( w.internals.activeTriggers ) ).every( c => c.totalMs === undefined ), 'counters: no timing without a measurement' );
@@ -259,7 +259,8 @@ const counterReply = w => {
 {
     const hit = makeTrigger( 'Hit', [ phrase( 'alpha beta gamma', false ) ] );
     const quiet = makeTrigger( 'Quiet', [ phrase( 'something else entirely', false ) ] );
-    const w = createWatcher( { triggers: [ hit, quiet ] } );
+    const blocked = makeTrigger( 'Blocked', [ phrase( 'alpha beta gamma', false ) ], { conditions: [ variableIs( 'NoSuchVariable', 'x' ) ] } );
+    const w = createWatcher( { triggers: [ hit, quiet, blocked ] } );
     w.tick();
     for ( let i = 0; i < 30; i++ ) {
         w.feed( 'alpha beta gamma' );
@@ -280,10 +281,12 @@ const counterReply = w => {
     check( report?.lineCount === 200, 'measurement: counts the lines in the window' );
     check( report?.endedAt >= report?.startedAt, 'measurement: has a time window' );
     const row = report?.rows.find( r => r.triggerId === hit.triggerId );
-    check( row?.checked === 200 && row?.fired === 100, 'measurement: checked and fired cover the window only' );
-    check( row?.samples === 200, 'measurement: with fewer triggers than the timed batch, every trigger is timed on every line' );
+    check( Math.abs( row?.checked - 200 ) <= 4 && row?.fired === 100, 'measurement: checked (estimated from the timed lines) and fired cover the window only' );
+    check( row?.samples > 0, 'measurement: times the trigger' );
+    const blockedRow = report?.rows.find( r => r.triggerId === blocked.triggerId );
+    check( blockedRow?.checked === 0 && blockedRow?.skipped === true && report?.rows[ 2 ].triggerId === blocked.triggerId, 'measurement: a trigger whose conditions fail is not checked, is skipped and sorted last' );
     check( row?.totalMs > 0 && row?.maxMs > 0 && row?.maxMs <= row?.totalMs, 'measurement: times the sampled lines' );
-    check( report?.rows.length === 2, 'measurement: lists every active trigger' );
+    check( report?.rows.length === 3, 'measurement: lists every active trigger' );
     check( Math.abs( report?.rows.reduce( ( sum, r ) => sum + r.sharePercent, 0 ) - 100 ) < 1e-6, 'measurement: shares add up to 100' );
     check( report?.rows[ 0 ].totalMs >= report?.rows[ 1 ].totalMs, 'measurement: sorted by time' );
 
@@ -292,7 +295,7 @@ const counterReply = w => {
     w.feed( 'alpha beta gamma' );
     w.handlers[ 'trigger-perf:stop' ]( {} );
     const second = w.results[ 1 ]?.report.rows.find( r => r.triggerId === hit.triggerId );
-    check( second?.checked === 1 && second?.fired === 1, 'measurement: a new window starts from zero' );
+    check( second?.checked <= 2 && second?.fired === 1, 'measurement: a new window starts from zero' );
     check( counterReply( w )[ hit.triggerId ].fired === 30 + 100 + 1, 'counters: the always-on total is not reset by a measurement' );
 }
 
@@ -392,10 +395,10 @@ const counterReply = w => {
     check( store.sanitizeReport( good )?.rows[ 0 ].hints.length === 1, 'sanitize: keeps known hints only' );
     check( store.sanitizeReport( { ...good, rows: [ { ...good.rows[ 0 ], hints: undefined } ] } )?.rows[ 0 ].hints.length === 0, 'sanitize: a row without hints gets none' );
     check( store.sanitizeReport( { ...good, rows: [ { ...good.rows[ 0 ], hints: [ '__proto__', 'constructor', 'toString', 'no-literal' ] } ] } ).rows[ 0 ].hints.length === 1, 'sanitize: inherited names are not hint codes' );
-    check( Object.keys( store.sanitizeCounters( JSON.parse( '{"__proto__":{"name":"x","checked":1,"fired":1},"a":{"name":"y","checked":1,"fired":1}}' ) ) ).length === 2, 'sanitize: counters keep odd ids as plain entries' );
+    check( Object.keys( store.sanitizeCounters( JSON.parse( '{"__proto__":{"name":"x","fired":1},"a":{"name":"y","fired":1}}' ) ) ).length === 2, 'sanitize: counters keep odd ids as plain entries' );
     check( [ null, 5, 'x', [], {}, { ...good, lineCount: 'x' }, { ...good, rows: 'x' } ].every( r => store.sanitizeReport( r ) === null ), 'sanitize: junk is not a report' );
     check( store.sanitizeReport( { ...good, rows: [ null, { triggerId: 1 }, { ...good.rows[ 0 ], checked: NaN }, good.rows[ 0 ] ] } ).rows.length === 1, 'sanitize: bad rows are dropped' );
-    check( store.sanitizeCounters( { a: { name: 'x', checked: 1, fired: 2 }, b: { name: 5 }, c: null } ).a.fired === 2 && Object.keys( store.sanitizeCounters( { b: { name: 5 } } ) ).length === 0 && store.sanitizeCounters( 'x' ) === null, 'sanitize: counters' );
+    check( store.sanitizeCounters( { a: { name: 'x', fired: 2 }, b: { name: 5 }, c: null } ).a.fired === 2 && Object.keys( store.sanitizeCounters( { b: { name: 5 } } ) ).length === 0 && store.sanitizeCounters( 'x' ) === null, 'sanitize: counters' );
 
     const folder = mkdtempSync( path.join( process.env.NAG_TEST_TMP ?? tmpdir(), 'nag-perf-junk-' ) );
     writeFileSync( path.join( folder, 'trigger-perf.json' ), 'null' );

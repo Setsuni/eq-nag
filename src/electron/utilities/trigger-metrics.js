@@ -1,7 +1,8 @@
 // Per-trigger counters and on-demand timing for the log watcher.
 //
-// Every trigger has a { checked, fired } pair that is always counted (two
-// integer increments).  Timing only runs during a measurement.  A trigger costs
+// Every trigger counts how often it fired, always (one integer increment on a
+// match).  How often its phrases were tried (checked) and the timing only run
+// during a measurement, so the rest of the time they cost nothing.  A trigger costs
 // about a microsecond, so timing all of them on every line would cost more than
 // the triggers themselves; instead each line times only a few triggers, taken
 // round-robin from the active list, and scales each sample up by the number of
@@ -112,6 +113,15 @@ class TriggerMetrics {
     }
 
     /**
+     * Counts a line on which a timed trigger's phrases were tried, scaled up for the triggers that were not timed.
+     *
+     * @param {{checked: number}} stats The trigger's counters.
+     */
+    countChecked( stats ) {
+        stats.checked += this.#count / this.#timed;
+    }
+
+    /**
      * Ends the measurement.
      *
      * @param {{triggerId: string}[]} triggers The triggers to report; those never checked are included with zeros.
@@ -125,7 +135,7 @@ class TriggerMetrics {
             const s = this.statsFor( trigger.triggerId );
             const base = this.#base[ trigger.triggerId ] ?? [ 0, 0 ];
             result.triggers[ trigger.triggerId ] = {
-                checked: s.checked - base[ 0 ],
+                checked: Math.round( s.checked - base[ 0 ] ),
                 fired: s.fired - base[ 1 ],
                 samples: s.samples,
                 totalMs: s.totalMs,
@@ -136,7 +146,7 @@ class TriggerMetrics {
     }
 
     /**
-     * Gets the always-on counters of the given triggers.
+     * Gets the always-on counters of the given triggers: how often each fired.  Checked is only counted during a measurement.
      *
      * @param {{triggerId: string, name: string}[]} triggers The triggers.
      */
@@ -144,7 +154,7 @@ class TriggerMetrics {
         const result = Object.create( null );
         triggers.forEach( trigger => {
             const s = this.#stats[ trigger.triggerId ];
-            result[ trigger.triggerId ] = { name: trigger.name, checked: s?.checked ?? 0, fired: s?.fired ?? 0 };
+            result[ trigger.triggerId ] = { name: trigger.name, fired: s?.fired ?? 0 };
         } );
         return result;
     }

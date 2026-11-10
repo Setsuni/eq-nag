@@ -1474,7 +1474,6 @@ function generateTriggerFns() {
         
                             // If all conditions passed, then parse the phrase.
                             if ( trigger._checkConditions() ) {
-                                _stats.checked++;
                                 _phraseParsers.forEach( ( parser, i ) => {
                                     let _res = parser( value );
                                     if ( _res?.match ) {
@@ -1516,7 +1515,6 @@ function generateTriggerFns() {
                             let passed = false;
         
                             if ( trigger._checkConditions() ) {
-                                _stats.checked++;
         
                                 let _res = _phraseParsers[ 0 ]( value );
         
@@ -1973,9 +1971,15 @@ function parseLogEntries( raw, simulating, padTime ) {
                 if ( !!trigger.enabled && !trigger._profileDisabled ) {
                     const perfStart = perfTriggers ? perf.now() : 0;
                     const timed = index === timedFirst || index === timedSecond;
-                    const timerStart = timed ? process.hrtime.bigint() : 0n;
-                    runTrigger( trigger );
-                    timed && triggerMetrics.record( trigger._stats, process.hrtime.bigint() - timerStart );
+                    if ( timed ) {
+                        // The two timed triggers also count whether their phrases will be tried; the counts are scaled up like the time.
+                        typeof trigger._checkConditions === 'function' && trigger._checkConditions() && triggerMetrics.countChecked( trigger._stats );
+                        const timerStart = process.hrtime.bigint();
+                        runTrigger( trigger );
+                        triggerMetrics.record( trigger._stats, process.hrtime.bigint() - timerStart );
+                    } else {
+                        runTrigger( trigger );
+                    }
                     perfTriggers && perf.record( trigger._perfName ??= `trigger: ${trigger.name}`, perfStart, 10 );
                 }
             } );
