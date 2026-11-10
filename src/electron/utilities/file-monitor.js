@@ -417,6 +417,23 @@ class FileMonitor {
                 return false;
             };
 
+            /** Schedules the next read, or finishes monitoring if it was asked to stop. */
+            const next = async () => {
+                if ( !this.#stopMonitor ) {
+                    setTimeout( () => parse(), readDelayMs );
+                    return;
+                }
+
+                await file.close();
+                this.#monitoring = false;
+
+                if ( this.#onStopped ) {
+                    this.#onStopped( position );
+                }
+
+                resolve();
+            };
+
             const parse = async () => {
 
                 let exists = fs.existsSync( this.filePath );
@@ -452,7 +469,7 @@ class FileMonitor {
                     file?.close();
                     file = await fsp.open( this.filePath, 'r' );
 
-                    setTimeout( () => parse(), readDelayMs );
+                    await next();
                     return;
                 }
 
@@ -466,7 +483,7 @@ class FileMonitor {
                             payload: { readSize, position, stats },
                         } );
                     }
-                    setTimeout( () => parse(), readDelayMs );
+                    await next();
                     return;
                 }
 
@@ -508,7 +525,7 @@ class FileMonitor {
 
                         this.#readErrorCount++;
 
-                        setTimeout( () => parse(), readDelayMs );
+                        await next();
                         return;
                     }
 
@@ -532,18 +549,9 @@ class FileMonitor {
 
                     if ( !this.#stopMonitor ) {
                         this.#readErrorCount = 0;
-                        setTimeout( () => parse(), readDelayMs );
-    
-                    } else {
-                        await file.close();
-                        this.#monitoring = false;
-    
-                        if ( this.#onStopped ) {
-                            this.#onStopped( position );
-                        }
-    
-                        resolve();
                     }
+
+                    await next();
 
                 } catch ( error ) {
 
