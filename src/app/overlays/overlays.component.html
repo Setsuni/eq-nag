@@ -14,6 +14,11 @@
 </mat-toolbar>
 <div class="tab-content">
 
+    <ng-template [ngIf]="overlays?.length > 0">
+        <p class="map-intro">Where your overlays are on your screens. Drag a box to move it, or press <strong>Arrange Overlays</strong> to move them on screen.</p>
+        <app-overlay-map [overlays]="overlays" [selectedOverlayId]="selectedOverlayId" (overlaySelected)="selectedOverlayId = $event" (overlayMoved)="moveOverlay( $event )"></app-overlay-map>
+    </ng-template>
+
     <div class="empty-state" *ngIf="overlaysLoaded && overlays?.length === 0">
         <h2>No overlays yet</h2>
         <p>Overlays are the windows on your screen where trigger text, timers and bars show up.</p>
@@ -24,9 +29,10 @@
         [dataSource]="overlays">
 
         <ng-container matColumnDef="edit">
-            <th mat-header-cell *matHeaderCellDef style="text-align: center; width: 280px;">  </th>
-            <td mat-cell *matCellDef="let element; let i = index" style="text-align: center; width: 280px; white-space: nowrap;">
+            <th mat-header-cell *matHeaderCellDef style="text-align: center; width: 440px;">  </th>
+            <td mat-cell *matCellDef="let element; let i = index" style="text-align: center; width: 440px; white-space: nowrap;">
                 <button mat-button color="accent" aria-label="Edit this overlay" (click)="enableOverlayEdit(element.overlayId)" matTooltip="Edit this overlay" matTooltipShowDelay="500" matTooltipPosition="above"><mat-icon>display_settings</mat-icon> Edit</button>
+                <button mat-button color="accent" aria-label="Show a sample on this overlay" [disabled]="!canSendTest( element.overlayType )" (click)="sendTest( element )" [matTooltip]="canSendTest( element.overlayType ) ? 'Show a sample timer or text on this overlay.' : 'There is no sample for this overlay type.'" matTooltipShowDelay="500" matTooltipPosition="above"><mat-icon>play_arrow</mat-icon> Send test</button>
                 <button mat-button color="accent" aria-label="Centre this overlay on a monitor" (click)="sendToOrigin(element.overlayId)" matTooltip="Send overlay to the middle of the selected monitor." matTooltipShowDelay="500" matTooltipPosition="right"><mat-icon>filter_center_focus</mat-icon> Centre on monitor</button>
             </td>
         </ng-container>
@@ -38,7 +44,7 @@
 
         <ng-container matColumnDef="type">
             <th mat-header-cell *matHeaderCellDef style="padding-left: 15px;"> Type </th>
-            <td mat-cell *matCellDef="let element; let i = index" style="padding-left: 15px;"> {{getOverlayTypeLabel(element.overlayType)}} </td>
+            <td mat-cell *matCellDef="let element; let i = index" style="padding-left: 15px;"><span class="type-dot" [ngClass]="getOverlayTypeClass( element.overlayType )"></span> {{getOverlayTypeLabel(element.overlayType)}} </td>
         </ng-container>
 
         <ng-container matColumnDef="assignCount">
@@ -59,7 +65,7 @@
         </ng-container>
 
         <tr mat-header-row *matHeaderRowDef="['edit', 'name', 'type', 'assignCount', 'delete']"></tr>
-        <tr mat-row *matRowDef="let element; columns: ['edit', 'name', 'type', 'assignCount', 'delete'];"></tr>
+        <tr mat-row *matRowDef="let element; columns: ['edit', 'name', 'type', 'assignCount', 'delete'];" [class.selected-row]="element.overlayId === selectedOverlayId" (click)="selectedOverlayId = element.overlayId"></tr>
 
     </table>
 </div>

@@ -1,6 +1,27 @@
 .spacer {
     flex: 1 1 auto;
 }
+
+.map-intro {
+    margin: 0 0 12px 0;
+}
+
+.type-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 6px;
+    background-color: #bdbdbd;
+
+    &.type-timer { background-color: #66bb6a; }
+    &.type-text { background-color: #4fc3f7; }
+    &.type-fct { background-color: #ffb74d; }
+}
+
+tr.selected-row {
+    background-color: #ffffff14;
+}
 div.tab-content {
     overflow-y: scroll;
     position: fixed;

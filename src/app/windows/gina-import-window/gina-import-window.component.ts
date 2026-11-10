@@ -618,7 +618,7 @@ export class GinaImportWindowComponent implements OnInit {
                                     if ( this.alertOverlays?.length > 0 ) {
                                         ac.overlayId = this.alertOverlays[ 0 ]?.overlayId;
                                     } else {
-                                        this.alertMissingOverlays( 'Alert Overlay' );
+                                        this.alertMissingOverlays( 'Text Overlay' );
                                         allSelected = false;
                                         return;
                                     }
@@ -639,7 +639,7 @@ export class GinaImportWindowComponent implements OnInit {
                                         if ( this.alertOverlays?.length > 0 ) {
                                             ac.endingSoonTextOverlayId = this.alertOverlays[ 0 ]?.overlayId;
                                         } else {
-                                            this.alertMissingOverlays( 'Alert Overlay' );
+                                            this.alertMissingOverlays( 'Text Overlay' );
                                             allSelected = false;
                                             return;
                                         }
@@ -649,7 +649,7 @@ export class GinaImportWindowComponent implements OnInit {
                                         if ( this.alertOverlays?.length > 0 ) {
                                             ac.endedTextOverlayId = this.alertOverlays[ 0 ]?.overlayId;
                                         } else {
-                                            this.alertMissingOverlays( 'Alert Overlay' );
+                                            this.alertMissingOverlays( 'Text Overlay' );
                                             allSelected = false;
                                             return;
                                         }
