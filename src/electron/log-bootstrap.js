@@ -308,7 +308,7 @@ class LogBootstrapper {
                     let _stats = fs.existsSync( _chr.logFile ) ? fs.statSync( _chr.logFile ) : null;
 
                     // If the window has not been engaged, then open it. // TODO: Start up a log watcher when simulating. Even allow a charcter to be selected from a list.
-                    logWatchers[ _chr.characterId ].window = startLogWatcherWindow( _chr.logFile, isDev, sendTick, _chr, logWatchers[ _chr.characterId ].logSize > _stats.size ? 0 : logWatchers[ _chr.characterId ].logSize );
+                    logWatchers[ _chr.characterId ].window = startLogWatcherWindow( _chr.logFile, isDev, sendTick, _chr, logWatchers[ _chr.characterId ].logSize > ( _stats?.size ?? 0 ) ? 0 : logWatchers[ _chr.characterId ].logSize );
             
                     // Notify the main window.
                     mainWindowRef.reference.webContents.send( 'log:character:activated', _chr.characterId );
@@ -347,7 +347,7 @@ class LogBootstrapper {
                     let _stats = fs.existsSync( _chr.logFile ) ? fs.statSync( _chr.logFile ) : null;
 
                     // If the window has not been engaged, then open it. // TODO: Start up a log watcher when simulating. Even allow a charcter to be selected from a list.
-                    logWatchers[ _chr.characterId ].window = startLogWatcherWindow( _chr.logFile, isDev, sendTick, _chr, logWatchers[ _chr.characterId ].logSize > _stats.size ? 0 : logWatchers[ _chr.characterId ].logSize );
+                    logWatchers[ _chr.characterId ].window = startLogWatcherWindow( _chr.logFile, isDev, sendTick, _chr, logWatchers[ _chr.characterId ].logSize > ( _stats?.size ?? 0 ) ? 0 : logWatchers[ _chr.characterId ].logSize );
                 
                     // Notify the main window.
                     mainWindowRef.reference.webContents.send( 'log:character:activated', _chr.characterId );
