@@ -206,7 +206,7 @@
                             <td mat-cell *matCellDef="let element; let i = index" class="col-status">
                                 <span class="chip off" *ngIf="!element.enabled">off</span>
                                 <span class="chip pkg" *ngIf="element.packageId" matTooltip="Part of an imported package">package</span>
-                                <span class="chip warn" *ngIf="getTriggerHealthTip(element)" [matTooltip]="getTriggerHealthTip(element)" matTooltipClass="health-tip" (click)="openHealth.emit()">{{triggerNeedsLook(element) ? 'needs a look' : 'health'}}</span>
+                                <span class="chip warn" *ngIf="getTriggerHealthTip(element)" [matTooltip]="getTriggerHealthTip(element)" matTooltipClass="health-tip" (click)="openHealth.emit()">{{triggerNeedsLook(element) ? 'needs a look' : 'health note'}}</span>
                             </td>
                         </ng-container>
 
