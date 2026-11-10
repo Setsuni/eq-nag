@@ -557,60 +557,44 @@ function parseMatchesToLiteral( value, matches, deltaTime ) {
         return value;
     }
 
-    // \${(.[^}]*)}     Your ${SpellBeingCast} spell is interrupted.
-    //                      Full match	47-63	{SpellBeingCast}
-    //                      Group 1.	n/a	SpellBeingCast
-    let namedResults = [ ...value.matchAll( /\${(.[^}]*)}/g ) ];// /\${(.[^}]*)}/g.exec( value );
-    
-    if ( namedResults?.length > 0 && matches?.groups != null ) {
-        for ( let m = 0; m < namedResults.length; m++ ) {
-            // ex: matches.groups.player == 'Soandso'
-            //  when given the phrase
-            //      ${target} has been slain by ${player}!
-            //  matches the log entry
-            //      Mob Name A has been slain by Soandso!
-            let key = namedResults[ m ][ 1 ];
-
-            if ( key === 'deltaTime' ) {
-                value = value.replace( RegExp( `\\\${${getEscapedString( key )}}`, 'g' ), () => deltaTime );
-            } else if ( matches.groups[ key ] != null ) {
-                value = value.replace( RegExp( `\\\${${getEscapedString( key )}}`, 'g' ), () => matches.groups[ key ] );
-            }
-        }
-    }
-
-    // #{([0-9]+?)}     This is a test #{1} so that testing can #{2}.
+    // Everything is replaced in a single pass so that captured text is inserted literally and never expanded again.
     //
-    //                      Match 1
-    //                      Full match	15-19	#{1}
-    //                      Group 1.	17-18	1
+    // \${(.[^}]*)}                  Your ${SpellBeingCast} spell is interrupted.
+    //                                  Group 1.	SpellBeingCast
+    //                                  A name of digits only is an indexed result, as in ${1}.
     //
-    //                      Match 2
-    //                      Full match	40-44	#{2}
-    //                      Group 1.	42-43	2
-    //
-    // Having alternate syntax including ${1} and {1}.
-    let indexedResults = [ ...value.matchAll( /(:?#|\$)?{([0-9]+?)}/g ) ];
-
-    if ( indexedResults?.length > 0 ) {
-        for ( let i = 0; i < indexedResults.length; i++ ) {
-            // ex: matches[2] == 'Soandso'
-            //  when given the phrase
-            //      (.+?) has been slain by (.+?)!
-            //  matches the log entry
-            //      Mob Name A has been slain by Soandso!
-            let index = +indexedResults[ i ][ indexedResults[ i ].length - 1 ];
-            if ( matches[ index ] != null ) {
-                if ( indexedResults[ i ][ 1 ] === '$' || indexedResults[ i ][ 1 ] === '#' ) {
-                    value = value.replace( RegExp( `(#|\\$)\\{${index}\\}`, 'g' ), () => matches[ index ] );
-                } else {
-                    value = value.replace( RegExp( `\\{${index}\\}`, 'g' ), () => matches[ index ] );
+    // (:?#|\$)?{([0-9]+?)}           This is a test #{1} so that testing can #{2}.
+    //                                  Group 1.	#
+    //                                  Group 2.	1
+    //                                  Having alternate syntax including ${1} and {1}.
+    return value.replace( /\${(.[^}]*)}|(:?#|\$)?{([0-9]+?)}/g, ( full, name, prefix, digits ) => {
+        // ex: matches.groups.player == 'Soandso'
+        //  when given the phrase
+        //      ${target} has been slain by ${player}!
+        //  matches the log entry
+        //      Mob Name A has been slain by Soandso!
+        if ( name != null ) {
+            if ( matches.groups != null ) {
+                if ( name === 'deltaTime' ) {
+                    return deltaTime;
+                } else if ( matches.groups[ name ] != null ) {
+                    return matches.groups[ name ];
                 }
             }
+            digits = /^[0-9]+$/.test( name ) ? name : null;
+            prefix = '$';
         }
-    }
 
-    return value;
+        // ex: matches[2] == 'Soandso'
+        //  when given the phrase
+        //      (.+?) has been slain by (.+?)!
+        //  matches the log entry
+        //      Mob Name A has been slain by Soandso!
+        if ( digits != null && String( +digits ) === digits && matches[ +digits ] != null ) {
+            return prefix === ':#' ? prefix + matches[ +digits ] : matches[ +digits ];
+        }
+        return full;
+    } );
 }
 
 
