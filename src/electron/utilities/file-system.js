@@ -1,4 +1,5 @@
 const fs = require( 'fs' );
+const nodePath = require( 'path' );
 
 /**
  * Combines the given path segments into a system file path.
@@ -87,17 +88,12 @@ function pathAppendFilename( filePath, suffix ) {
  * @param {string} filePath The full or filename of the file.
  */
 function pathPrependFilename( filePath, prefix ) {
-    const matches = /^.*\\(.+\\)*(.+)\.(.+)$/.exec( filePath );
-    if ( matches ) {
-        return filePath.replace( matches[ 2 ], prefix + matches[ 2 ] );
-    }
-    
-    const exactFilename = /^(.+)\.(.+)$/.exec( filePath );
-    if ( exactFilename ) {
-        return filePath.replace( exactFilename[ 1 ], prefix + exactFilename[ 1 ] );
+    const fileName = nodePath.basename( filePath );
+    if ( !/^.+\..+$/.test( fileName ) ) {
+        throw 'Invalid file path given';
     }
 
-    throw 'Invalid file path given';
+    return nodePath.join( nodePath.dirname( filePath ), prefix + fileName );
 }
 
 /**

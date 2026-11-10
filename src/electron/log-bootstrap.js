@@ -754,7 +754,13 @@ class LogBootstrapper {
         };
 
         const waitForLogFile = async () => {
-            if ( await FsUtilities.existsAsync( chr.logFile ) ) {
+            const current = characterDatabase.find( characterId );
+            if ( !current ) {
+                // The character was removed while waiting.
+                return;
+            }
+
+            if ( await FsUtilities.existsAsync( current.logFile ) ) {
                 // Log file's back, let's start watching again.
                 logWatchers[ characterId ].intervalId = setInterval( () => checkFn().then( () => { } ), checkInterval );
                 
@@ -769,15 +775,26 @@ class LogBootstrapper {
          * @param {number} fileSize The file size.
          */
         const backupFn = async ( fileSize ) => {
-            log.info( `LogBootstrap > Initializing backup for: ${chr.logFile} by size.` );
+            const current = characterDatabase.find( characterId );
+            if ( !current ) {
+                return;
+            }
+
+            log.info( `LogBootstrap > Initializing backup for: ${current.logFile} by size.` );
 
             if ( logWatchers[ characterId ].window ) {
                 logWatchers[ characterId ].window.webContents.send( 'log:backup-started' );
             }
             // First, let's rename the log file with a timestamp.
-            const logFilePath = FsUtilities.Path.prependFilename( chr.logFile, ArchiveFilePrefix );
-            await fsp.rename( chr.logFile, logFilePath );
-            await fsp.writeFile( chr.logFile, '' );
+            const logFilePath = FsUtilities.Path.prependFilename( current.logFile, ArchiveFilePrefix );
+            try {
+                await fsp.rename( current.logFile, logFilePath );
+                await fsp.writeFile( current.logFile, '' );
+            } catch ( error ) {
+                log.error( `LogBootstrap > Log file backup failed for: ${current.logFile}`, error );
+                waitForLogFile().then( () => { } );
+                return;
+            }
             
             log.info( `LogBootstrap > Log file renamed to: ${logFilePath}` );
             logWatchers[ characterId ].logSize = 0;
@@ -791,6 +808,12 @@ class LogBootstrapper {
 
             // Ensure we have the latest information.
             let _chr = characterDatabase.find( characterId );
+            if ( !_chr ) {
+                // The character was removed, there is nothing left to watch.
+                clearInterval( logWatchers[ characterId ]?.intervalId );
+                return;
+            }
+
             let _stats = await FsUtilities.statOrNull( _chr.logFile );
             
             if ( _chr.logFile !== logWatchers[ characterId ].logFile ) {
