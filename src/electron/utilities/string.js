@@ -112,22 +112,16 @@ function parseStoredVariablesToRegex(value, storedVariables) {
     // \${(.[^}]*)}     Your ${SpellBeingCast} spell is interrupted.
     //                      Full match	47-63	{SpellBeingCast}
     //                      Group 1.	n/a	SpellBeingCast
-    let result = /\${(.[^}]*)}/g.exec( value );
-    
-    if ( result?.length > 1 ) {
-        for ( let i = 1; i < result.length; i++ ) {
-            let values = storedVariables[ result[ i ] ];
-            //value = value.replace(/\${SpellBeingCast}/g, '(?:Envenomed Bolt|Pyre of Mori)');
-            if ( values?.length > 0 ) {
+    let names = [ ...new Set( [ ...value.matchAll( /\${(.[^}]*)}/g ) ].map( m => m[ 1 ] ) ) ];
 
-                let captureGroupRgx = '(?<' + result[ i ] + '>' + getEscapedString( values[ 0 ] );
-                for ( let i = 1; i < values.length; i++ ) {
-                    captureGroupRgx += '|' + getEscapedString( values[ i ] );
-                }
-                captureGroupRgx += ')';
-                
-                value = value.replace( RegExp( `\\\${${result[ i ]}}`, 'g' ), captureGroupRgx );
-            }
+    for ( const name of names ) {
+        let values = storedVariables[ name ];
+        if ( values?.length > 0 ) {
+            let captureGroupRgx = '(?<' + name + '>' + values.map( v => getEscapedString( v ) ).join( '|' ) + ')';
+            let token = `\\\${${name}}`;
+            // A repeated variable refers back to the first group, since duplicate group names are invalid.
+            value = value.replace( RegExp( token ), () => captureGroupRgx );
+            value = value.replace( RegExp( token, 'g' ), () => `\\k<${name}>` );
         }
     }
     return value;
@@ -640,23 +634,21 @@ function parseStoredVariablesToLiteralArray( value, storedVariables ) {
     // \${(.[^}]*)}     Your ${SpellBeingCast} spell is interrupted.
     //                      Full match	47-63	{SpellBeingCast}
     //                      Group 1.	n/a	SpellBeingCast
-    let result = /\${(.[^}]*)}/g.exec( value );
-    let literals = [];
+    let names = [ ...new Set( [ ...value.matchAll( /\${(.[^}]*)}/g ) ].map( m => m[ 1 ] ) ) ];
+    let literals = [ value ];
 
-    if ( result?.length > 1 ) {
-        for ( let i = 1; i < result.length; i++ ) {
-            let values = storedVariables[ result[ i ] ];
-            if ( values?.length > 0 ) {
-                
-                for ( let i = 1; i < values.length; i++ ) {
-                    literals.push( value.replace( RegExp( `\\\${${result[ i ]}}`, 'g' ), values[ i ] ) );
-                    
+    for ( const name of names ) {
+        let values = storedVariables[ name ];
+        let rgx = RegExp( `\\\${${name}}`, 'g' );
+        let expanded = [];
+        if ( values?.length > 0 ) {
+            for ( const literal of literals ) {
+                for ( const text of values ) {
+                    expanded.push( literal.replace( rgx, () => text ) );
                 }
-                
             }
         }
-    } else {
-        literals.push( value );
+        literals = expanded;
     }
 
     return literals;
