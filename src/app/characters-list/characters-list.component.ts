@@ -64,6 +64,7 @@ export class CharactersListComponent implements OnInit {
     public activeLogFilesDictionary: any = {};
     public logFileInfo: Record<string, CharacterLogFileInfo> = {};
     public focusOpen: Record<string, boolean> = {};
+    private reloadingCharacters: boolean = false;
     public triggerProfiles: TriggersProfileModel[] = [];
     public combatCharacter: CharacterModel | undefined = undefined;
     
@@ -86,11 +87,26 @@ export class CharactersListComponent implements OnInit {
         
         this.ipcService.tickReceived().subscribe( tick => {
 
-            tick.characterOptions.forEach( character => {
+            let unknownCharacter = false;
+            tick.characterOptions?.forEach( character => {
                 // Update the class for each character.
                 let index = this.characters.findIndex( f => f.characterId === character.characterId );
-                this.characters[ index ].class = character.class;
+                if ( index > -1 ) {
+                    this.characters[ index ].class = character.class;
+                } else {
+                    unknownCharacter = true;
+                }
             } );
+
+            // A character was added elsewhere while this tab was open.
+            if ( unknownCharacter && !this.reloadingCharacters ) {
+                this.reloadingCharacters = true;
+                this.ipcService.getCharacters().subscribe( {
+                    next: data => this.mergeNewCharacters( data ),
+                    error: () => this.reloadingCharacters = false,
+                    complete: () => this.reloadingCharacters = false,
+                } );
+            }
             
             if ( tick.triggerProfileDisabledTriggers?.length > 0 ) {
                 tick.triggerProfileDisabledTriggers.forEach( tp => {
@@ -141,6 +157,30 @@ export class CharactersListComponent implements OnInit {
      */
     public newCharacter(): void {
         this.dialogService.showNewCharacterDialog( characterId => this.loadCharacters( characterId ) );
+    }
+
+
+
+
+
+
+
+
+
+    
+    /**
+     * Adds characters that are not in the list yet, keeping the existing entries and their open panels.
+     * 
+     * @param data The current characters from the main process.
+     */
+    private mergeNewCharacters( data: CharacterModel[] ): void {
+        const added = data.filter( c => !this.characters.some( f => f.characterId === c.characterId ) );
+        if ( added.length > 0 ) {
+            const selectedId = this.characters[ this.selectedTabIndex ]?.characterId;
+            added.forEach( character => character.disabledTriggers = character.disabledTriggers ?? [] );
+            this.characters = _.sortBy( [ ...this.characters, ...added ], [ 'server', 'name' ] );
+            this.selectedTabIndex = selectedId ? _.findIndex( this.characters, f => f.characterId === selectedId ) : -1;
+        }
     }
 
 
