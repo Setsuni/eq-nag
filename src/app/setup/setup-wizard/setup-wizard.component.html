@@ -1,110 +1,102 @@
-<h2 mat-dialog-title>Setup</h2>
+<h2 mat-dialog-title>Welcome to Nag</h2>
 
 <mat-dialog-content class="setup-wizard">
-    <mat-stepper [linear]="true" #stepper>
 
-        <mat-step label="Welcome" ariaLabel="Welcome">
-            <p>NAG is an EverQuest Notification Agent.  It works by reading your EverQuest log file for specific phrases and reacts to those log entries in many different ways.</p>
-            <p>To begin, we need to configure a few settings.  To make this easy, I'll ask you a few questions first.</p>
-        </mat-step>
+    <div class="steps">
+        <ng-container *ngFor="let label of stepLabels; let i = index; let last = last">
+            <span class="step" [class.current]="i === step" [class.done]="i < step"><span class="mark">{{ i < step ? '✓' : i + 1 }}</span>{{label}}</span>
+            <span class="sep" *ngIf="!last">&rsaquo;</span>
+        </ng-container>
+    </div>
 
-        <mat-step label="FCT" ariaLabel="FCT">
-            <div class="img-float-left"><img src="/assets/images/fct-example.png" /></div>
-            <p>Floating combat text will display the damage amounts from your hits or hits to you on your screen.</p>
-            <p>Would you like to enable floating combat text?</p>
-            <mat-slide-toggle [(ngModel)]="enableFct" name="enableFct" style="margin-bottom: 14px;">Enable FCT</mat-slide-toggle>
-            <p class="notice border-green" *ngIf="enableFct">
-                <mat-icon class="material-icons color-green">engineering</mat-icon><span>This feature is still in development and more customization options will be added later.</span>
-            </p>
-        </mat-step>
+    <ng-container *ngIf="step === 0">
+        <h3>Which characters should Nag watch?</h3>
 
-        <mat-step label="DPS Meter" ariaLabel="DPS Meter">
-            
-            <div class="img-float-left"><img src="/assets/images/dps-meter.png" /></div>
-            <p>DPS Meter will display the DPS and total damage for you and your group/raid members. To add people to the list, be sure to type in /who.</p>
-            <p>Would you like to enable damage meters?</p>
+        <p class="loading" *ngIf="scanning"><mat-spinner diameter="28"></mat-spinner><span>Looking for your EverQuest logs.</span></p>
 
-            <mat-slide-toggle [(ngModel)]="enableDpsMeter" name="enableDpsMeter" style="margin-bottom: 14px;">Enable DPS Meter</mat-slide-toggle>
+        <ng-container *ngIf="!scanning">
+            <p class="hint" *ngIf="scanFolder">Found in <span class="mono">{{scanFolder}}</span>. <a class="link" (click)="showFileSelector()">Different folder&hellip;</a></p>
 
-            <p class="notice border-green" *ngIf="enableDpsMeter">
-                <mat-icon class="material-icons color-green">engineering</mat-icon><span>This feature is still in development and more parsing functions will be added later.</span>
-            </p>
-
-        </mat-step>
-
-        <mat-step label="Overlays" ariaLabel="Overlays">
-
-            <p>Timers and Overlays can be displayed in two basic formats: Grouped and Linear</p>
-            <p>Which format would you like your timers?</p>
-
-            <div style="padding-left: 25px;">
-                <mat-radio-group [(ngModel)]="groupedTimers" name="groupedTimers">
-                    <mat-radio-button [value]="true" class="picture-radio">
-                        <div>Grouped</div>
-                        <img src="/assets/images/grouped-timer-example.png" [ngClass]="{'selected-grouping': groupedTimers === true}" />
-                    </mat-radio-button>
-        
-                    <mat-radio-button [value]="false" class="picture-radio">
-                        <div>Linear</div>
-                        <img src="/assets/images/inline-timer-example-2.png" [ngClass]="{'selected-grouping': groupedTimers === false}" />
-                    </mat-radio-button>
-                </mat-radio-group>
-            </div>
-
-        </mat-step>
-
-        <mat-step label="Characters" ariaLabel="Characters">
-
-            <div style="padding-bottom: 15px; text-align: center;">
-                <p>Click on the New Character button to add characters to track in NAG.</p>
-                <div class="button-highlight-green">
-                    <button mat-button color="accent" (click)="characterList.newCharacter()">New Character</button>
+            <div class="character-list" *ngIf="characterOptions.length > 0">
+                <div class="character-row" *ngFor="let option of characterOptions">
+                    <mat-checkbox [(ngModel)]="option.checked" [disabled]="option.added" [name]="option.logFile" color="accent">{{option.name}}</mat-checkbox>
+                    <span class="hint">{{option.added ? 'already added' : option.lastPlayed}}</span>
                 </div>
             </div>
 
-            <app-characters-list #characterList></app-characters-list>
+            <div class="empty-note" *ngIf="characterOptions.length === 0">
+                <p>Nag could not find any character logs{{scanFolder ? ' in that folder' : ''}}. Pick any log file from your EverQuest Logs folder and Nag will look there.</p>
+                <button mat-stroked-button (click)="showFileSelector()">Choose a log file</button>
+                <p class="hint">If you have not turned on logging in the game yet, type /log on in EverQuest, then come back with Run setup again.</p>
+            </div>
 
-        </mat-step>
+            <p class="hint">You can add or remove characters later in the Characters tab.</p>
+        </ng-container>
+    </ng-container>
 
-        <mat-step label="Finished" ariaLabel="Finished">
-            <p>What to do after setup?</p>
-            <mat-list>
-                <mat-list-item>
-                    <mat-icon mat-list-icon class="material-icons">groups</mat-icon>
-                    <div mat-line>You can add additional characters by clicking on the green <span class="color-green">[New Character]</span> button in the Characters tab.</div>
-                </mat-list-item>
-                <mat-list-item>
-                    <mat-icon mat-list-icon class="material-icons-outlined">layers</mat-icon>
-                    <div mat-line>Setup will create default overlays for you.  You can change the size and position of those overlays in the Overlays tab.  At the top, click on the blue <span class="color-blue">[Arrange Overlays]</span> button.</div>
-                </mat-list-item>
-                <mat-list-item>
-                    <mat-icon mat-list-icon class="material-icons">local_library</mat-icon>
-                    <div mat-line>There are trigger packages available in the library for common tasks.  In the Triggers tab, click on the blue <span class="color-blue">[Trigger Library]</span> button to begin importing triggers.</div>
-                </mat-list-item>
-            </mat-list>
-            
-        </mat-step>
+    <ng-container *ngIf="step === 1">
+        <h3>Where should alerts appear?</h3>
+        <p class="hint">Drag the boxes. This is your main monitor; the game is behind them.</p>
 
-    </mat-stepper>
+        <div class="monitor" [style.width.px]="previewWidth" [style.height.px]="previewHeight">
+            <div class="overlay-box" *ngFor="let box of previewBoxes" [class.text]="box.kind === 'text'"
+                [style.left.px]="box.left" [style.top.px]="box.top" [style.width.px]="box.width" [style.height.px]="box.height"
+                (mousedown)="startDrag($event, box)">
+                <span class="overlay-name">{{box.overlay.name}}</span>
+                <span class="sample-timer" *ngIf="box.kind === 'timer'">Sample timer &middot; 1:42</span>
+                <span class="sample-text" *ngIf="box.kind === 'text'">Sample text</span>
+            </div>
+        </div>
+
+        <div class="row">
+            <mat-checkbox *ngIf="canChooseGrouping" [(ngModel)]="groupedTimers" name="groupedTimers" color="accent">Group timers by target</mat-checkbox>
+            <span class="hint"><a class="link" (click)="arrangeOnScreen()">Move them on screen instead</a></span>
+        </div>
+    </ng-container>
+
+    <ng-container *ngIf="step === 2">
+        <h3>See an alert</h3>
+        <p class="hint">Press Test. A timer and a text appear on your overlays for {{testSeconds}} seconds.</p>
+
+        <div class="row">
+            <button mat-flat-button color="accent" (click)="sendTest()"><mat-icon>play_arrow</mat-icon> Test</button>
+            <span class="result" *ngIf="testSent">Sent. Could you see both? <a class="link" (click)="moveOverlaysAgain()">No, move the overlays</a></span>
+        </div>
+    </ng-container>
+
+    <ng-container *ngIf="step === 3">
+        <h3>Optional extras</h3>
+        <p class="hint">Each one is a single switch. You can change them any time.</p>
+
+        <div class="extra">
+            <mat-slide-toggle [(ngModel)]="enableDpsMeter" name="enableDpsMeter" color="accent">DPS meter</mat-slide-toggle>
+            <p class="hint">Shows damage per second for you and your group. Type /who in the game so Nag learns who is in it.</p>
+        </div>
+        <div class="extra">
+            <mat-slide-toggle [ngModel]="enableFct" (ngModelChange)="setFct($event)" name="enableFct" color="accent">Floating combat text</mat-slide-toggle>
+            <p class="hint">Shows the damage you deal and take as numbers on your screen.</p>
+        </div>
+        <div class="extra">
+            <mat-slide-toggle [ngModel]="rollTrackerEnabled" (ngModelChange)="setRollTracker($event)" name="rollTrackerEnabled" color="accent">Roll tracker</mat-slide-toggle>
+            <p class="hint">Collects /random rolls into a ranked list so you can read out a winner.</p>
+        </div>
+    </ng-container>
+
+    <input type="file" #fileSelector style="display:none;" accept=".txt" (change)="fileSelected()" />
 </mat-dialog-content>
 
 <mat-dialog-actions>
-    
+
     <div>
-        <button mat-button [mat-dialog-close]="null" class="t-confirm-no" color="warn">Cancel Setup Wizard</button>
+        <button mat-button *ngIf="step === 0" [mat-dialog-close]="null" class="muted">Skip setup</button>
+        <button mat-button *ngIf="step > 0" (click)="previous()" [disabled]="busy">Back</button>
 
         <span class="spacer"></span>
 
-        <ng-template [ngIf]="!onLastStep" [ngIfElse]="completeSetup">
-            <button mat-button (click)="previous()">Previous</button>
-            <div style="padding-top: 7px; opacity: 0.25; margin-left: 10px; margin-right: 10px;">|</div>
-            <button mat-button (click)="next()">Next</button>
-        </ng-template>
-
-        <ng-template #completeSetup>
-            <button mat-button color="accent" (click)="complete()">Complete Setup!</button>
-        </ng-template>
-
+        <button mat-button color="accent" *ngIf="step === 0" (click)="saveCharacters()" [disabled]="busy || scanning">Next</button>
+        <button mat-button color="accent" *ngIf="step === 1" (click)="overlaysLookGood()" [disabled]="busy">Looks good</button>
+        <button mat-button color="accent" *ngIf="step === 2" (click)="openExtrasStep()">Next</button>
+        <button mat-button color="accent" *ngIf="step === 3" (click)="complete()">Finish</button>
     </div>
 
 </mat-dialog-actions>

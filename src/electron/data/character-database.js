@@ -537,7 +537,7 @@ class CharacterDatabaseStore extends Store {
 
         if ( fs.existsSync( logsPath ) ) {
             var files = await fs.promises.readdir( logsPath );
-            files.forEach( file => {
+            for ( const file of files ) {
                 let results = /eqlog_(?<Character>.*)_(?<Server>[a-z]*)\.txt$/gi.exec( file );
                 if ( results != null && results?.groups?.Character != null && results?.groups?.Server != null ) {
                     const thj = results.groups.Server === 'thj';
@@ -553,11 +553,12 @@ class CharacterDatabaseStore extends Store {
                     option.thj = thj === true;
                     option.daybreak = thj === false && results.groups.Server !== 'p99';
                     option.characterId = this.findCharacterIdByLogFile( option.logFile );
+                    option.modified = await fs.promises.stat( option.logFile ).then( stats => stats.mtimeMs, () => null );
                     
                     dictionary[ key ].push( option );
                 }
 
-            } );
+            }
         }
         
         return dictionary;
