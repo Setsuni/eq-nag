@@ -149,6 +149,15 @@ let onTriggerGenCompleteHandlers = [];
 let triggerGenComplete = false;
     
 let rgxTimestamp = /^\[(.*?)\]\s*/i;
+
+/** Log lines older than this (in milliseconds) are catch-up lines: their attention actions are muted. */
+const staleLineMs = 15000;
+/** True while a line read from the live log file is being parsed. */
+let parsingLiveLine = false;
+/** True while the live line being parsed is stale. */
+let parsingStaleLine = false;
+/** True between the first stale live line and the first fresh one. */
+let catchingUp = false;
 const rgxRandomRoll = /^\*\*A Magic Die is rolled by (?<player>.+?)\. It could have been any number from (?<min>\d+) to (?<max>\d+), but this time it turned up a (?<roll>\d+)\./;
 
 /** @type {LogList[]} */
@@ -210,7 +219,13 @@ function startParsingLogFile( logPath, startLogPosition ) {
         lines.forEach( line => {
             if ( line && line.length > 0 ) {
                 const perfStart = perf.enabled ? perf.now() : 0;
-                parseLogEntries( line );
+                parsingLiveLine = true;
+                try {
+                    parseLogEntries( line );
+                } finally {
+                    parsingLiveLine = false;
+                    parsingStaleLine = false;
+                }
                 perf.enabled && perf.record( 'log-watcher: line', perfStart );
             }
         } );
@@ -1639,6 +1654,27 @@ function generateTriggerFns() {
 
 
 /**
+ * Tracks whether the live log is being caught up and logs when that starts and ends.
+ * Every line is still parsed while catching up; only its attention actions are muted.
+ *
+ * @param {Date} timestamp The log timestamp of the live line being parsed.
+ */
+function updateCatchUp( timestamp ) {
+    parsingStaleLine = Date.now() - timestamp.getTime() > staleLineMs;
+
+    if ( parsingStaleLine && !catchingUp ) {
+        catchingUp = true;
+        log( `Nag is catching up: alerts for lines older than ${staleLineMs / 1000} s are muted.` );
+    } else if ( !parsingStaleLine && catchingUp ) {
+        catchingUp = false;
+        log( 'Nag has caught up: alerts are no longer muted.' );
+    }
+}
+
+/** The actions that get the user's attention, which are not run for stale log lines. */
+const attentionActionTypes = [ ActionTypes.PlayAudio, ActionTypes.Speak, ActionTypes.DisplayText, ActionTypes.ScreenGlow, ActionTypes.Clipboard ];
+
+/**
  * Parses the given log entry.
  * 
  * @param {string} raw The raw log entry.
@@ -1685,6 +1721,10 @@ function parseLogEntries( raw, simulating, padTime ) {
             timestamp = new Date( timestamp.getTime() + ( padTime * 1000 ) );
     
         let log = raw.replace( rgxTimestamp, '' );
+
+        if ( parsingLiveLine ) {
+            updateCatchUp( timestamp );
+        }
 
         if ( !simulating && log.startsWith( '**A Magic Die' ) ) {
             const randomRoll = rgxRandomRoll.exec( log );
@@ -1955,6 +1995,10 @@ function parseLogEntries( raw, simulating, padTime ) {
  * @param {{instanceId?: string} | undefined} options
  */
 function executeTriggerAction( trigger, action, timestamp, res, deltaTime, simulating, options ) {
+
+    if ( parsingStaleLine && attentionActionTypes.includes( action.actionType ) ) {
+        return;
+    }
 
     if ( action.actionType === ActionTypes.DisplayText ) {
         /* --== Display Text ==-- */
