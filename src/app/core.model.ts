@@ -102,15 +102,15 @@ export function ActionTypeLabels(actionType: ActionTypes): string {
         actionType === ActionTypes.Speak ? 'Speak' :
         actionType === ActionTypes.Timer ? 'Timer' :
         actionType === ActionTypes.Countdown ? 'Countdown' :
-        actionType === ActionTypes.StoreVariable ? 'Store Variable' :
-        actionType === ActionTypes.DotTimer ? 'DoT Timer' :
-        actionType === ActionTypes.ClearVariable ? 'Clear Variable' :
+        actionType === ActionTypes.StoreVariable ? 'Remember a value' :
+        actionType === ActionTypes.DotTimer ? 'Timer until DoT ends' :
+        actionType === ActionTypes.ClearVariable ? 'Forget a value' :
         actionType === ActionTypes.Counter ? 'Counter' :
-        actionType === ActionTypes.Clipboard ? 'Clipboard' :
-        actionType === ActionTypes.BeneficialTimer ? 'Beneficial Timer' :
-        actionType === ActionTypes.DisplayDeathRecap ? 'Display Death Recap' :
-        actionType === ActionTypes.ScreenGlow ? 'Screen Glow' :
-        actionType === ActionTypes.ClearAll ? 'Clear All' :
+        actionType === ActionTypes.Clipboard ? 'Copy to clipboard' :
+        actionType === ActionTypes.BeneficialTimer ? 'Timer until buff ends' :
+        actionType === ActionTypes.DisplayDeathRecap ? 'Death recap' :
+        actionType === ActionTypes.ScreenGlow ? 'Screen glow' :
+        actionType === ActionTypes.ClearAll ? 'Clear everything' :
         actionType === ActionTypes.Stopwatch ? 'Stopwatch' :
         actionType === ActionTypes.List ? 'List' :
         'Unset Action';
