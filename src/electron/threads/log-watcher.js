@@ -26,6 +26,10 @@ const { TriggerGate, storeHasValue: storeHasValueIn, storeContainsValue: storeCo
 // Triggers are timed on one log line in ten (perf-taps.js scales them up), so
 // the per-trigger timing doesn't slow the log watcher down much.
 let perfTriggerSample = 0;
+const { TriggerMetrics, measureDurationMs: triggerMeasureDuration } = require( '../utilities/trigger-metrics' );
+const TriggerPerfAnalysis = require( '../utilities/trigger-perf-analysis' );
+const triggerMetrics = new TriggerMetrics();
+var triggerMeasureTimer = null;
 const { LogHistoryManager } = require( '../utilities/log-console' );
 const { createChatRoomLink } = require( '../utilities/peer-to-peer' );
 const { nagException, nagLog } = require( '../utilities/nag-console' );
@@ -767,6 +771,14 @@ function LogWatcher(character, logPosition) {
         perf.enabled && perf.record( 'log-watcher: tick (rebuild triggers)', perfStart );
     } );
 
+    ipcRenderer.on( 'trigger-perf:start', () => startTriggerMeasurement() );
+
+    ipcRenderer.on( 'trigger-perf:stop', () => finishTriggerMeasurement() );
+
+    ipcRenderer.on( 'trigger-perf:counters-request', ( event, requestId ) => {
+        ipcRenderer.send( 'trigger-perf:counters-response', { requestId: requestId, characterId: characterId, counters: triggerMetrics.counters( activeTriggers ) } );
+    } );
+
     ipcRenderer.on( 'component:destroy', function ( event, instanceId ) {
 
         // Let's remove the destroyed instance from any cancellation or secondary action tracking.
@@ -1302,6 +1314,9 @@ function generateTriggerFns() {
         trigger._hasSequence = undefined;
 
         try {
+
+            const _stats = triggerMetrics.statsFor( trigger.triggerId );
+            trigger._stats = _stats;
 
             if ( ( isDev || !trigger.onlyExecuteInDev ) && trigger.capturePhrases?.length > 0 ) {
     
@@ -1939,6 +1954,38 @@ function timerExpiredOnArrival( action ) {
 const attentionActionTypes = [ ActionTypes.PlayAudio, ActionTypes.Speak, ActionTypes.DisplayText, ActionTypes.ScreenGlow, ActionTypes.Clipboard ];
 
 /**
+ * Starts timing the triggers for ten minutes, or until finishTriggerMeasurement is called.
+ */
+function startTriggerMeasurement() {
+    if ( triggerMetrics.measuring ) {
+        return;
+    }
+    triggerMetrics.begin( Date.now() );
+    triggerMeasureTimer = setTimeout( finishTriggerMeasurement, triggerMeasureDuration );
+}
+
+/**
+ * Ends the measurement and sends the report to the main process.
+ */
+function finishTriggerMeasurement() {
+    if ( !triggerMetrics.measuring ) {
+        return;
+    }
+    clearTimeout( triggerMeasureTimer );
+    const report = TriggerPerfAnalysis.buildReport( triggerMetrics.end( activeTriggers, Date.now() ), activeTriggers );
+    ipcRenderer.send( 'trigger-perf:result', { characterId: characterId, report: report } );
+}
+
+
+
+
+
+
+
+
+
+
+/**
  * Parses the given log entry.
  * 
  * @param {string} raw The raw log entry.
@@ -2200,8 +2247,7 @@ function parseLogEntries( raw, simulating, padTime ) {
         // Perf builds only: on 1 line in 100, also parse the triggers the prefilter skipped, to count any it wrongly skipped.
         const perfPrefilterCheck = perf.enabled && ( prefilter || gate ) && ++perfPrefilterLines % 100 === 0;
 
-        activeTriggers.forEach( ( trigger, index ) => {
-
+        const skipTrigger = ( trigger, index ) => {
             const gateClosed = gate && !gate.open[ index ] && !trigger._hasSequence?.();
             if ( gateClosed || ( prefilter && prefilter.marks[ index ] !== stamp && !prefilter.alwaysRun[ index ] && !trigger._hasSequence?.() ) ) {
                 if ( perfPrefilterCheck && !!trigger.enabled && !trigger._profileDisabled && typeof trigger._parse === 'function' ) {
@@ -2217,58 +2263,86 @@ function parseLogEntries( raw, simulating, padTime ) {
                         }
                     } );
                 }
-                return;
+                return true;
             }
 
             if ( perf.enabled && prefilter ) {
                 perfPrefilterCandidates++;
             }
+            return false;
+        };
+        const runTrigger = trigger => {
+            trigger._parse( log, ( res, deltaTime ) => {
 
-            if ( !!trigger.enabled && !trigger._profileDisabled && typeof trigger._parse === 'function' ) {
-                const perfStart = perfTriggers ? perf.now() : 0;
-                trigger._parse( log, ( res, deltaTime ) => {
-
-                    try {
-                            
-                        trigger.actions.forEach( action => {
-                            // This used to execute actions if there are no phrases on the action, but now it doesn't because the action may exist only as a subaction
-                            // ( action.phrases == null || action.phrases?.length === 0 || action.phrases?.indexOf( res.phraseId ) > -1 )
-                            if ( ( isDev || !action.onlyExecuteInDev ) && ( action.actionType === ActionTypes.List || action.phrases?.indexOf( res.phraseId ) > -1 ) ) {
-
-                                enableLogging && sendInformationToLog( `Execute trigger action [${trigger.name}] : ${ActionTypes[ action.actionType ]}`, 24 );
-                                enableLogging && sendInformationToLog( `    ||${raw}||`, 24 );
-
-                                executeTriggerAction( trigger, action, timestamp, res, deltaTime, simulating );
-                                
-                                logHistoryMgr.addSuccessfulTriggerParsedEvent(
-                                    log,
-                                    trigger.triggerId,
-                                    action.actionId,
-                                    trigger.captureMethod === 'Sequential' ? 'Trigger Sequential Action' : 'Trigger Action',
-                                    res.renderedPhrase,
-                                    trigger.capturePhrases.find( p => p.phraseId === res.phraseId )?.phrase,
-                                    res,
-                                    trigger._conditionResults,
-                                    undefined );
-                            }
-                        } );
-                        entryMatched = true;
-
-                        // If the trigger has a cooldown, start the cooldown now.
-                        if ( trigger.useCooldown ) {
-                            trigger._onCooldown = true;
-                            trigger._cooldownStart = new Date();
-                        }
-                            
-                    } catch ( error ) {
-                        logHistoryMgr.logError( error, raw, simulating, padTime, ErrorMessages.triggerExecution(), trigger );
-                    }
+            try {
                     
+                trigger.actions.forEach( action => {
+                    // This used to execute actions if there are no phrases on the action, but now it doesn't because the action may exist only as a subaction
+                    // ( action.phrases == null || action.phrases?.length === 0 || action.phrases?.indexOf( res.phraseId ) > -1 )
+                    if ( ( isDev || !action.onlyExecuteInDev ) && ( action.actionType === ActionTypes.List || action.phrases?.indexOf( res.phraseId ) > -1 ) ) {
+
+                        enableLogging && sendInformationToLog( `Execute trigger action [${trigger.name}] : ${ActionTypes[ action.actionType ]}`, 24 );
+                        enableLogging && sendInformationToLog( `    ||${raw}||`, 24 );
+
+                        executeTriggerAction( trigger, action, timestamp, res, deltaTime, simulating );
+                        
+                        logHistoryMgr.addSuccessfulTriggerParsedEvent(
+                            log,
+                            trigger.triggerId,
+                            action.actionId,
+                            trigger.captureMethod === 'Sequential' ? 'Trigger Sequential Action' : 'Trigger Action',
+                            res.renderedPhrase,
+                            trigger.capturePhrases.find( p => p.phraseId === res.phraseId )?.phrase,
+                            res,
+                            trigger._conditionResults,
+                            undefined );
+                    }
                 } );
-                perfTriggers && perf.record( trigger._perfName ??= `trigger: ${trigger.name}`, perfStart, 10 );
+                entryMatched = true;
+
+                // If the trigger has a cooldown, start the cooldown now.
+                if ( trigger.useCooldown ) {
+                    trigger._onCooldown = true;
+                    trigger._cooldownStart = new Date();
+                }
+                    
+            } catch ( error ) {
+                logHistoryMgr.logError( error, raw, simulating, padTime, ErrorMessages.triggerExecution(), trigger );
             }
             
-        } );
+            } );
+        };
+
+        if ( triggerMetrics.measuring ) {
+            // A measurement times two triggers on each line; the idle path below does no timing work.
+            triggerMetrics.sampleWindow( activeTriggers.length );
+            const timedFirst = triggerMetrics.first;
+            const timedSecond = triggerMetrics.second;
+            activeTriggers.forEach( ( trigger, index ) => {
+                if ( !!trigger.enabled && !trigger._profileDisabled && typeof trigger._parse === 'function' && !skipTrigger( trigger, index ) ) {
+                    const perfStart = perfTriggers ? perf.now() : 0;
+                    const timed = index === timedFirst || index === timedSecond;
+                    if ( timed ) {
+                        // The two timed triggers also count whether their phrases will be tried; the counts are scaled up like the time.
+                        typeof trigger._checkConditions === 'function' && trigger._checkConditions() && triggerMetrics.countChecked( trigger._stats );
+                        const timerStart = process.hrtime.bigint();
+                        runTrigger( trigger );
+                        triggerMetrics.record( trigger._stats, process.hrtime.bigint() - timerStart );
+                    } else {
+                        runTrigger( trigger );
+                    }
+                    perfTriggers && perf.record( trigger._perfName ??= `trigger: ${trigger.name}`, perfStart, 10 );
+                }
+            } );
+        } else {
+            activeTriggers.forEach( ( trigger, index ) => {
+                if ( !!trigger.enabled && !trigger._profileDisabled && typeof trigger._parse === 'function' && !skipTrigger( trigger, index ) ) {
+                    const perfStart = perfTriggers ? perf.now() : 0;
+                    runTrigger( trigger );
+                    perfTriggers && perf.record( trigger._perfName ??= `trigger: ${trigger.name}`, perfStart, 10 );
+                }
+            } );
+        }
 
         if ( !triggerGateDisabled && log.charCodeAt( 0 ) === 89 ) {
             const enteredZone = rgxEnteredZone.exec( log );
