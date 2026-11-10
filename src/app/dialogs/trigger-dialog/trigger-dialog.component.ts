@@ -8,6 +8,10 @@ import { DialogService } from '../dialog.service';
 import { ColorUtility } from 'src/app/utilities';
 import { TriggerModel, CapturePhrase, ActionTypes, TriggerAction, OverlayWindowModel, OperatorTypes, ImportTypes, ExternalDataSources } from 'src/app/core.model';
 import { Observable } from 'rxjs';
+import { CooldownExplanation } from 'src/app/editors/capture-phrases/capture-phrases.component';
+import { isAdvancedActionType } from 'src/app/editors/action-picker';
+
+const advancedStorageKey = 'nagTriggerEditorAdvanced';
 
 @Component( {
     selector: 'app-trigger-dialog',
@@ -29,12 +33,25 @@ export class TriggerDialogComponent implements OnInit {
     public actionTypes: typeof ActionTypes = ActionTypes;
     public operatorTypes: typeof OperatorTypes = OperatorTypes;
     public isDev: boolean = false;
-    public tabIndex: number = 0;
+    public showAdvanced: boolean = false;
+    public showOnlyWhen: boolean = false;
     private _baseline: string = null;
-    private _docsUrl: string = 'https://guildantix.github.io/eq-nag/triggers/';
-    private _docsPages: string[] = [ 'capture-phrases/', 'actions/', 'conditions/' ];
-    public get helpUrl(): string {
-        return this._docsUrl + this._docsPages[ this.tabIndex ];
+    public readonly helpUrl: string = 'https://guildantix.github.io/eq-nag/triggers/';
+
+    /** Whether the trigger uses anything that only shows under Advanced. */
+    public get usesAdvanced(): boolean {
+        const m = this.model;
+        return m.captureMethod === 'Sequential'
+            || m.conditions?.length > 0
+            || m.classLevels?.some( c => c.class?.trim().length > 0 )
+            || m.hotkeys?.length > 0
+            || m.comments?.length > 0
+            || m.actions?.some( a => isAdvancedActionType( a.actionType ) );
+    }
+
+    /** Whether the trigger uses anything that shows under Only when. */
+    public get usesOnlyWhen(): boolean {
+        return this.model.useCooldown === true;
     }
     private _fullName: string = '';
     public get fullName(): string {
@@ -100,10 +117,12 @@ export class TriggerDialogComponent implements OnInit {
             if ( this.triggerId != null ) {
                 this.ipcService.getTrigger( this.triggerId ).subscribe( trigger => {
                     this.model = trigger;
+                    this.initDisclosures();
                     this.captureBaseline();
                 } );
                 this.ipcService.getTriggerFullName( this.triggerId ).subscribe( fullName => this.fullName = fullName );
             } else {
+                this.initDisclosures();
                 this.captureBaseline();
             }
 
@@ -115,6 +134,22 @@ export class TriggerDialogComponent implements OnInit {
 
     public closeModal(): void {
         this.ipcService.closeThisChild();
+    }
+
+    /** Opens Advanced when the player left it open last time, or when this trigger needs it. */
+    private initDisclosures(): void {
+        this.showAdvanced = localStorage.getItem( advancedStorageKey ) === 'true' || this.usesAdvanced;
+        this.showOnlyWhen = this.usesOnlyWhen || ( this.showAdvanced && ( this.model.conditions?.length > 0 || this.model.classLevels?.some( c => c.class?.trim().length > 0 ) ) );
+    }
+
+    /** Shows or hides the advanced options, and remembers the choice for the next trigger. */
+    public setShowAdvanced( value: boolean ): void {
+        this.showAdvanced = value;
+        localStorage.setItem( advancedStorageKey, value.toString() );
+    }
+
+    public explainCooldowns(): void {
+        this.dialogService.showInfoDialog( 'Capture Cooldowns', CooldownExplanation );
     }
 
     /** Records the model as it looks once the editor has finished rendering it. */
@@ -156,10 +191,6 @@ export class TriggerDialogComponent implements OnInit {
                 action.phrases.push( added.phraseId );
             }
         } );
-    }
-
-    public onChangeTabs( index: number ): void {
-        this.tabIndex = index;
     }
 
     public save(): Observable<boolean> {

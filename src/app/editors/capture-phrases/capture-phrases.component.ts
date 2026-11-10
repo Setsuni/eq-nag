@@ -8,6 +8,21 @@ import { customAlphabet } from 'nanoid';
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
 
+export const CooldownExplanation: string[] = [
+    'Not all of EverQuest actions are logged. For example, Lord Nagafen doesn\'t have a casting emote for Fire Breath.',
+    'The common way to deal with these abilities is to capture when someone is hit with this ability. However, the size of the raid can make these captures expensive.',
+    'In this example, by enabling capture cooldown and setting the duration to 1 second, the trigger will effectively only capture the first person hit with this ability.',
+    'During the cooldown, the capture phrase regular expressions are not executed.',
+];
+
+interface PhraseSnippet {
+    label: string;
+    code: string;
+    hint: string;
+    needsPattern: boolean;
+    select?: string;
+}
+
 
 
 
@@ -239,6 +254,28 @@ export class CapturePhrasesComponent implements OnInit {
      * Defaults to true.
      */
     @Input() public startWithNewPhrase: boolean = true;
+
+    /**
+     * Shows the one-page editor layout: phrase rows with a Plain text / Pattern
+     * toggle and insert chips.  Match mode and cooldown are then left to the host.
+     */
+    @Input() public simple: boolean = false;
+
+    /** The snippets that can be inserted into a phrase. */
+    public snippets: PhraseSnippet[] = [
+        { label: 'Player name', code: '{S1}', hint: 'Matches a player or any word, and remembers it', needsPattern: true },
+        { label: 'Number', code: '{N1}', hint: 'Matches a number, and remembers it', needsPattern: true },
+        { label: 'Your name', code: '{C}', hint: 'Matches the name of the character you are watching', needsPattern: true },
+        { label: 'Stored value', code: '${Name}', hint: 'Uses a value kept by another trigger', needsPattern: false, select: 'Name' },
+    ];
+
+    private _activeIndex: number = 0;
+    private _activeTextarea: HTMLTextAreaElement | null = null;
+
+    /** Whether the phrase that last had the cursor is a pattern. */
+    public get activeIsPattern(): boolean {
+        return this.capturePhrases?.[ Math.min( this._activeIndex, ( this.capturePhrases?.length ?? 1 ) - 1 ) ]?.useRegEx === true;
+    }
 
 
 
@@ -495,14 +532,7 @@ export class CapturePhrasesComponent implements OnInit {
      * Provides context about EverQuest action logging and raid optimization.
      */
     public explainCooldowns() {
-        this.dialogService.showInfoDialog(
-            'Capture Cooldowns',
-            [
-                'Not all of EverQuest actions are logged. For example, Lord Nagafen doesn\'t have a casting emote for Fire Breath.',
-                'The common way to deal with these abilities is to capture when someone is hit with this ability. However, the size of the raid can make these captures expensive.',
-                'In this example, by enabling capture cooldown and setting the duration to 1 second, the trigger will effectively only capture the first person hit with this ability.',
-                'During the cooldown, the capture phrase regular expressions are not executed.'
-            ] );
+        this.dialogService.showInfoDialog( 'Capture Cooldowns', CooldownExplanation );
     }
 
 
@@ -602,4 +632,55 @@ export class CapturePhrasesComponent implements OnInit {
             this.overlayOpenIndex = index;
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Remembers which phrase has the cursor, so insert chips know where to write.
+     * @param index - The index of the focused phrase
+     * @param event - The focus event
+     */
+    public onPhraseFocus( index: number, event: Event ) {
+        this._activeIndex = index;
+        this._activeTextarea = event.target as HTMLTextAreaElement;
+    }
+
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Inserts a snippet at the cursor of the phrase that last had it.
+     * @param snippet - The snippet to insert
+     */
+    public insertSnippet( snippet: PhraseSnippet ) {
+        const el = this._activeTextarea;
+        if ( !el || !el.isConnected ) {
+            return;
+        }
+        const start = el.selectionStart ?? el.value.length;
+        const end = el.selectionEnd ?? start;
+        el.setRangeText( snippet.code, start, end, 'end' );
+        if ( snippet.select ) {
+            const selectFrom = start + snippet.code.indexOf( snippet.select );
+            el.setSelectionRange( selectFrom, selectFrom + snippet.select.length );
+        }
+        el.dispatchEvent( new Event( 'input', { bubbles: true } ) );
+        el.focus();
+    }
+
 }
