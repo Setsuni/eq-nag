@@ -115,9 +115,9 @@ function parseStoredVariablesToRegex(value, storedVariables) {
 
     for ( const name of names ) {
         let values = storedVariables[ name ];
-        if ( values?.length > 0 ) {
+        if ( values?.length > 0 && /^[A-Za-z_$][\w$]*$/.test( name ) ) {
             let captureGroupRgx = '(?<' + name + '>' + values.map( v => getEscapedString( v ) ).join( '|' ) + ')';
-            let token = `\\\${${name}}`;
+            let token = `\\\${${getEscapedString( name )}}`;
             // A repeated variable refers back to the first group, since duplicate group names are invalid.
             value = value.replace( RegExp( token ), () => captureGroupRgx );
             value = value.replace( RegExp( token, 'g' ), () => `\\k<${name}>` );
@@ -164,7 +164,7 @@ function parseStoredVariablesToRegexConditional( value ) {
             vConditional.name = 'nag_' + nagId();
 
             let captureGroupRgx = `(?<${vConditional.name}>.+?)`;
-            const token = `\\\${${result[ i ]}}`;
+            const token = `\\\${${getEscapedString( result[ i ] )}}`;
             // A repeated variable refers back to the first group, since duplicate group names are invalid.
             output.value = output.value.replace( RegExp( token ), () => captureGroupRgx );
             output.value = output.value.replace( RegExp( token, 'g' ), () => `\\k<${vConditional.name}>` );
@@ -265,7 +265,7 @@ function parseStoredVariablesToLiteral( value, storedVariables ) {
                     text += ',' + values[ i ];
                 }
             
-                value = value.replace( RegExp( `\\\${${key}}`, 'g' ), () => text );
+                value = value.replace( RegExp( `\\\${${getEscapedString( key )}}`, 'g' ), () => text );
             }
         }
     }
@@ -304,7 +304,7 @@ function parseConditionResultsToLiteral( value, conditionResults ) {
         for ( let i = 1; i < result.length; i++ ) {
             //value = value.replace(/\${SpellBeingCast}/g, 'Envenomed Bolt');
             if ( conditionResults[ result[ i ] ] ) {
-                value = value.replace( RegExp( `\\\${${result[ i ]}}`, 'g' ), () => conditionResults[ result[ i ] ] );
+                value = value.replace( RegExp( `\\\${${getEscapedString( result[ i ] )}}`, 'g' ), () => conditionResults[ result[ i ] ] );
             }
         }
     }
@@ -634,7 +634,7 @@ function parseMatchesToLiteral( value, matches, deltaTime ) {
  * @param {number} maxCombinations The most phrases to build.
  * @returns {string[] | null} The phrases, or null when there would be more than maxCombinations; use parseStoredVariablesToLiteralRegExp then.
  */
-function parseStoredVariablesToLiteralArray( value, storedVariables, maxCombinations = 1000 ) {
+function parseStoredVariablesToLiteralArray( value, storedVariables, maxCombinations = 10 ) {
     // \${(.[^}]*)}     Your ${SpellBeingCast} spell is interrupted.
     //                      Full match	47-63	{SpellBeingCast}
     //                      Group 1.	n/a	SpellBeingCast
@@ -651,7 +651,7 @@ function parseStoredVariablesToLiteralArray( value, storedVariables, maxCombinat
 
     for ( const name of names ) {
         let values = storedVariables[ name ];
-        let rgx = RegExp( `\\\${${name}}`, 'g' );
+        let rgx = RegExp( `\\\${${getEscapedString( name )}}`, 'g' );
         let expanded = [];
         if ( values?.length > 0 ) {
             for ( const literal of literals ) {
@@ -669,7 +669,7 @@ function parseStoredVariablesToLiteralArray( value, storedVariables, maxCombinat
 /**
  * Builds a case-insensitive regular expression matching any phrase parseStoredVariablesToLiteralArray would build, without building them.
  * A variable used more than once must have the same value each time.
- * 
+ *
  * @param {string} value The phrase to parse.
  * @param {Record<string, any>} storedVariables The stored variables.
  * @returns {RegExp | null} Null when a variable has no stored values.
