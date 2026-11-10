@@ -87,3 +87,244 @@ mat-progress-bar {
         opacity: 0.5;
     }
 }
+
+.import-caret {
+    margin-left: -6px;
+    margin-right: -8px;
+}
+
+::ng-deep .import-hint {
+    padding: 8px 16px 6px;
+    font-size: 12px;
+    opacity: 0.6;
+    max-width: 230px;
+}
+
+.sw {
+    flex: 0 0 auto;
+    position: relative;
+    width: 34px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    border-radius: 9px;
+    background-color: rgba(255, 255, 255, 0.3);
+    cursor: pointer;
+    transition: background-color 0.15s;
+    outline: none;
+
+    i {
+        position: absolute;
+        top: 2px;
+        left: 2px;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background-color: #fafafa;
+        transition: left 0.15s;
+    }
+
+    &.on {
+        background-color: #ff4081;
+
+        i {
+            left: 18px;
+        }
+    }
+
+    &.mixed {
+        background-color: rgba(255, 64, 129, 0.45);
+
+        i {
+            left: 10px;
+        }
+    }
+
+    &:focus-visible {
+        box-shadow: 0 0 0 2px #69f0ae;
+    }
+}
+
+.sw-spacer {
+    flex: 0 0 34px;
+}
+
+.mat-tree-node {
+    .sw {
+        margin-left: 8px;
+    }
+
+    .more-button {
+        flex: 0 0 auto;
+        opacity: 0.55;
+    }
+
+    &:hover .more-button,
+    .more-button:focus-visible {
+        opacity: 1;
+    }
+}
+
+.folder-count {
+    flex: 0 0 auto;
+    margin-left: 8px;
+    font-size: 11px;
+    opacity: 0.55;
+}
+
+.chip {
+    display: inline-block;
+    flex: 0 0 auto;
+    margin-left: 6px;
+    padding: 1px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    line-height: 16px;
+    white-space: nowrap;
+    background-color: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.75);
+
+    &.warn {
+        background-color: rgba(255, 152, 0, 0.2);
+        color: #ffb74d;
+        cursor: pointer;
+    }
+
+    &.pkg {
+        background-color: rgba(100, 181, 246, 0.18);
+        color: #90caf9;
+    }
+
+    &.folder-chip {
+        padding: 0 6px;
+        font-weight: 700;
+    }
+}
+
+::ng-deep .health-tip {
+    white-space: pre-line;
+}
+
+table.capture-phrases {
+    tr.mat-row {
+        height: 52px !important;
+    }
+
+    th.col-switch,
+    td.col-switch {
+        width: 56px;
+        padding-left: 15px;
+        padding-right: 0;
+    }
+
+    th.col-name,
+    td.col-name {
+        padding-left: 12px;
+        overflow: hidden;
+        max-width: 0;
+    }
+
+    th.col-status,
+    td.col-status {
+        width: 1%;
+        white-space: nowrap;
+        text-align: right;
+    }
+
+    th.col-more,
+    td.col-more {
+        width: 48px;
+        padding: 0 4px 0 0;
+        text-align: center;
+    }
+}
+
+.trig-line {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    min-width: 0;
+}
+
+.trig-link {
+    min-width: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:hover,
+    &:focus-visible {
+        text-decoration: underline;
+        outline: none;
+    }
+
+    &.off {
+        opacity: 0.55;
+    }
+}
+
+.trig-family {
+    flex: 0 0 auto;
+    margin-left: auto;
+    font-size: 11px;
+}
+
+.trig-sum {
+    margin-top: 2px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.55);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    b {
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.8);
+    }
+
+    .arrow {
+        margin: 0 6px;
+    }
+
+    .mono {
+        font-family: Consolas, monospace;
+        color: rgba(255, 255, 255, 0.8);
+    }
+}
+
+.list-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    height: 100%;
+    padding: 20px;
+    text-align: center;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.65);
+
+    b {
+        font-size: 15px;
+        font-weight: 500;
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    .list-empty-actions {
+        display: flex;
+        gap: 12px;
+    }
+
+    .list-empty-tip {
+        font-size: 12px;
+        opacity: 0.7;
+    }
+}
