@@ -158,6 +158,8 @@ let parsingLiveLine = false;
 let parsingStaleLine = false;
 /** True between the first stale live line and the first fresh one. */
 let catchingUp = false;
+/** The constant difference, in whole hours, between the wall clock and the parsed log time (a time zone or DST mismatch). */
+let clockOffsetMs = 0;
 const rgxRandomRoll = /^\*\*A Magic Die is rolled by (?<player>.+?)\. It could have been any number from (?<min>\d+) to (?<max>\d+), but this time it turned up a (?<roll>\d+)\./;
 
 /** @type {LogList[]} */
@@ -213,6 +215,9 @@ function toLowerCached( value ) {
  */
 function startParsingLogFile( logPath, startLogPosition ) {
     
+    clockOffsetMs = 0;
+    catchingUp = false;
+
     fileMonitor.monitorLines( ( lines ) => {
         // let start = performance.now();
 
@@ -1660,7 +1665,24 @@ function generateTriggerFns() {
  * @param {Date} timestamp The log timestamp of the live line being parsed.
  */
 function updateCatchUp( timestamp ) {
-    parsingStaleLine = Date.now() - timestamp.getTime() > staleLineMs;
+    let lag = Date.now() - timestamp.getTime() - clockOffsetMs;
+
+    if ( Number.isNaN( lag ) ) {
+        parsingStaleLine = false;
+        return;
+    }
+
+    if ( Math.abs( lag ) > staleLineMs ) {
+        // A lag that is a whole number of hours (to within the stale limit) is a clock offset such as a time zone or
+        // DST mismatch, not a backlog, so it is learned instead of muting alerts.
+        const hours = Math.round( lag / 3600000 ) * 3600000;
+        if ( hours !== 0 && Math.abs( lag - hours ) <= staleLineMs ) {
+            clockOffsetMs += hours;
+            lag -= hours;
+        }
+    }
+
+    parsingStaleLine = lag > staleLineMs;
 
     if ( parsingStaleLine && !catchingUp ) {
         catchingUp = true;
