@@ -1674,7 +1674,7 @@ function Renderer( originX, originY, glowOnStart ) {
          * @param {{overlays: OverlayWindow[], origin: import('electron').Point}} data The list of overlays.
          */
         function ( event, data ) {
-            origin = data.origin;
+            origin = data.origin ?? origin;
             
             data.overlays.forEach( function ( overlay ) {
                 let div = overlayInstances[ overlay.overlayId ]?.dom;
