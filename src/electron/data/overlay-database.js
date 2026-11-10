@@ -1,5 +1,6 @@
 const { app, BrowserWindow, ipcMain, screen } = require( "electron" );
 const Store = require( './store' );
+const log = require( 'electron-log' );
 const ForwardRef = require( '../forward-ref' );
 const _ = require( 'lodash' );
 const customAlphabet = require( 'nanoid' ).customAlphabet;
@@ -125,7 +126,32 @@ class OverlayDatabaseStore extends Store {
                 this.#data = data;
                 this.storeDataFile( this.#data );
             } );
+
+            if ( this.#repairDisplayBounds( this.#data?.overlays ) ) {
+                this.storeDataFile( this.#data );
+            }
         } );
+    }
+
+    /**
+     * Gives overlays that have no valid display bounds a display.
+     * 
+     * @returns {boolean} Returns true if any overlay was changed.
+     * 
+     * @param {OverlayWindow[]} overlays The overlays to repair.
+     */
+    #repairDisplayBounds( overlays ) {
+        const displays = screen.getAllDisplays();
+        const primaryDisplay = screen.getPrimaryDisplay();
+        let changed = false;
+
+        overlays?.forEach( overlay => {
+            if ( ElectronUtilities.repairOverlayDisplayBounds( overlay, displays, primaryDisplay ) ) {
+                changed = true;
+            }
+        } );
+
+        return changed;
     }
     
 
@@ -151,6 +177,8 @@ class OverlayDatabaseStore extends Store {
 
         // Generate a new id for the overlay.
         overlay.overlayId = overlay.overlayId?.length === 16 ? overlay.overlayId : nanoid();
+
+        this.#repairDisplayBounds( [ overlay ] );
 
         // Add it to the store.
         this.#data.overlays.push( overlay );
@@ -265,6 +293,7 @@ class OverlayDatabaseStore extends Store {
 
         // If the index is valid, then update the found overlay.
         if ( i > -1 && i < this.#data?.overlays?.length ) {
+            this.#repairDisplayBounds( [ overlay ] );
             this.#data.overlays[ i ] = overlay;
 
             // Save changes to the data.
@@ -850,7 +879,17 @@ class OverlayDatabaseStore extends Store {
                         const display = ElectronUtilities.determineContainingDisplay( d );
 
                         if ( !display ) {
-                            throw `Could not locate display for overlay ${d.overlayId}, dims: ${d.x}, ${d.y}, ${d.windowWidth}, ${d.windowHeight}. displayBounds: ${d.displayBounds}`;
+                            // Don't let one offscreen overlay stop the rest from saving; move it to the primary display.
+                            log.warn( `[Overlay:setOverlayDimensions] Could not locate display for overlay ${d.overlayId}, moving it to the primary display.` );
+                            model.displayBounds = null;
+                            model.displayId = null;
+                            model.x = d.x;
+                            model.y = d.y;
+                            model.windowWidth = d.windowWidth;
+                            model.windowHeight = d.windowHeight;
+                            this.#repairDisplayBounds( [ model ] );
+                            this.update( model );
+                            return;
                         }
     
                         model.displayId = display.id;
