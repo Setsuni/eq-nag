@@ -274,6 +274,11 @@ function executeDataMigration( data ) {
 
             } else {
                 var matchingDisplay = displays.find( f => ElectronUtilities.compareRectangles( overlay.displayBounds, f.bounds, true ) );
+
+                if ( !matchingDisplay ) {
+                    return;
+                }
+
                 overlay.displayId = matchingDisplay.id;
                 overlay.displayBounds = matchingDisplay.bounds;
                 overlay.displayLabel = matchingDisplay.label;
