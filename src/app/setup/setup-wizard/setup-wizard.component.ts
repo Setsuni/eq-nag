@@ -287,6 +287,14 @@ export class SetupWizardComponent implements OnInit {
         this._drag = { box: box, startX: event.clientX, startY: event.clientY, originLeft: box.left, originTop: box.top };
     }
 
+    nudge( event: Event, box: SetupPreviewBox, dx: number, dy: number ): void {
+        event.preventDefault();
+        box.left += dx * 4;
+        box.top += dy * 4;
+        this._movedIds.add( box.overlay.overlayId );
+        this.settleBox( box );
+    }
+
     @HostListener( 'document:mousemove', [ '$event' ] )
     onMouseMove( event: MouseEvent ): void {
         if ( this._drag ) {
@@ -322,7 +330,7 @@ export class SetupWizardComponent implements OnInit {
             duration: sampleSeconds,
         } );
 
-        this.ipcService.sendOverlayComponent( { instanceId: nanoid(), action: timerAction, overlayId: this._detrimentalId, matches: [] } );
+        this.ipcService.sendOverlayComponent( { instanceId: nanoid(), action: timerAction, overlayId: this._detrimentalId, matches: [], timestamp: new Date() } );
         this.ipcService.sendOverlayComponent( { instanceId: nanoid(), action: textAction, overlayId: this._alertId, matches: [] } );
         this.testSent = true;
     }

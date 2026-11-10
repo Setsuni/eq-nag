@@ -125,7 +125,16 @@ export class NewCharacterDialogComponent implements OnInit {
      * @param daybreak If  true, the selected character is on the daybreak service.
      */
     selectModel( e: MatSelectChange, p99: boolean = false, daybreak: boolean = false ): void {
-        this.model = e.value;
+        const option: CharacterModel = e.value;
+        this.model = Object.assign( new CharacterModel(), {
+            name: option.name,
+            server: option.server,
+            logFile: option.logFile,
+            thj: option.thj,
+            p99: option.p99,
+            takp: option.takp,
+            daybreak: option.daybreak,
+        } );
         this.model.p99 = p99 === true || e.value.p99 === true;
         this.model.takp = e.value.takp === true;
         this.model.thj = e.value.thj === true;

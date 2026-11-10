@@ -76,6 +76,8 @@ export class CharactersListComponent implements OnInit {
         private readonly snackBar: MatSnackBar
     ) { }
 
+    private reloadingCharacters: boolean = false;
+
     ngOnInit(): void {
         this.loadCharacters();
         this.ipcService.characterLogActivated().subscribe( chrId => this.activeLogFilesDictionary[ chrId ] = true );
@@ -84,11 +86,22 @@ export class CharactersListComponent implements OnInit {
         
         this.ipcService.tickReceived().subscribe( tick => {
 
+            let unknownCharacter = false;
             tick.characterOptions.forEach( character => {
                 // Update the class for each character.
                 let index = this.characters.findIndex( f => f.characterId === character.characterId );
-                this.characters[ index ].class = character.class;
+                if ( index > -1 ) {
+                    this.characters[ index ].class = character.class;
+                } else {
+                    unknownCharacter = true;
+                }
             } );
+
+            // A character was added elsewhere while this tab was open.
+            if ( unknownCharacter && !this.reloadingCharacters ) {
+                this.reloadingCharacters = true;
+                this.loadCharacters( undefined, () => this.reloadingCharacters = false );
+            }
             
             if ( tick.triggerProfileDisabledTriggers?.length > 0 ) {
                 tick.triggerProfileDisabledTriggers.forEach( tp => {
@@ -155,7 +168,7 @@ export class CharactersListComponent implements OnInit {
      * 
      * @param characterId The id of the character to load.
      */
-    public loadCharacters( characterId?: string ): void {
+    public loadCharacters( characterId?: string, onLoaded?: () => void ): void {
         this.ipcService.getCharacters().subscribe( data => {
             this.characters = _.sortBy( data, [ 'server', 'name' ] );
             this.characters?.forEach( character => character.disabledTriggers = character.disabledTriggers ?? [] );
@@ -163,6 +176,7 @@ export class CharactersListComponent implements OnInit {
                 let i: number = _.findIndex( this.characters, f => f.characterId === characterId );
                 this.selectedTabIndex = i >= 0 && i < this.characters.length ? i : -1;
             }
+            onLoaded?.();
         } );
     }
 
