@@ -9,9 +9,8 @@
             <form #stepOneForm="ngForm">
                 <p>
                     <mat-form-field style="width: 100%;">
-                        <mat-label></mat-label>
+                        <mat-label>{{serviceName}} URL</mat-label>
                         <input matInput type="text" [(ngModel)]="url" name="txtUrl" required />
-                        <mat-hint>{{serviceName}} URL</mat-hint>
                     </mat-form-field>
                 </p>
                 
@@ -88,11 +87,10 @@
 
                 <p>
                     <mat-form-field style="width: 100%;">
-                        <mat-label></mat-label>
+                        <mat-label>Timer Overlay Window</mat-label>
                         <mat-select [(ngModel)]="timerOverlayId" name="ddlTimerOverlay" required>
                             <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                         </mat-select>
-                        <mat-hint>Timer Overlay Window</mat-hint>
                     </mat-form-field>
                 </p>
 

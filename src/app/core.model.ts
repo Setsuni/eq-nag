@@ -97,8 +97,8 @@ export const actionOverlayMap: Record<number, 'Log' | 'Alert' | 'Timer' | 'FCT' 
 export function ActionTypeLabels(actionType: ActionTypes): string {
     
 
-    return actionType === ActionTypes.DisplayText ? 'Display Text' :
-        actionType === ActionTypes.PlayAudio ? 'Play Audio' :
+    return actionType === ActionTypes.DisplayText ? 'Show text' :
+        actionType === ActionTypes.PlayAudio ? 'Play sound' :
         actionType === ActionTypes.Speak ? 'Speak' :
         actionType === ActionTypes.Timer ? 'Timer' :
         actionType === ActionTypes.Countdown ? 'Countdown' :

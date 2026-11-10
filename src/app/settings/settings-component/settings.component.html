@@ -26,7 +26,7 @@
                 </mat-radio-group>
                 <div *ngIf="logMaintenanceRules.maintenancePlan === logMaintenancePlanTypes.BySize">
                     <mat-form-field style="width: 100%;">
-                        <mat-label></mat-label>
+                        <mat-label>Archive when the file reaches</mat-label>
                         <mat-select [(ngModel)]="logMaintenanceRules.maxLogFileSizeMb" name="maxLogFileSizeMb" [disabled]="!logMaintenanceRules.enableLogFileMaintenance" (selectionChange)="updateSetting(settingsKeys.logMaintenanceRules, logMaintenanceRules)">
                             <mat-option [value]="20">20 MB</mat-option>
                             <mat-option [value]="50">50 MB</mat-option>
@@ -56,7 +56,7 @@
                         <button mat-flat-button color="accent">OK</button>
                     </ng-template>
                     <mat-form-field class="archiveTimeOfDay">
-                        <mat-label></mat-label>
+                        <mat-label>Archive time of day</mat-label>
                         <input matInput [ngxMatTimepicker]="picker" [(ngModel)]="logTime" (ngModelChange)="saveLogMaintenance()">
                         <button mat-icon-button matSuffix >
                             <mat-icon matSuffix
@@ -64,7 +64,6 @@
                                 watch_later
                             </mat-icon>
                         </button>
-                        <mat-hint>Archive time of day</mat-hint>
                         <ngx-mat-timepicker #picker [cancelBtnTmpl]="timePickerCancel" [confirmBtnTmpl]="timePickerConfirm" [format]="12"></ngx-mat-timepicker>
                     </mat-form-field>
                     
@@ -209,11 +208,10 @@
             <div>
                 <h2 class="sub-header full-width">Text to Speech</h2>
                 <mat-form-field style="width: 100%;">
-                    <mat-label></mat-label>
+                    <mat-label>Text to speech voice</mat-label>
                     <mat-select [(ngModel)]="voiceIndex" (selectionChange)="onChangeVoice()">
                         <mat-option *ngFor="let option of voiceOptions; let i = index" [value]="i">{{option.name}}</mat-option>
                     </mat-select>
-                    <mat-hint>Select the text to speech voice</mat-hint>
                 </mat-form-field>
                 <div style="margin-top: 15px;">Base Speaking Rate</div>
                 <mat-slider [(ngModel)]="baseSpeakingRate" thumbLabel tickInterval="0.25" step="0.25" min="0.25" max="4" style="width: 100%;" (change)="updateSetting( settingsKeys.baseSpeakingRate, baseSpeakingRate, 500 )"></mat-slider>
@@ -281,9 +279,8 @@
                         <mat-radio-button [value]="quickShareAuthorListTypes.Blacklist">Black List</mat-radio-button>
                     </mat-radio-group>
                     <mat-form-field style="width:100%;">
-                        <mat-label></mat-label>
+                        <mat-label>Characters List</mat-label>
                         <textarea matInput [(ngModel)]="quickShareAuthorList" name="txtQuickShareAuthorList" rows="5" [disabled]="quickShareAuthorListType == quickShareAuthorListTypes.Disabled" (change)="onQuickShareImportsChange()"></textarea>
-                        <mat-hint>Characters List</mat-hint>
                     </mat-form-field>
                 </div>
             </div>
@@ -353,9 +350,8 @@
                 <td mat-cell *matCellDef="let element; let i = index" style="text-align: left;">
 
                     <mat-form-field style="width: 95%;margin-top: 10px;">
-                        <mat-label></mat-label>
+                        <mat-label>Original text</mat-label>
                         <input matInput [(ngModel)]="element.originalText" name="txtOriginalText_{{i}}" type="text" (change)="phoneticTransformsModified = true" />
-                        <mat-hint>Original text</mat-hint>
                     </mat-form-field>
 
                 </td>
@@ -366,9 +362,8 @@
                 <td mat-cell *matCellDef="let element; let i = index" style="text-align: left;">
 
                     <mat-form-field style="width: 95%;margin-top: 10px;">
-                        <mat-label></mat-label>
+                        <mat-label>Phonetic text</mat-label>
                         <input matInput [(ngModel)]="element.phoneticText" name="txtPhoneticText_{{i}}" type="text" (change)="phoneticTransformsModified = true" />
-                        <mat-hint>Phonetic text</mat-hint>
                     </mat-form-field>
                     
                 </td>

@@ -10,11 +10,10 @@
         <p>If you would like to reassign all references to this overlay to another overlay, you can select that here.</p>
 
         <mat-form-field style="width: 100%">
-            <mat-label></mat-label>
+            <mat-label>Full Replacement Overlay</mat-label>
             <mat-select [(ngModel)]="fullReassignmentOverlayId" name="fullReassignmentOverlayId">
                 <mat-option *ngFor="let option of getOverlaysOfType(data.overlay.overlayType)" [value]="option.overlayId">{{option.name}}</mat-option>
             </mat-select>
-            <mat-hint>Full Replacement Overlay</mat-hint>
         </mat-form-field>
 
         <p>If you only need to change a few references, you can select the changes below</p>

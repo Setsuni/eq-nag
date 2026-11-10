@@ -5,9 +5,8 @@
         <h2 class="sub-header full-width">Encounter Settings</h2>
 
         <mat-form-field style="width: 100%;">
-            <mat-label></mat-label>
+            <mat-label>Encounter Minimum Damage</mat-label>
             <input matInput type="number" [(ngModel)]="encounterMinimumDamage" name="encounterMinimumDamage" />
-            <mat-hint>Encounter Minimum Damage</mat-hint>
         </mat-form-field>
 
     </div>
@@ -44,6 +43,7 @@
 
                     <div>
                         <mat-form-field>
+                            <mat-label>Search players</mat-label>
                             <input matInput [(ngModel)]="serverSearchText[db.server]" name="serverSearchText" (keyup)="handleSearchTextChange(db.server)" />
                             <mat-hint>Search by name or class.</mat-hint>
                         </mat-form-field>

@@ -2,7 +2,7 @@
     <span>Combat Statistics</span>
     <span class="spacer"></span>
     <mat-form-field>
-        <mat-label></mat-label>
+        <mat-label>Combat Character</mat-label>
         <mat-select [(ngModel)]="combatCharacterId" name="combatCharacterId" >
             <mat-select-trigger>
                 {{getCombatName()}}<small style="float: right; margin-right: 0.5em;">{{getCombatServer()}}</small>
@@ -10,7 +10,6 @@
             <mat-option [value]="null">Auto</mat-option>
             <mat-option *ngFor="let option of characterOptions" [value]="option.characterId">{{option.name}}<small style="float: right;">{{option.server}}</small></mat-option>
         </mat-select>
-        <mat-hint>Combat Character</mat-hint>
     </mat-form-field>
     <button mat-icon-button (click)="openCombatStatsSettings()"><mat-icon class="material-icons-outlined" style="opacity: 0.75;">settings</mat-icon></button>
     <!-- <button mat-button [disabled]="true">Export</button> -->
@@ -88,11 +87,10 @@
 
         <div>
             <mat-form-field>
-                <mat-label></mat-label>
+                <mat-label>Server</mat-label>
                 <mat-select [(ngModel)]="serverTrustServer" name="serverTrustServer" style="text-transform: capitalize;">
                     <mat-option *ngFor="let server of serverTrustServerOptions" [value]="server" style="text-transform: capitalize;">{{server}}</mat-option>
                 </mat-select>
-                <mat-hint>Server</mat-hint>
             </mat-form-field>
         </div>
 
@@ -100,7 +98,7 @@
             <div>
                 <h3 class="sub-header full-width header-glow">Trusted Players</h3>
                 <mat-form-field style="width: 100%;">
-                    <mat-label></mat-label>
+                    <mat-label>Trusted characters</mat-label>
                     <textarea matInput [(ngModel)]="trustedPlayers" name="trustedPlayers" rows="5" spellcheck="false" ></textarea>
                     <mat-hint>Add trusted characters to the list, separated by new lines.</mat-hint>
                 </mat-form-field>
@@ -110,7 +108,7 @@
             <div>
                 <h3 class="sub-header full-width header-glow">Blocked Players</h3>
                 <mat-form-field style="width: 100%;">
-                    <mat-label></mat-label>
+                    <mat-label>Blocked characters</mat-label>
                     <textarea matInput [(ngModel)]="blockedPlayers" name="blockedPlayers" rows="5" spellcheck="false" ></textarea>
                     <mat-hint>Add blocked characters to the list, separated by new lines.</mat-hint>
                 </mat-form-field>

@@ -233,7 +233,7 @@ export class FloatingCombatTextComponent implements OnInit, DoCheck {
     installQuickShare(): void {
         this.dialogService
             .showInputDialog(
-                'Install Quick Share',
+                'Enter a share code',
                 [ 'To install shared combat groups, paste the code below' ],
                 'Quick share code',
                 'Paste in the quick share code',

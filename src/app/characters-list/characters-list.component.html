@@ -185,7 +185,7 @@
                                 <h2>Profile</h2>
                                 <div>
                                     <mat-form-field style="width: 100%;">
-                                        <mat-label></mat-label>
+                                        <mat-label>Trigger profile</mat-label>
                                         <mat-select [(ngModel)]="character.triggerProfile" name="ddlTriggerProfile_{{i}}" (selectionChange)="onTriggerProfileChanged(character)" profileId="profileId" #profileId="ngModel">
                                             <mat-select-trigger>
                                                 {{getProfileName(profileId.value)}}

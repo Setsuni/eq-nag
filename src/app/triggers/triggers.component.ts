@@ -2079,7 +2079,7 @@ export class TriggersComponent implements OnInit {
     installMultiCode() {
         this.dialogService
             .showInputDialog(
-                'Install Quick Share',
+                'Enter a share code',
                 [ 'To install a quick share or package, paste the code below' ],
                 'Package code',
                 'Paste in the quick share or package code',
