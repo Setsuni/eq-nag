@@ -1617,7 +1617,7 @@ function generateTriggerFns() {
             }
 
         } catch ( error ) {
-            logHistoryMgr.logError( error, raw, simulating, padTime, ErrorMessages.triggerGeneration(), trigger );
+            logHistoryMgr.logError( error, null, false, null, ErrorMessages.triggerGeneration(), trigger );
         }
 
     } );
