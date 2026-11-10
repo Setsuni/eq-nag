@@ -187,7 +187,8 @@
                             <td mat-cell *matCellDef="let element; let i = index" class="col-name">
                                 <div class="trig-line">
                                     <button type="button" class="trig-link" [class.off]="!element.enabled" (click)="showEditTriggerDialog(element.triggerId)" matTooltip="Click to edit" matTooltipShowDelay="600" [attr.aria-label]="'Edit ' + element.name">{{element.name}}</button>
-                                    <span class="text-depress trig-family">{{getTriggerFamily(element)}}</span>
+                                    <button type="button" class="trig-path" *ngIf="searchTerm; else family" (click)="toggleSelectedFolder(element.folderId)" matTooltip="Show this folder" matTooltipShowDelay="600">{{getSearchResultPath(element)}}</button>
+                                    <ng-template #family><span class="text-depress trig-family">{{getTriggerFamily(element)}}</span></ng-template>
                                 </div>
                                 <div class="trig-sum" *ngIf="getTriggerSummary(element) as sum">
                                     <ng-container [ngSwitch]="sum.whenKind">

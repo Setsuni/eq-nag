@@ -277,6 +277,29 @@ table.capture-phrases {
     font-size: 11px;
 }
 
+.trig-path {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin-left: auto;
+    padding: 0;
+    border: none;
+    background: none;
+    color: rgba(255, 255, 255, 0.5);
+    font: inherit;
+    font-size: 11px;
+    cursor: pointer;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &:hover,
+    &:focus-visible {
+        color: rgba(255, 255, 255, 0.85);
+        text-decoration: underline;
+        outline: none;
+    }
+}
+
 .trig-sum {
     margin-top: 2px;
     font-size: 12px;

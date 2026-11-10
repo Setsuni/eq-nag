@@ -117,6 +117,7 @@ export class TriggersComponent implements OnInit {
     private triggerFindings: Record<string, HealthFinding[]> = {};
     private folderFindings: Record<string, HealthFinding[]> = {};
     private summaryCache = new WeakMap<TriggerModel, TriggerSummary>();
+    private folderPathCache: Record<string, string> = {};
 
     @Output() public openHealth: EventEmitter<void> = new EventEmitter<void>();
     
@@ -908,6 +909,7 @@ export class TriggersComponent implements OnInit {
         this.expandFolders( folders );
         this.updateExpandStatus();
         this.updateFolderCounts();
+        this.folderPathCache = {};
 
     }
 
@@ -2291,6 +2293,15 @@ export class TriggersComponent implements OnInit {
             return `${hours}:${String( minutes ).padStart( 2, '0' )}:${String( seconds ).padStart( 2, '0' )}`;
         }
         return totalSeconds >= 60 ? `${minutes}:${String( seconds ).padStart( 2, '0' )}` : `${seconds} s`;
+    }
+
+    /**
+     * Returns the full folder path of a search result, so the player can tell where a match lives.
+     * 
+     * @param trigger The trigger.
+     */
+    public getSearchResultPath( trigger: TriggerModel ): string {
+        return this.folderPathCache[ trigger.folderId ] ??= this.getFolderFamilyNames( trigger.folderId, this.triggerFolders, [] ).join( ' › ' );
     }
 
     /**
