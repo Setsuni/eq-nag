@@ -1,0 +1,30 @@
+<div class="map-wrap" *ngIf="displays.length > 0">
+    <div #mapArea class="map-area" [style.aspect-ratio]="space.width + ' / ' + space.height" [style.max-width.px]="ratio * 240">
+        <div class="monitor" *ngFor="let display of displays" [class.label-inside]="labelInside( display )"
+            [style.left.%]="( display.bounds.x - space.x ) / space.width * 100"
+            [style.top.%]="( display.bounds.y - space.y ) / space.height * 100"
+            [style.width.%]="display.bounds.width / space.width * 100"
+            [style.height.%]="display.bounds.height / space.height * 100">
+            <span class="monitor-label">{{display.label}} &middot; {{display.bounds.width}} &times; {{display.bounds.height}}</span>
+        </div>
+        <div class="box" *ngFor="let box of boxes"
+            [ngClass]="[ typeClass( box.overlay.overlayType ), box.overlay.overlayId === selectedOverlayId ? 'selected' : '', box.overlay.overlayId === dragId ? 'dragging' : '' ]"
+            [style.left.%]="left( box )"
+            [style.top.%]="top( box )"
+            [style.width.%]="width( box )"
+            [style.height.%]="height( box )"
+            [title]="box.overlay.name"
+            (pointerdown)="onPointerDown( $event, box )"
+            (pointermove)="onPointerMove( $event )"
+            (pointerup)="onPointerUp( $event, box )"
+            (pointercancel)="onPointerCancel()">
+            <span class="box-label">{{box.overlay.name}}</span>
+        </div>
+    </div>
+    <div class="legend">
+        <span><i class="swatch type-timer"></i> Timer</span>
+        <span><i class="swatch type-text"></i> Text</span>
+        <span><i class="swatch type-fct"></i> Floating combat text</span>
+        <span class="hint">Drag a box to move it.</span>
+    </div>
+</div>

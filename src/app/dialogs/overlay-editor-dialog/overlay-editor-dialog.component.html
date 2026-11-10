@@ -1,286 +1,283 @@
 <div class="modal">
     <header>
         <mat-toolbar class="titlebar" color="default">
-            <span>Overlay Editor</span>
+            <span>Edit overlay<ng-container *ngIf="model.name"> &middot; {{model.name}}</ng-container></span>
             <span class="spacer"></span>
-            <button mat-icon-button aria-label="Exit application" (click)="requestClose()">
+            <button mat-icon-button aria-label="Close without saving" matTooltip="Close without saving" matTooltipPosition="below" (click)="requestClose()">
                 <mat-icon>clear</mat-icon>
             </button>
         </mat-toolbar>
     </header>
-    <section>
-        <mat-tab-group animationDuration="0ms" [selectedIndex]="0">
-            <mat-tab label="General">
-                <div class="tab-content" [ngClass]="{'with-preview': model.overlayType === 'Alert'}">
 
-                    <game-preview class="game-preview" *ngIf="model.overlayType === 'Alert'">
-                        <div class="text-preview" 
-                            [style.color]="previewFontColor"
-                            [style.font-family]="model.fontFamily"
-                            [style.font-weight]="fontWeight"
-                            [style.line-height]="lineHeight"
-                            [style.text-shadow]="textShadow"
-                            [style.font-size]="model.fontSize + 'px'"
-                            [style.border]="border"
-                            [style.background]="backgroundColor">
-                            The quick brown fox {{model.fontSize}} jumped over the lazy dog.<br/>
-                            The quick brown fox {{model.fontSize}} jumped over the lazy dog.<br/>
-                            The quick brown fox {{model.fontSize}} jumped over the lazy dog.</div>
-                    </game-preview>
+    <div class="editor-info">
+        <p class="type-line"><span class="type-chip" [ngClass]="typeClass">{{typeLabel}}</span> overlay. {{typeDescription}}</p>
+        <p class="how-to"><mat-icon class="material-icons-outlined">info</mat-icon><span>This overlay is showing on your screen with a box around it. Drag the box to move it and drag its corners to resize it, then press <strong>Save</strong>. <strong>Cancel</strong> puts everything back.</span></p>
+    </div>
 
-                    <fieldset class="margin-t-25">
-                        <legend><span class="title">Properties</span><small>Description and styles for this overlay window.</small></legend>
-                        <mat-form-field floatLabel="always">
-                            <mat-label>Name</mat-label>
-                            <input matInput type="text" [(ngModel)]="model.name" (ngModelChange)="broadcastModel()" />
-                        </mat-form-field>
+    <div class="preview-panel" *ngIf="model.overlayType === 'Alert' || model.overlayType === 'Timer'">
+        <game-preview>
+            <div class="text-preview" *ngIf="model.overlayType === 'Alert'"
+                [style.color]="previewFontColor"
+                [style.font-family]="model.fontFamily"
+                [style.font-weight]="fontWeight"
+                [style.line-height]="lineHeight"
+                [style.text-shadow]="textShadow"
+                [style.font-size]="model.fontSize + 'px'"
+                [style.text-align]="model.horizontalAlignment"
+                [style.justify-content]="previewVerticalAlign"
+                [style.border]="border"
+                [style.background]="backgroundColor">
+                Soandso is mesmerized!<br/>
+                Complete Heal on Soandso</div>
 
-                        <app-link-button (click)="enterDescription = true" *ngIf="!enterDescription" style="margin-top: 5px; margin-bottom: 5px;">Add a description ...</app-link-button>
-                
-                        <mat-form-field *ngIf="enterDescription" floatLabel="always">
-                            <mat-label>Description</mat-label>
-                            <textarea matInput [(ngModel)]="model.description" name="txtDescription" rows="5"></textarea>
-                        </mat-form-field>
-
-                        <ng-template [ngIf]="model.overlayType !== 'FCT'">
-                            <mat-form-field floatLabel="always">
-                                <mat-label>Font</mat-label>
-                                <mat-select class="font-ddl" [(ngModel)]="model.fontFamily" name="ddlFontFamily" disableOptionCentering (selectionChange)="onChangeFontFamily()" style="max-width: unset;">
-                                    <mat-option class="font-option" value="Roboto" style="font-family: Roboto, sans-serif; font-size: 16px;"><small>Roboto</small></mat-option>
-                                    <mat-option class="font-option" value="Red Rose" style="font-family: 'Red Rose', sans-serif; font-size: 16px;"><small>Red Rose</small></mat-option>
-                                    <mat-option class="font-option" value="Oswald" style="font-family: Oswald, sans-serif; font-size: 16px;"><small>Oswald</small></mat-option>
-                                    <mat-option class="font-option" value="Roboto Mono" style="font-family: 'Roboto Mono', sans-serif; font-size: 16px;"><small>Roboto Mono</small></mat-option>
-                                    <mat-option class="font-option" value="Open Sans Condensed" style="font-family: 'Open Sans Condensed', sans-serif; font-size: 16px;"><small>Open Sans Condensed</small></mat-option>
-                                    <mat-option class="font-option" value="Ranchers" style="font-family: Ranchers, sans-serif; font-size: 16px;"><small>Ranchers</small></mat-option>
-                                    <mat-option class="font-option" value="Press Start 2P" style="font-family: 'Press Start 2P', sans-serif; font-size: 14px;"><small>Press Start 2P</small></mat-option>
-                                </mat-select>
-                            </mat-form-field>
-    
-                            <div class="f-row">
-                                <div class="f-sm-4 al-center"><mat-label>Size</mat-label></div>
-                                <div class="f-sm-4 al-center"><mat-label>Spacing</mat-label></div>
-                                <div class="f-sm-4 al-center"><mat-label>Weight</mat-label></div>
-                            </div>
-                            <div class="f-row">
-                                <div class="f-sm-4"><mat-slider thumbLabel tickInterval="1" min="1" max="64" style="width: 100%;" [(ngModel)]="model.fontSize" name="sldrFontSize" (change)="broadcastModel()"></mat-slider></div>
-                                <div class="f-sm-4"><mat-slider thumbLabel tickInterval="1" step="5" min="10" max="300" style="width: 100%;" [(ngModel)]="model.lineHeight" name="sldrLineHeight" (change)="broadcastModel()"></mat-slider></div>
-                                <div class="f-sm-4"><mat-slider thumbLabel tickInterval="1" step="1" min="0" [max]="maxFontWeightIndex" style="width: 100%;" [(ngModel)]="fontWeightIndex" name="sldrFontWeight" (change)="broadcastModel()"></mat-slider></div>
-                            </div>
-    
-                            <div class="f-row">
-                                <div class="f-sm-4 al-center"><mat-label>Text</mat-label></div>
-                                <div class="f-sm-4 al-center"><mat-label>Background</mat-label></div>
-                                <div class="f-sm-4 al-center"><mat-label>Border</mat-label></div>
-                            </div>
-                            <div class="f-row">
-                                <div class="f-sm-4 al-center"><app-color-picker [(ngModel)]="model.fontColor" (change)="broadcastModel()"></app-color-picker></div>
-                                <div class="f-sm-4 al-center"><app-color-picker [(ngModel)]="model.backgroundColor" (change)="broadcastModel()"></app-color-picker></div>
-                                <div class="f-sm-4 al-center"><app-color-picker [(ngModel)]="model.borderColor" (change)="broadcastModel()"></app-color-picker></div>
-                            </div>
-                            <div class="f-row">
-                                <div class="f-sm-4"><mat-slider thumbLabel tickInterval="1" min="0" max="100" style="width: 100%;" [(ngModel)]="fontTransparency" name="sldrFontSize" (change)="onChangeFontTransparency()"></mat-slider></div>
-                                <div class="f-sm-4"><mat-slider thumbLabel tickInterval="1" min="0" max="100" style="width: 100%;" [(ngModel)]="backgroundTransparency" name="sldrFontSize" (change)="onChangeBackgroundTransparency()"></mat-slider></div>
-                                <div class="f-sm-4"><mat-slider thumbLabel tickInterval="1" min="0" max="100" style="width: 100%;" [(ngModel)]="borderTransparency" name="sldrFontSize" (change)="onChangeBorderTransparency()"></mat-slider></div>
-                            </div>
-                        </ng-template>
-                        <ng-template [ngIf]="model.overlayType === 'FCT'">
-                            <p>To change the colors for FCT combat, use the [Floating Combat Text] tab in the main window.</p>
-                        </ng-template>
-
-                    </fieldset>
-
-                    <fieldset class="margin-t-25" *ngIf="model.overlayType === 'Alert'">
-                        <legend><span class="title">Alert Options</span><small>Change properties about how text should appear in this overlay.</small></legend>
-
-                        <!-- <div class="f-row">
-                            <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>Alignment</mat-label></div>
-                            <div class="f-sm-4 al-center" style="text-align: left !important;">
-                                <mat-radio-group [(ngModel)]="model.horizontalAlignment" name="horizontalAlignment" (ngModelChange)="broadcastModel()" class="horizontal">
-                                    <mat-radio-button value="left"><mat-icon class="material-icons-outlined">format_align_left</mat-icon></mat-radio-button>
-                                    <mat-radio-button value="center"><mat-icon class="material-icons-outlined">format_align_center</mat-icon></mat-radio-button>
-                                    <mat-radio-button value="right"><mat-icon class="material-icons-outlined">format_align_right</mat-icon></mat-radio-button>
-                                </mat-radio-group>
-                                <div class="f-sm-4 al-center"></div>
-                            </div>
-                        </div> -->
-                        <div class="f-row">
-                            <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>Horizontal alignment</mat-label></div>
-                            <div class="f-sm-4 al-center" style="text-align: left !important;">
-                                <mat-radio-group [(ngModel)]="model.horizontalAlignment" name="horizontalAlignment" (ngModelChange)="broadcastModel()" class="horizontal">
-                                    <mat-radio-button value="left"><mat-icon class="material-icons-outlined">format_align_left</mat-icon></mat-radio-button>
-                                    <mat-radio-button value="center"><mat-icon class="material-icons-outlined">format_align_center</mat-icon></mat-radio-button>
-                                    <mat-radio-button value="right"><mat-icon class="material-icons-outlined">format_align_right</mat-icon></mat-radio-button>
-                                </mat-radio-group>
-                            </div>
-                            <div class="f-sm-4 al-center"></div>
-                        </div>
-                        <div class="f-row">
-                            <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>Vertical alignment</mat-label></div>
-                            <div class="f-sm-4 al-center" style="text-align: left !important;">
-                                <mat-radio-group [(ngModel)]="model.verticalAlignment" name="verticalAlignment" (ngModelChange)="broadcastModel()" class="horizontal">
-                                    <mat-radio-button value="top"><mat-icon class="material-icons-outlined">vertical_align_top</mat-icon></mat-radio-button>
-                                    <mat-radio-button value="middle"><mat-icon class="material-icons-outlined">vertical_align_center</mat-icon></mat-radio-button>
-                                    <mat-radio-button value="bottom"><mat-icon class="material-icons-outlined">vertical_align_bottom</mat-icon></mat-radio-button>
-                                </mat-radio-group>
-                            </div>
-                            <div class="f-sm-4 al-center"></div>
-                        </div>
-                        
-                        <div class="f-row">
-                            <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>White space</mat-label></div>
-                            <div class="f-sm-4 al-center" style="text-align: left !important;">
-                                <mat-radio-group [(ngModel)]="model.textOverflow.whiteSpace" name="whiteSpace" (ngModelChange)="broadcastModel()" class="horizontal">
-                                    <mat-radio-button value="nowrap"><mat-icon class="material-icons-outlined">horizontal_rule</mat-icon></mat-radio-button>
-                                    <mat-radio-button value="normal"><mat-icon class="material-icons-outlined">wrap_text</mat-icon></mat-radio-button>
-                                </mat-radio-group>
-                            </div>
-                            <div class="f-sm-4 al-center"></div>
-                        </div>
-
-                        <div class="f-row">
-                            <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>Overflow</mat-label></div>
-                            <div class="f-sm-4 al-center" style="text-align: left !important;">
-                                <mat-radio-group [(ngModel)]="model.textOverflow.overflow" name="overflow" (ngModelChange)="broadcastModel()" class="horizontal">
-                                    <mat-radio-button value="hidden"><mat-icon class="material-icons-outlined">visibility_off</mat-icon></mat-radio-button>
-                                    <mat-radio-button value="visible"><mat-icon class="material-icons-outlined">visibility</mat-icon></mat-radio-button>
-                                </mat-radio-group>
-                            </div>
-                            <div class="f-sm-4 al-center"></div>
-                        </div>
-
-                        <div class="f-row" style="margin-bottom: 60px;">
-                            <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>Overflow style</mat-label></div>
-                            <div class="f-sm-4 al-center" style="text-align: left !important;">
-                                <mat-radio-group [(ngModel)]="model.textOverflow.textOverflow" name="textOverflow" (ngModelChange)="broadcastModel()" class="horizontal">
-                                    <mat-radio-button value="clip" title="Clip text"><mat-icon class="material-icons-outlined">content_cut</mat-icon></mat-radio-button>
-                                    <mat-radio-button value="ellipsis" title="End with ellipsis (ex: testin...)"><mat-icon class="material-icons-outlined">more_horiz</mat-icon></mat-radio-button>
-                                </mat-radio-group>
-                            </div>
-                            <div class="f-sm-4 al-center"></div>
-                        </div>
-
-                        <div class="f-row">
-                            <div class="f-sm-4 al-center"><mat-checkbox [(ngModel)]="model.showTextBorder" name="cbxShowTextBorder" (change)="broadcastModel()">Text Border</mat-checkbox></div>
-                            <div class="f-sm-4 al-center"><mat-checkbox [(ngModel)]="model.showTextGlow" name="cbxShowTextBorder" (change)="broadcastModel()">Text Glow</mat-checkbox></div>
-                            <div class="f-sm-4 al-center"></div>
-                        </div>
-                        <div class="f-row">
-                            <div class="f-sm-4 al-center"><mat-label *ngIf="model.showTextBorder">Color</mat-label></div>
-                            <div class="f-sm-4 al-center"><mat-label *ngIf="model.showTextGlow">Color</mat-label></div>
-                            <div class="f-sm-4 al-center"></div>
-                        </div>
-                        <div class="f-row">
-                            <div class="f-sm-4 al-center"><app-color-picker [(ngModel)]="textBorderColor" (change)="broadcastModel()" *ngIf="model.showTextBorder"></app-color-picker></div>
-                            <div class="f-sm-4 al-center"><app-color-picker [(ngModel)]="textGlowColor" (change)="broadcastModel()" *ngIf="model.showTextGlow"></app-color-picker></div>
-                            <div class="f-sm-4 al-center"></div>
-                        </div>
-                        <div class="f-row">
-                            <div class="f-sm-4 al-center"><mat-label *ngIf="model.showTextBorder">Intensity</mat-label></div>
-                            <div class="f-sm-4 al-center"><mat-label *ngIf="model.showTextGlow">Intensity</mat-label></div>
-                            <div class="f-sm-4 al-center"></div>
-                        </div>
-                        <div class="f-row">
-                            <div class="f-sm-4"><mat-slider thumbLabel tickInterval="1" min="0" max="100" style="width: 100%;" [(ngModel)]="textBorderIntensity" name="sldrTextBorderIntensity" (change)="onChangeTextBorderIntensity()" *ngIf="model.showTextBorder"></mat-slider></div>
-                            <div class="f-sm-4"><mat-slider thumbLabel tickInterval="1" min="0" max="100" style="width: 100%;" [(ngModel)]="textGlowIntensity" name="sldrTextGlowIntensity" (change)="onChangeTextGlowIntensity()" *ngIf="model.showTextGlow"></mat-slider></div>
-                            <div class="f-sm-4"></div>
-                        </div>
-                        <div class="f-row">
-                            <div class="f-sm-4 al-center"></div>
-                            <div class="f-sm-4 al-center"><mat-label *ngIf="model.showTextGlow">Size</mat-label></div>
-                            <div class="f-sm-4 al-center"></div>
-                        </div>
-                        <div class="f-row">
-                            <div class="f-sm-4 al-center"></div>
-                            <div class="f-sm-4 al-center"><mat-slider thumbLabel tickInterval="1" min="0" max="10" style="width: 100%;" [(ngModel)]="model.textGlowSize" name="sldrTextGlowSize" (change)="broadcastModel()" *ngIf="model.showTextGlow"></mat-slider></div>
-                            <div class="f-sm-4 al-center"></div>
-                        </div>
-
-                    </fieldset>
-
-                    <fieldset class="margin-t-25" *ngIf="model.overlayType === 'Timer'">
-                        <legend><span class="title">Timer Options</span><small>Change properties about how timers should appear in this overlay.</small></legend>
-                                   
-                        <div class="f-row">
-                            <div class="f-sm-6 al-center">
-                                <mat-form-field floatLabel="always">
-                                    <mat-label>Timer sort type</mat-label>
-                                    <mat-select [(ngModel)]="model.timerSortType" name="ddlTimerSortType">
-                                        <mat-option [value]="timerSortTypes.None">First in on top.</mat-option>
-                                        <mat-option [value]="timerSortTypes.Ascending">Shortest time remaining on top.</mat-option>
-                                        <mat-option [value]="timerSortTypes.Descending">Longest time remaining on top.</mat-option>
-                                    </mat-select>
-                                </mat-form-field>
-                            </div>
-                        </div>
-
-                        <div class="f-row">
-                            <div class="f-sm-4 al-center"><mat-label>Timer</mat-label></div>
-                            <div class="f-sm-4 al-center"></div>
-                            <div class="f-sm-4 al-center"></div>
-                        </div>
-                        <div class="f-row">
-                            <div class="f-sm-4 al-center"><app-color-picker [(ngModel)]="model.timerColor" (change)="broadcastModel()"></app-color-picker></div>
-                            <div class="f-sm-4 al-center"></div>
-                            <div class="f-sm-4 al-center"></div>
-                        </div>
-
-                        <div>
-                            <mat-checkbox [(ngModel)]="model.hideTargetLabel" name="hideTargetLabel" (change)="broadcastModel()">Hide target label</mat-checkbox>
-                        </div>
-
-                        <div>
-                            <mat-checkbox [(ngModel)]="model.showTimeRemaining" name="showTimeRemaining" (change)="broadcastModel()">Show the time remaining</mat-checkbox>
-                        </div>
-
-                        <div class="f-row">
-                            <div class="f-sm-4 al-left"><mat-checkbox [(ngModel)]="model.reverse" name="reverse" (change)="broadcastModel()">Reverse timer flow, starting from the bottom and adding more above.</mat-checkbox></div>
-                            <div class="f-sm-4 al-center"></div>
-                            <div class="f-sm-4 al-center"></div>
-                        </div>
-
-                        <div class="f-row">
-                            <div class="f-sm-4 al-left"><mat-checkbox [(ngModel)]="model.groupByTarget" name="groupByTarget" (change)="broadcastModel()">Group DoTs by target</mat-checkbox></div>
-                            <div class="f-sm-4 al-center"></div>
-                            <div class="f-sm-4 al-center"></div>
-                        </div>
-
-                        <div class="f-row">
-                            <div class="f-sm-4 al-left"><mat-label *ngIf="model.groupByTarget">Header</mat-label></div>
-                            <div class="f-sm-4 al-right"><mat-label *ngIf="model.groupByTarget">Size</mat-label></div>
-                            <div class="f-sm-4 al-center"><mat-slider thumbLabel tickInterval="1" min="1" max="64" style="width: 100%;" [(ngModel)]="model.groupHeaderSize" name="groupHeaderSize" (change)="broadcastModel()" *ngIf="model.groupByTarget"></mat-slider></div>
-                        </div>
-                        <div class="f-row">
-                            <div class="f-sm-4 al-left"></div>
-                            <div class="f-sm-4 al-right"><mat-label *ngIf="model.groupByTarget">Weight</mat-label></div>
-                            <div class="f-sm-4 al-left"><mat-slider thumbLabel tickInterval="1" step="1" min="0" [max]="maxFontWeightIndex" style="width: 100%;" [(ngModel)]="dotGroupHeaderWeightIndex" name="sldrFontWeight" (change)="broadcastModel()" *ngIf="model.groupByTarget"></mat-slider></div>
-                        </div>
-                        <div class="f-row">
-                            <div class="f-sm-4 al-center"></div>
-                            <div class="f-sm-4 al-right"><mat-label *ngIf="model.groupByTarget">Color</mat-label></div>
-                            <div class="f-sm-4 al-left"><app-color-picker [(ngModel)]="model.groupHeaderColor" (change)="broadcastModel()" *ngIf="model.groupByTarget"></app-color-picker></div>
-                        </div>
-                        
-
-                        <div class="f-row">
-                            <div class="f-sm-4 al-left"><mat-label *ngIf="model.groupByTarget">Item</mat-label></div>
-                            <div class="f-sm-4 al-right"><mat-label *ngIf="model.groupByTarget">Min width</mat-label></div>
-                            <div class="f-sm-4 al-center"><mat-slider thumbLabel tickInterval="1" step="10" min="50" max="500" style="width: 100%;" [(ngModel)]="model.groupMinWidth" name="groupMinWidth" (change)="broadcastModel()" *ngIf="model.groupByTarget"></mat-slider></div>
-                        </div>
-
-                    </fieldset>
-
-                    <!-- <fieldset>
-                        <legend><span class="title">Window</span></legend>
-
-                    </fieldset> -->
+            <div class="timer-preview" *ngIf="model.overlayType === 'Timer'"
+                [class.reverse]="model.reverse"
+                [style.color]="previewFontColor"
+                [style.font-family]="model.fontFamily"
+                [style.font-weight]="fontWeight"
+                [style.text-shadow]="textShadow"
+                [style.font-size]="model.fontSize + 'px'">
+                <div class="timer-group-header" *ngIf="model.groupByTarget" [style.color]="model.groupHeaderColor" [style.font-weight]="model.groupHeaderWeight" [style.font-size.px]="previewGroupHeaderSize">Mob 01</div>
+                <div class="timer-bar" *ngFor="let sample of sampleTimers" [style.background]="previewTimerBackground">
+                    <div class="timer-fill" [style.width.%]="sample.percent" [style.background]="model.timerColor"></div>
+                    <span class="timer-name">{{sample.name}}<ng-container *ngIf="!model.hideTargetLabel && !model.groupByTarget"> --== Mob 01 ==--</ng-container></span>
+                    <span class="timer-time" *ngIf="model.showTimeRemaining">{{sample.time}}</span>
                 </div>
-            </mat-tab>
-        </mat-tab-group>
+            </div>
+        </game-preview>
+    </div>
+
+    <section class="editor-section">
+        <div class="editor-body">
+
+            <fieldset>
+                <legend><span class="title">Properties</span><small>Name and look of this overlay.</small></legend>
+                <mat-form-field floatLabel="always">
+                    <mat-label>Name</mat-label>
+                    <input matInput type="text" [(ngModel)]="model.name" (ngModelChange)="broadcastModel()" />
+                </mat-form-field>
+
+                <app-link-button (click)="enterDescription = true" *ngIf="!enterDescription" style="margin-top: 5px; margin-bottom: 18px;">Add a description ...</app-link-button>
+
+                <mat-form-field *ngIf="enterDescription" floatLabel="always">
+                    <mat-label>Description</mat-label>
+                    <textarea matInput [(ngModel)]="model.description" name="txtDescription" rows="3"></textarea>
+                </mat-form-field>
+
+                <ng-template [ngIf]="model.overlayType !== 'FCT'">
+                    <mat-form-field floatLabel="always">
+                        <mat-label>Font</mat-label>
+                        <mat-select class="font-ddl" [(ngModel)]="model.fontFamily" name="ddlFontFamily" disableOptionCentering (selectionChange)="onChangeFontFamily()" style="max-width: unset;">
+                            <mat-option class="font-option" *ngIf="!isListedFont" [value]="model.fontFamily" [style.font-family]="model.fontFamily" style="font-size: 16px;"><small>{{model.fontFamily}} (not in list)</small></mat-option>
+                            <mat-option class="font-option" value="Roboto" style="font-family: Roboto, sans-serif; font-size: 16px;"><small>Roboto</small></mat-option>
+                            <mat-option class="font-option" value="Red Rose" style="font-family: 'Red Rose', sans-serif; font-size: 16px;"><small>Red Rose</small></mat-option>
+                            <mat-option class="font-option" value="Oswald" style="font-family: Oswald, sans-serif; font-size: 16px;"><small>Oswald</small></mat-option>
+                            <mat-option class="font-option" value="Roboto Mono" style="font-family: 'Roboto Mono', sans-serif; font-size: 16px;"><small>Roboto Mono</small></mat-option>
+                            <mat-option class="font-option" value="Open Sans Condensed" style="font-family: 'Open Sans Condensed', sans-serif; font-size: 16px;"><small>Open Sans Condensed</small></mat-option>
+                            <mat-option class="font-option" value="Ranchers" style="font-family: Ranchers, sans-serif; font-size: 16px;"><small>Ranchers</small></mat-option>
+                            <mat-option class="font-option" value="Press Start 2P" style="font-family: 'Press Start 2P', sans-serif; font-size: 14px;"><small>Press Start 2P</small></mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <div class="slider-row">
+                        <span class="row-label">Font size</span>
+                        <mat-slider min="1" max="64" [(ngModel)]="model.fontSize" name="sldrFontSize" (change)="broadcastModel()"></mat-slider>
+                        <span class="slider-value">{{model.fontSize}} px</span>
+                    </div>
+                    <div class="slider-row">
+                        <span class="row-label">Line height</span>
+                        <mat-slider step="5" min="10" max="300" [(ngModel)]="model.lineHeight" name="sldrLineHeight" (change)="broadcastModel()"></mat-slider>
+                        <span class="slider-value">{{model.lineHeight}} %</span>
+                    </div>
+                    <div class="slider-row">
+                        <span class="row-label">Font weight</span>
+                        <mat-slider step="1" min="0" [max]="maxFontWeightIndex" [(ngModel)]="fontWeightIndex" name="sldrFontWeight" (change)="broadcastModel()"></mat-slider>
+                        <span class="slider-value">{{fontWeight}}</span>
+                    </div>
+
+                    <div class="colour-grid">
+                        <span></span><span class="col-head">Colour</span><span class="col-head">Opacity</span><span></span>
+
+                        <span class="row-label">Text</span>
+                        <app-color-picker [(ngModel)]="model.fontColor" (change)="broadcastModel()"></app-color-picker>
+                        <mat-slider min="0" max="100" [(ngModel)]="fontTransparency" name="sldrFontOpacity" aria-label="Text opacity" (change)="onChangeFontTransparency()"></mat-slider>
+                        <span class="slider-value">{{fontTransparency}} %</span>
+
+                        <span class="row-label">Background</span>
+                        <app-color-picker [(ngModel)]="model.backgroundColor" (change)="broadcastModel()"></app-color-picker>
+                        <mat-slider min="0" max="100" [(ngModel)]="backgroundTransparency" name="sldrBackgroundOpacity" aria-label="Background opacity" (change)="onChangeBackgroundTransparency()"></mat-slider>
+                        <span class="slider-value">{{backgroundTransparency}} %</span>
+
+                        <span class="row-label">Border</span>
+                        <app-color-picker [(ngModel)]="model.borderColor" (change)="broadcastModel()"></app-color-picker>
+                        <mat-slider min="0" max="100" [(ngModel)]="borderTransparency" name="sldrBorderOpacity" aria-label="Border opacity" (change)="onChangeBorderTransparency()"></mat-slider>
+                        <span class="slider-value">{{borderTransparency}} %</span>
+                    </div>
+                </ng-template>
+                <ng-template [ngIf]="model.overlayType === 'FCT'">
+                    <p>To change the colors for FCT combat, use the [Floating Combat Text] tab in the main window.</p>
+                </ng-template>
+
+            </fieldset>
+
+            <fieldset class="margin-t-25" *ngIf="model.overlayType === 'Alert'">
+                <legend><span class="title">Text options</span><small>How text appears in this overlay.</small></legend>
+
+                <div class="f-row">
+                    <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>Horizontal alignment</mat-label></div>
+                    <div class="f-sm-4 al-center" style="text-align: left !important;">
+                        <mat-radio-group [(ngModel)]="model.horizontalAlignment" name="horizontalAlignment" (ngModelChange)="broadcastModel()" class="horizontal">
+                            <mat-radio-button value="left"><mat-icon class="material-icons-outlined">format_align_left</mat-icon></mat-radio-button>
+                            <mat-radio-button value="center"><mat-icon class="material-icons-outlined">format_align_center</mat-icon></mat-radio-button>
+                            <mat-radio-button value="right"><mat-icon class="material-icons-outlined">format_align_right</mat-icon></mat-radio-button>
+                        </mat-radio-group>
+                    </div>
+                    <div class="f-sm-4 al-center"></div>
+                </div>
+                <div class="f-row">
+                    <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>Vertical alignment</mat-label></div>
+                    <div class="f-sm-4 al-center" style="text-align: left !important;">
+                        <mat-radio-group [(ngModel)]="model.verticalAlignment" name="verticalAlignment" (ngModelChange)="broadcastModel()" class="horizontal">
+                            <mat-radio-button value="top"><mat-icon class="material-icons-outlined">vertical_align_top</mat-icon></mat-radio-button>
+                            <mat-radio-button value="middle"><mat-icon class="material-icons-outlined">vertical_align_center</mat-icon></mat-radio-button>
+                            <mat-radio-button value="bottom"><mat-icon class="material-icons-outlined">vertical_align_bottom</mat-icon></mat-radio-button>
+                        </mat-radio-group>
+                    </div>
+                    <div class="f-sm-4 al-center"></div>
+                </div>
+
+                <div class="f-row">
+                    <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>White space</mat-label></div>
+                    <div class="f-sm-4 al-center" style="text-align: left !important;">
+                        <mat-radio-group [(ngModel)]="model.textOverflow.whiteSpace" name="whiteSpace" (ngModelChange)="broadcastModel()" class="horizontal">
+                            <mat-radio-button value="nowrap" title="Keep each message on one line"><mat-icon class="material-icons-outlined">horizontal_rule</mat-icon></mat-radio-button>
+                            <mat-radio-button value="normal" title="Wrap long messages onto more lines"><mat-icon class="material-icons-outlined">wrap_text</mat-icon></mat-radio-button>
+                        </mat-radio-group>
+                    </div>
+                    <div class="f-sm-4 al-center"></div>
+                </div>
+
+                <div class="f-row">
+                    <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>Overflow</mat-label></div>
+                    <div class="f-sm-4 al-center" style="text-align: left !important;">
+                        <mat-radio-group [(ngModel)]="model.textOverflow.overflow" name="overflow" (ngModelChange)="broadcastModel()" class="horizontal">
+                            <mat-radio-button value="hidden" title="Hide text that does not fit"><mat-icon class="material-icons-outlined">visibility_off</mat-icon></mat-radio-button>
+                            <mat-radio-button value="visible" title="Show text that does not fit"><mat-icon class="material-icons-outlined">visibility</mat-icon></mat-radio-button>
+                        </mat-radio-group>
+                    </div>
+                    <div class="f-sm-4 al-center"></div>
+                </div>
+
+                <div class="f-row" style="margin-bottom: 30px;">
+                    <div class="f-sm-4 al-center" style="text-align: left !important;"><mat-label>Overflow style</mat-label></div>
+                    <div class="f-sm-4 al-center" style="text-align: left !important;">
+                        <mat-radio-group [(ngModel)]="model.textOverflow.textOverflow" name="textOverflow" (ngModelChange)="broadcastModel()" class="horizontal">
+                            <mat-radio-button value="clip" title="Clip text"><mat-icon class="material-icons-outlined">content_cut</mat-icon></mat-radio-button>
+                            <mat-radio-button value="ellipsis" title="End with ellipsis (ex: testin...)"><mat-icon class="material-icons-outlined">more_horiz</mat-icon></mat-radio-button>
+                        </mat-radio-group>
+                    </div>
+                    <div class="f-sm-4 al-center"></div>
+                </div>
+
+                <div>
+                    <mat-checkbox [(ngModel)]="model.showTextBorder" name="cbxShowTextBorder" (change)="broadcastModel()">Text outline</mat-checkbox>
+                </div>
+                <div class="colour-grid" *ngIf="model.showTextBorder">
+                    <span class="row-label">Colour</span>
+                    <app-color-picker [(ngModel)]="textBorderColor" (change)="broadcastModel()"></app-color-picker>
+                    <span></span><span></span>
+                    <span class="row-label">Strength</span>
+                    <span></span>
+                    <mat-slider min="0" max="100" [(ngModel)]="textBorderIntensity" name="sldrTextBorderIntensity" aria-label="Outline strength" (change)="onChangeTextBorderIntensity()"></mat-slider>
+                    <span class="slider-value">{{textBorderIntensity}} %</span>
+                </div>
+
+                <div style="margin-top: 10px;">
+                    <mat-checkbox [(ngModel)]="model.showTextGlow" name="cbxShowTextGlow" (change)="broadcastModel()">Text glow</mat-checkbox>
+                </div>
+                <div class="colour-grid" *ngIf="model.showTextGlow">
+                    <span class="row-label">Colour</span>
+                    <app-color-picker [(ngModel)]="textGlowColor" (change)="broadcastModel()"></app-color-picker>
+                    <span></span><span></span>
+                    <span class="row-label">Strength</span>
+                    <span></span>
+                    <mat-slider min="0" max="100" [(ngModel)]="textGlowIntensity" name="sldrTextGlowIntensity" aria-label="Glow strength" (change)="onChangeTextGlowIntensity()"></mat-slider>
+                    <span class="slider-value">{{textGlowIntensity}} %</span>
+                    <span class="row-label">Size</span>
+                    <span></span>
+                    <mat-slider min="0" max="10" [(ngModel)]="model.textGlowSize" name="sldrTextGlowSize" aria-label="Glow size" (change)="broadcastModel()"></mat-slider>
+                    <span class="slider-value">{{model.textGlowSize}}</span>
+                </div>
+
+            </fieldset>
+
+            <fieldset class="margin-t-25" *ngIf="model.overlayType === 'Timer'">
+                <legend><span class="title">Timer options</span><small>How timers appear in this overlay.</small></legend>
+
+                <mat-form-field floatLabel="always">
+                    <mat-label>Timer sort type</mat-label>
+                    <mat-select [(ngModel)]="model.timerSortType" name="ddlTimerSortType">
+                        <mat-option [value]="timerSortTypes.None">First in on top.</mat-option>
+                        <mat-option [value]="timerSortTypes.Ascending">Shortest time remaining on top.</mat-option>
+                        <mat-option [value]="timerSortTypes.Descending">Longest time remaining on top.</mat-option>
+                    </mat-select>
+                </mat-form-field>
+
+                <div class="colour-grid">
+                    <span class="row-label">Timer colour</span>
+                    <app-color-picker [(ngModel)]="model.timerColor" (change)="broadcastModel()"></app-color-picker>
+                    <span></span><span></span>
+                </div>
+
+                <div>
+                    <mat-checkbox [(ngModel)]="model.hideTargetLabel" name="hideTargetLabel" (change)="broadcastModel()">Hide target label</mat-checkbox>
+                </div>
+
+                <div>
+                    <mat-checkbox [(ngModel)]="model.showTimeRemaining" name="showTimeRemaining" (change)="broadcastModel()">Show the time remaining</mat-checkbox>
+                </div>
+
+                <div>
+                    <mat-checkbox [(ngModel)]="model.reverse" name="reverse" (change)="broadcastModel()">Reverse timer flow, starting from the bottom and adding more above.</mat-checkbox>
+                </div>
+
+                <div>
+                    <mat-checkbox [(ngModel)]="model.groupByTarget" name="groupByTarget" (change)="broadcastModel()">Group DoTs by target</mat-checkbox>
+                </div>
+
+                <ng-template [ngIf]="model.groupByTarget">
+                    <div class="slider-row">
+                        <span class="row-label">Header size</span>
+                        <mat-slider min="1" max="64" [(ngModel)]="model.groupHeaderSize" name="groupHeaderSize" (change)="broadcastModel()"></mat-slider>
+                        <span class="slider-value">{{model.groupHeaderSize}} px</span>
+                    </div>
+                    <div class="slider-row">
+                        <span class="row-label">Header weight</span>
+                        <mat-slider step="1" min="0" [max]="maxFontWeightIndex" [(ngModel)]="dotGroupHeaderWeightIndex" name="sldrGroupHeaderWeight" (change)="broadcastModel()"></mat-slider>
+                        <span class="slider-value">{{model.groupHeaderWeight}}</span>
+                    </div>
+                    <div class="colour-grid">
+                        <span class="row-label">Header colour</span>
+                        <app-color-picker [(ngModel)]="model.groupHeaderColor" (change)="broadcastModel()"></app-color-picker>
+                        <span></span><span></span>
+                    </div>
+                    <div class="slider-row">
+                        <span class="row-label">Item min width</span>
+                        <mat-slider step="10" min="50" max="500" [(ngModel)]="model.groupMinWidth" name="groupMinWidth" (change)="broadcastModel()"></mat-slider>
+                        <span class="slider-value">{{model.groupMinWidth}} px</span>
+                    </div>
+                </ng-template>
+
+            </fieldset>
+        </div>
     </section>
-    <footer>
-        <button mat-flat-button color="primary" (click)="save()">Save</button>
-        <button mat-button (click)="requestClose()">Cancel</button>
-        <button mat-button (click)="sendDisplayTextTest()">Send Test</button>
-        <button mat-button color="accent" aria-label="Send overlay to the middle of the selected monitor" (click)="sendToOrigin()" matTooltip="Send overlay to the middle of the selected monitor." matTooltipPosition="above">Center Overlay</button>
+
+    <footer class="editor-footer">
+        <button mat-button aria-label="Show a sample on this overlay" *ngIf="canSendTest" (click)="sendDisplayTextTest()"><mat-icon>play_arrow</mat-icon> Send test</button>
+        <button mat-button color="accent" aria-label="Send overlay to the middle of the selected monitor" (click)="sendToOrigin()" matTooltip="Send overlay to the middle of the selected monitor." matTooltipPosition="above"><mat-icon>filter_center_focus</mat-icon> Centre on monitor</button>
+        <span class="spacer"></span>
+        <span class="unsaved" *ngIf="hasUnsavedChanges">Unsaved changes</span>
+        <button mat-stroked-button (click)="requestClose()">Cancel</button>
+        <button mat-flat-button color="primary" class="save-button" (click)="save()">Save</button>
     </footer>
 </div>

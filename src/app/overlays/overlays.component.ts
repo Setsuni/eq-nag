@@ -9,6 +9,7 @@ import { DialogService } from '../dialogs/dialog.service';
 import { NotificationDialogComponent } from '../dialogs/notification-dialog/notification-dialog.component';
 import { NotificationDialogModel, NotificationTypes } from '../dialogs/notification-dialog/notification-dialog.model';
 import { IpcService } from '../ipc.service';
+import { canSendOverlayTest, sendOverlayTest } from './overlay-test';
 
 @Component( {
     selector: 'app-overlays',
@@ -23,6 +24,7 @@ export class OverlaysComponent implements OnInit {
     public overlayAssignCounts: Record<string, number> = {};
     public overlays: OverlayWindowModel[] = [];
     public overlaysLoaded: boolean = false;
+    public selectedOverlayId: string = null;
 
     /** The open "Your resolution has changed!" dialog, if any. */
     private resolutionDialog: MatDialogRef<NotificationDialogComponent> = null;
@@ -207,13 +209,91 @@ export class OverlaysComponent implements OnInit {
      */
     getOverlayTypeLabel( overlayType: string ): string {
         switch ( overlayType ) {
-            case 'Log': return 'Debug Log';
-            case 'Alert': return 'Text Notifications';
-            case 'Timer': return 'Timer & Countdown';
-            case 'FCT': return 'Floating Combat Text';
+            case 'Log': return 'Debug log';
+            case 'Alert': return 'Text';
+            case 'Timer': return 'Timer';
+            case 'FCT': return 'Floating combat text';
             case 'Chart': return 'Chart';
             default: return overlayType ?? '';
         }
+    }
+
+
+
+
+
+
+
+
+
+    
+    /**
+     * The css class that colours an overlay type, matching the map.
+     * 
+     * @param overlayType The overlay type value.
+     */
+    getOverlayTypeClass( overlayType: string ): string {
+        switch ( overlayType ) {
+            case 'Timer': return 'type-timer';
+            case 'Alert': return 'type-text';
+            case 'FCT': return 'type-fct';
+            default: return '';
+        }
+    }
+
+
+
+
+
+
+
+
+
+    
+    /**
+     * Whether there is a sample to show on the given overlay type.
+     * 
+     * @param overlayType The overlay type value.
+     */
+    canSendTest( overlayType: string ): boolean {
+        return canSendOverlayTest( overlayType );
+    }
+
+
+
+
+
+
+
+
+
+    
+    /**
+     * Shows a sample timer or text on the given overlay.
+     * 
+     * @param overlay The overlay to test.
+     */
+    sendTest( overlay: OverlayWindowModel ): void {
+        this.selectedOverlayId = overlay.overlayId;
+        sendOverlayTest( this.ipcService, overlay );
+    }
+
+
+
+
+
+
+
+
+
+    
+    /**
+     * Moves an overlay after it was dragged on the map.
+     * 
+     * @param move The overlay, display and position it was dropped at.
+     */
+    moveOverlay( move: { overlayId: string, displayId: number, x: number, y: number } ): void {
+        this.ipcService.moveOverlayTo( move.overlayId, move.displayId, move.x, move.y );
     }
 
 

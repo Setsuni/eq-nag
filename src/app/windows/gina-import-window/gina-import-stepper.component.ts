@@ -109,7 +109,7 @@ export class GinaImportStepperComponent implements OnInit {
                 if ( this.alertOverlays?.length > 0 ) {
                     ac.overlayId = this.alertOverlays[ 0 ]?.overlayId;
                 } else {
-                    this.alertMissingOverlays( 'Alert Overlay' );
+                    this.alertMissingOverlays( 'Text' );
                     allSelected = false;
                     return;
                 }
@@ -120,7 +120,7 @@ export class GinaImportStepperComponent implements OnInit {
                     if ( this.timerOverlays?.length > 0 ) {
                         ac.overlayId = this.timerOverlays[ 0 ]?.overlayId;
                     } else {
-                        this.alertMissingOverlays( 'Timer Overlay' );
+                        this.alertMissingOverlays( 'Timer' );
                         allSelected = false;
                         return;
                     }
@@ -130,7 +130,7 @@ export class GinaImportStepperComponent implements OnInit {
                     if ( this.alertOverlays?.length > 0 ) {
                         ac.endingSoonTextOverlayId = this.alertOverlays[ 0 ]?.overlayId;
                     } else {
-                        this.alertMissingOverlays( 'Alert Overlay' );
+                        this.alertMissingOverlays( 'Text' );
                         allSelected = false;
                         return;
                     }
@@ -140,7 +140,7 @@ export class GinaImportStepperComponent implements OnInit {
                     if ( this.alertOverlays?.length > 0 ) {
                         ac.endedTextOverlayId = this.alertOverlays[ 0 ]?.overlayId;
                     } else {
-                        this.alertMissingOverlays( 'Alert Overlay' );
+                        this.alertMissingOverlays( 'Text' );
                         allSelected = false;
                         return;
                     }

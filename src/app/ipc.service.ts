@@ -2002,6 +2002,10 @@ export class IpcService {
         window.api.ipc.send( 'overlay:send-to-origin', { overlayId: overlayId, displayId: displayId } );
     }
 
+    public moveOverlayTo( overlayId: string, displayId: number, x: number, y: number ): void {
+        window.api.ipc.send( 'overlay:move-to', { overlayId: overlayId, displayId: displayId, x: x, y: y } );
+    }
+
     public getAudioFiles(): Observable<FileModel[]> {
         let obs: Observable<FileModel[]> = new Observable<FileModel[]>( ( observer: Observer<FileModel[]> ) => {
             

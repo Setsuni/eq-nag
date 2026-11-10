@@ -409,15 +409,24 @@ class WindowManager {
             } ) ) {
                 posData = null;
             }
+            const editorWidth = 760;
+            const editorArea = ( posData == null ? screen.getPrimaryDisplay() : screen.getDisplayNearestPoint( { x: posData.x, y: posData.y } ) ).workArea;
+            const editorHeight = Math.min( 880, editorArea.height );
+            let editorX = null;
+            let editorY = null;
+            if ( posData != null ) {
+                editorX = Math.max( editorArea.x, Math.min( posData.x, editorArea.x + editorArea.width - editorWidth ) );
+                editorY = Math.max( editorArea.y, Math.min( posData.y, editorArea.y + editorArea.height - editorHeight ) );
+            }
             let overlayEditorDialog = new BrowserWindow( {
                 parent: mainWindowRef.reference,
                 modal: false,
                 show: false,
-                width: 732,
-                height: 870,
+                width: editorWidth,
+                height: editorHeight,
                 frame: false,
-                x: posData == null ? null : posData.x,
-                y: posData == null ? null : posData.y,
+                x: editorX,
+                y: editorY,
                 webPreferences: {
                     nodeIntegration: false,
                     contextIsolation: true,
@@ -434,8 +443,16 @@ class WindowManager {
             overlayEditorDialog.once( 'dom-read', () => {
                 
             } );
+            const keepEditorInFront = () => {
+                if ( !overlayEditorDialog.isDestroyed() ) {
+                    overlayEditorDialog.setAlwaysOnTop( true, "screen-saver" );
+                }
+            };
             overlayEditorDialog.once( "ready-to-show", () => {
                 overlayEditorDialog.show();
+                keepEditorInFront();
+                overlayEditorDialog.moveTop();
+                overlayEditorDialog.focus();
                 this.#openOverlayEditors.push( overlayEditorDialog );
             } );
             // The overlay renderer sits at the screen-saver level and would otherwise cover this window.
@@ -465,8 +482,8 @@ class WindowManager {
                 parent: mainWindowRef.reference,
                 modal: false,
                 show: false,
-                width: 400,
-                height: 225,
+                width: 520,
+                height: 390,
                 frame: false,
                 resizable: false,
                 movable: true,
@@ -559,6 +576,15 @@ class WindowManager {
              * @param {{overlayId: string, displayId: number}} data The display move data.
              */
             ( event, data ) => this.sendOverlayToMiddle( data.overlayId, data.displayId ) );
+
+        ipcMain.on( 'overlay:move-to',
+            /**
+             * Moves the specified overlay to a position on the specified display.
+             * 
+             * @param {any} event The event arguments.
+             * @param {{overlayId: string, displayId: number, x: number, y: number}} data The move data.
+             */
+            ( event, data ) => this.moveOverlayTo( data?.overlayId, data?.displayId, data?.x, data?.y ) );
 
         ipcMain.on( 'overlay:event:bounds-changed',
             /**
@@ -1611,6 +1637,33 @@ class WindowManager {
 
 
 
+
+    /**
+     * Moves the specified overlay to a position on the specified display, keeping it on that display.
+     * 
+     * @param {string} overlayId The id of the desired overlay.
+     * @param {number} displayId The id of the desired display.
+     * @param {number} x The new left edge, relative to the display.
+     * @param {number} y The new top edge, relative to the display.
+     */
+    moveOverlayTo( overlayId, displayId, x, y ) {
+        const display = screen.getAllDisplays().find( f => f.id === displayId );
+        const overlay = typeof overlayId === 'string' ? this.#overlayDatabase.find( overlayId ) : null;
+        if ( display == null || overlay == null || !Number.isFinite( x ) || !Number.isFinite( y ) ) {
+            return;
+        }
+
+        const maxX = Math.max( 0, display.size.width - ( overlay.windowWidth ?? 0 ) );
+        const maxY = Math.max( 0, display.size.height - ( overlay.windowHeight ?? 0 ) );
+        overlay.x = Math.round( Math.min( Math.max( 0, x ), maxX ) );
+        overlay.y = Math.round( Math.min( Math.max( 0, y ), maxY ) );
+        overlay.displayId = displayId;
+        overlay.displayBounds = display.bounds;
+
+        this.#overlayDatabase.update( overlay );
+
+        this.#renderer.webContents.send( 'renderer:overlay:move', { overlayId: overlayId, x: overlay.x, y: overlay.y, displayBounds: display.bounds } );
+    }
 
     /**
      * Sends the specified overlay to the middle of the main monitor.

@@ -26,6 +26,7 @@ import { SetupWizardComponent } from './setup/setup-wizard/setup-wizard.componen
 import { SetupService } from './setup/setup.service';
 import { EditorsModule } from './editors/editors.module';
 import { OverlaysComponent } from './overlays/overlays.component';
+import { OverlayMapComponent } from './overlays/overlay-map/overlay-map.component';
 import { NgxMatTimepickerModule } from 'ngx-mat-timepicker';
 import { FolderConditionsDialogComponent } from './triggers/folder-conditions-dialog/folder-conditions-dialog.component';
 import { DebugConsoleComponent } from './debug-console/debug-console.component';
@@ -65,6 +66,7 @@ import { QuickActionsComponent } from './quick-actions/quick-actions.component';
         FolderConditionsDialogComponent,
         TriggersComponent,
         OverlaysComponent,
+        OverlayMapComponent,
         ConsoleTriggerEventComponent,
         ConsoleMessageComponent,
         ConsoleListComponent,

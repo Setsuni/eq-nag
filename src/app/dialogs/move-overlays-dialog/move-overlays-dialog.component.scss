@@ -1,0 +1,46 @@
+
+
+.spacer {
+    flex: 1 1 auto;
+}
+
+.modal section.arrange-section {
+    box-sizing: border-box;
+    padding: 18px 24px 20px 24px;
+    font-size: 15px;
+
+    p {
+        margin: 0 0 12px 0;
+    }
+
+    .arrange-tip {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 8px 10px;
+        border-radius: 4px;
+        font-size: 14px;
+        background-color: #ffffff14;
+
+        mat-icon {
+            flex: none;
+            color: #69b2f0;
+        }
+    }
+}
+
+.modal footer.arrange-footer {
+    display: flex;
+    align-items: center;
+    box-sizing: border-box;
+    padding: 12px 24px;
+
+    button {
+        margin: 0 4px;
+    }
+
+    .done-button {
+        min-width: 110px;
+        font-weight: 500;
+    }
+}
