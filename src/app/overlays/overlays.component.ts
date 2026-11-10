@@ -199,28 +199,6 @@ export class OverlaysComponent implements OnInit {
 
     
     /**
-     * The id of the overlay.
-     * 
-     * @param overlayId The desired overlayId.
-     */
-    getOverlayCountLabel( overlayId: string ): string | number {
-        if ( overlayId === this.damageDealtOverlayId || overlayId === this.damageTakenOverlayId ) {
-            return 'FCT';
-        } else {
-            return this.overlayAssignCounts[ overlayId ] ?? 0;
-        }
-    }
-
-
-
-
-
-
-
-
-
-    
-    /**
      * Calculates all overlay uses in the given list of triggers.
      * 
      * @param triggers The list of triggers to use in the calculations.
