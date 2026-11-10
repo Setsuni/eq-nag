@@ -8,6 +8,13 @@
     <mat-slide-toggle [(ngModel)]="advanced" name="healthAdvanced">Advanced</mat-slide-toggle>
 </div>
 
+<div class="health-tabs" *ngIf="advanced">
+    <div class="health-tab" [class.on]="tab === 'findings'" (click)="showTab('findings')">Findings</div>
+    <div class="health-tab" [class.on]="tab === 'perf'" (click)="showTab('perf')">Performance</div>
+</div>
+
+<ng-container *ngIf="!showPerf">
+
 <p class="health-status" *ngIf="report">
     Last check: {{report.summary.checkedAt | date:'MMM d, h:mm a'}} &middot; {{report.summary.triggers | number}} triggers &middot;
     {{report.summary.defaultCount}} {{report.summary.defaultCount === 1 ? 'finding' : 'findings'}}
@@ -63,3 +70,52 @@
     <p class="advanced-note">Most of these still fire. They are listed because they are skipped, unusual, or cost time on every log line.</p>
     <ng-container *ngTemplateOutlet="findingList; context: { groups: advancedGroups }"></ng-container>
 </ng-container>
+
+</ng-container>
+
+<div class="perf" *ngIf="showPerf">
+    <p>Which triggers cost the most time while Nag reads your log. Counts are always on. Timing is measured only while a measurement runs, so it costs nothing the rest of the time.</p>
+
+    <div class="perf-actions">
+        <button mat-flat-button color="accent" *ngIf="!perf.measuring" (click)="startMeasuring()"><mat-icon>timer</mat-icon> Measure for 10 minutes</button>
+        <button mat-flat-button color="warn" *ngIf="perf.measuring" (click)="stopMeasuring()"><mat-icon>stop</mat-icon> Stop measuring</button>
+        <span class="perf-state" *ngIf="perf.measuring">Measuring {{elapsedLabel}} of {{durationLabel}}. Play as usual; the result shows here when it ends.</span>
+        <span class="perf-state" *ngIf="!perf.measuring && perf.last">Last measurement: {{perf.last.startedAt | date:'MMM d, h:mm a'}} to {{perf.last.endedAt | date:'h:mm a'}} &middot; {{perf.last.lineCount | number}} lines &middot; {{msPerLine}} of trigger time per line</span>
+        <span class="perf-state" *ngIf="!perf.measuring && !perf.last">No measurement yet. Press the button, play for a while, and the result appears here.</span>
+    </div>
+
+    <ng-container *ngIf="perf.last && !perf.measuring">
+        <div class="perf-title">In plain words</div>
+        <div class="perf-item" *ngFor="let item of plainWords">
+            <mat-icon class="material-icons-outlined {{item.good ? 'color-green' : 'color-orange'}}">{{item.good ? 'check_circle' : 'warning'}}</mat-icon>
+            <div class="perf-item-text">
+                <div class="perf-item-name">{{item.title}}</div>
+                <div class="perf-item-detail">{{item.detail}}</div>
+            </div>
+            <button mat-button *ngIf="item.triggerId" (click)="openTrigger(item.triggerId)">Open trigger</button>
+        </div>
+
+        <div class="perf-title">All triggers <span class="perf-sub">&middot; sorted by share &middot; page {{perfPage + 1}} of {{pageCount}}</span></div>
+        <table class="perf-table">
+            <tr>
+                <th>Trigger</th><th class="num">Share</th><th class="num">Avg / check</th><th class="num">Worst</th><th class="num">Checked</th><th class="num">Fired</th>
+            </tr>
+            <tr *ngFor="let row of pageRows; trackBy: trackRow" [class.dim]="row.skipped" [attr.title]="row.skipped ? skippedReason : null">
+                <td>
+                    <span class="perf-row-name" (click)="openTrigger(row.triggerId)">{{row.name}}</span>
+                    <div class="perf-bar" *ngIf="!row.skipped"><i [style.width.%]="row.sharePercent"></i></div>
+                </td>
+                <td class="num">{{row.skipped ? '–' : formatShare(row.sharePercent)}}</td>
+                <td class="num">{{row.skipped ? '–' : formatMs(row.avgMsPerCheck)}}</td>
+                <td class="num">{{row.skipped ? '–' : formatMs(row.maxMs)}}</td>
+                <td class="num">{{row.checked | number}}</td>
+                <td class="num">{{row.fired | number}}</td>
+            </tr>
+        </table>
+        <div class="perf-pager" *ngIf="pageCount > 1">
+            <button mat-button (click)="perfPage = perfPage - 1" [disabled]="perfPage === 0"><mat-icon>chevron_left</mat-icon> Previous</button>
+            <button mat-button (click)="perfPage = perfPage + 1" [disabled]="perfPage >= pageCount - 1">Next <mat-icon>chevron_right</mat-icon></button>
+        </div>
+        <p class="perf-note">"Checked" counts the lines a trigger's phrase was actually tried on. Greyed triggers show 0: their zone or variable condition was false, or their fixed words never appeared in a line.</p>
+    </ng-container>
+</div>

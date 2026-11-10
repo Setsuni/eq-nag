@@ -1,7 +1,8 @@
 // Turns a measurement from trigger-metrics.js into the rows and plain-words
 // hints shown on the trigger performance page.
 
-const manyAlternatives = 50;
+const MAX_ALTERNATIVES = 50;
+const MIN_LITERAL_RUN = 3;
 const manyPhrases = 20;
 const firesOftenRatio = 0.02;
 const firesOftenMin = 100;
@@ -16,97 +17,114 @@ const hintTexts = {
 };
 
 /**
- * Finds the longest run of fixed characters in a regular expression.
+ * Describes a regular expression pattern for the slow-phrase rules.
  *
- * @param {string} pattern The regular expression source.
- * @returns {number} The length of the run.
+ * @param {string} source The pattern text.
+ * @returns {{ longestLiteralRun: number, maxAlternatives: number, leadingWildcard: boolean, nestedQuantifier: boolean }}
  */
-function longestRegexLiteral( pattern ) {
-    let best = 0;
+function analyzePattern( source ) {
     let run = 0;
-    const end = () => {
-        best = Math.max( best, run );
+    let longestLiteralRun = 0;
+    let maxAlternatives = 0;
+    const alternatives = [ 0 ];
+    const endRun = () => {
+        longestLiteralRun = Math.max( longestLiteralRun, run );
         run = 0;
     };
 
-    for ( let i = 0; i < pattern.length; i++ ) {
-        const c = pattern[ i ];
+    for ( let i = 0; i < source.length; i++ ) {
+        const c = source[ i ];
+
         if ( c === '\\' ) {
-            const n = pattern[ ++i ];
-            if ( n != null && 'dDwWsSbBnrtfvk0123456789'.includes( n ) ) {
-                end();
+            const next = source[ i + 1 ] ?? '';
+            i++;
+            if ( /[dDwWsSbBnrtfv0-9kpPuxc]/.test( next ) ) {
+                endRun();
             } else {
                 run++;
             }
         } else if ( c === '[' ) {
-            end();
-            while ( i < pattern.length && pattern[ i ] !== ']' ) {
-                i += pattern[ i ] === '\\' ? 2 : 1;
+            i++;
+            while ( i < source.length && source[ i ] !== ']' ) {
+                i += source[ i ] === '\\' ? 2 : 1;
             }
-        } else if ( c === '{' ) {
-            // A counted repeat makes the character before it optional or repeated.
-            run = Math.max( 0, run - 1 );
-            end();
-            while ( i < pattern.length && pattern[ i ] !== '}' ) {
-                i++;
+            endRun();
+        } else if ( c === '(' ) {
+            if ( source[ i + 1 ] === '?' ) {
+                const prefix = /^\(\?(?:<[A-Za-z_][^>]*>|<=|<!|:|=|!)/.exec( source.substring( i ) );
+                i += ( prefix ? prefix[ 0 ].length : 2 ) - 1;
             }
+            alternatives.push( 0 );
+            endRun();
+        } else if ( c === ')' ) {
+            if ( alternatives.length > 1 ) {
+                maxAlternatives = Math.max( maxAlternatives, alternatives.pop() + 1 );
+            }
+            endRun();
+        } else if ( c === '|' ) {
+            alternatives[ alternatives.length - 1 ]++;
+            endRun();
         } else if ( c === '*' || c === '?' ) {
-            // Makes the character before it optional.
             run = Math.max( 0, run - 1 );
-            end();
-        } else if ( '()|.+^$'.includes( c ) ) {
-            end();
+            endRun();
+        } else if ( c === '+' || c === '.' || c === '^' ) {
+            endRun();
+        } else if ( c === '{' || ( c === '$' && source[ i + 1 ] === '{' ) ) {
+            const start = c === '$' ? i + 1 : i;
+            const quantifier = /^\{(\d+)(?:,\d*)?\}/.exec( source.substring( start ) );
+            if ( c === '{' && quantifier ) {
+                if ( +quantifier[ 1 ] === 0 ) {
+                    run = Math.max( 0, run - 1 );
+                }
+                i += quantifier[ 0 ].length - 1;
+            } else {
+                const end = source.indexOf( '}', start );
+                i = end < 0 ? source.length : end;
+            }
+            endRun();
+        } else if ( c === '$' ) {
+            endRun();
         } else {
             run++;
         }
     }
-    end();
-    return best;
+
+    endRun();
+    maxAlternatives = Math.max( maxAlternatives, alternatives[ 0 ] + 1 );
+
+    return {
+        longestLiteralRun,
+        maxAlternatives,
+        leadingWildcard: /^\^?(?:\(\?:)*\.[*+]/.test( source ),
+        nestedQuantifier: /\((?:[^()\\]|\\.)*[+*](?:[^()\\]|\\.)*\)[+*{]/.test( source ),
+    };
 }
 
 /**
- * Finds the longest run of fixed characters in a plain phrase, where {S}-style codes are not fixed.
- *
- * @param {string} phrase The phrase.
- */
-function longestPlainLiteral( phrase ) {
-    return phrase.split( /{[^}]*}/ ).reduce( ( max, part ) => Math.max( max, part.length ), 0 );
-}
-
-/**
- * Looks at a phrase for patterns that make matching slow.
+ * Looks at a regular expression phrase for patterns that make matching slow.  Plain text phrases are not judged.
  *
  * @param {{phrase: string, useRegEx?: boolean}} capturePhrase The phrase.
  * @returns {string[]} The hint codes.
  */
 function phraseHints( capturePhrase ) {
     const phrase = capturePhrase?.phrase;
-    if ( typeof phrase !== 'string' || phrase.length === 0 ) {
+    if ( !capturePhrase?.useRegEx || typeof phrase !== 'string' || phrase.length === 0 ) {
         return [];
     }
 
+    const pattern = analyzePattern( phrase );
     const hints = [];
-    if ( capturePhrase.useRegEx ) {
-        const body = phrase.replace( /^\^/, '' ).replace( /^(\((\?:|\?<[A-Za-z0-9_]+>)?)+/, '' );
-        if ( body.startsWith( '.*' ) || body.startsWith( '.+' ) ) {
-            hints.push( 'leading-wildcard' );
-        }
-        if ( longestRegexLiteral( phrase ) < 3 ) {
-            hints.push( 'no-literal' );
-        }
-        if ( phrase.replace( /\\./g, '' ).split( '|' ).length > manyAlternatives ) {
-            hints.push( 'many-alternatives' );
-        }
-        if ( /\((?:[^()\\]|\\.)*[+*](?:[^()\\]|\\.)*\)[+*{]/.test( phrase ) ) {
-            hints.push( 'nested-quantifier' );
-        }
-    } else {
-        if ( /^{[^}]*}/.test( phrase ) ) {
-            hints.push( 'leading-wildcard' );
-        }
-        if ( longestPlainLiteral( phrase ) < 3 ) {
-            hints.push( 'no-literal' );
-        }
+    if ( pattern.leadingWildcard ) {
+        hints.push( 'leading-wildcard' );
+    }
+    if ( pattern.longestLiteralRun < MIN_LITERAL_RUN ) {
+        hints.push( 'no-literal' );
+    }
+    if ( pattern.maxAlternatives > MAX_ALTERNATIVES ) {
+        hints.push( 'many-alternatives' );
+    }
+    if ( pattern.nestedQuantifier ) {
+        hints.push( 'nested-quantifier' );
     }
     return hints;
 }
@@ -162,4 +180,4 @@ function buildReport( measurement, triggers ) {
     };
 }
 
-module.exports = { buildReport, phraseHints, longestRegexLiteral, hintTexts };
+module.exports = { buildReport, phraseHints, analyzePattern, hintTexts, MIN_LITERAL_RUN, MAX_ALTERNATIVES };
