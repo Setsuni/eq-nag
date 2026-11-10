@@ -63,6 +63,7 @@ const triggerPrefilterDisabled = process.env.NAG_NO_TRIGGER_PREFILTER === '1' ||
 var triggerGate = null;
 var triggerGateTimer = null;
 var triggerGateLoggedCount = -1;
+var triggerGateZoneChanged = false;
 const triggerGateDisabled = process.env.NAG_NO_TRIGGER_GATE === '1' || process.argv.includes( '--no-trigger-gate' );
 const rgxEnteredZone = /^You have entered ([A-Z].*)\.$/;
 /** @type {TriggerFolder[]} */
@@ -1162,8 +1163,9 @@ function buildTriggerGate() {
  * Writes the number of triggers that can fire to the console, when it changed.
  */
 function logTriggerGate() {
-    if ( triggerGate && triggerGate.openCount !== triggerGateLoggedCount ) {
+    if ( triggerGate && ( triggerGate.openCount !== triggerGateLoggedCount || triggerGateZoneChanged ) ) {
         triggerGateLoggedCount = triggerGate.openCount;
+        triggerGateZoneChanged = false;
         log( `Triggers active in this zone: ${triggerGate.openCount} of ${activeTriggers.length}` );
     }
 }
@@ -1181,8 +1183,9 @@ function flushTriggerGate() {
     if ( triggerGate?.changed ) {
         triggerGate.acknowledge();
         buildTriggerPrefilter();
-        logTriggerGate();
     }
+
+    logTriggerGate();
 }
 
 /**
@@ -1190,7 +1193,7 @@ function flushTriggerGate() {
  * at the end of the current batch of log lines.
  */
 function triggerGateChanged() {
-    if ( triggerGate?.changed && triggerGateTimer === null ) {
+    if ( ( triggerGate?.changed || triggerGateZoneChanged ) && triggerGateTimer === null ) {
         triggerGateTimer = setTimeout( flushTriggerGate, 0 );
     }
 }
@@ -1201,6 +1204,7 @@ function triggerGateChanged() {
 function variableChanged( key ) {
     if ( triggerGate ) {
         triggerGate.variableChanged( key );
+        triggerGateZoneChanged = triggerGateZoneChanged || key === 'CurrentZone';
         triggerGateChanged();
     }
 }
@@ -2181,7 +2185,7 @@ function parseLogEntries( raw, simulating, padTime ) {
             
         } );
 
-        if ( log.charCodeAt( 0 ) === 89 ) {
+        if ( !triggerGateDisabled && log.charCodeAt( 0 ) === 89 ) {
             const enteredZone = rgxEnteredZone.exec( log );
             if ( enteredZone ) {
                 const current = storedVariables[ 'CurrentZone' ];

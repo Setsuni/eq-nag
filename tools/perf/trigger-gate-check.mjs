@@ -242,6 +242,23 @@ const counterAction = ( name, resetSeconds, resetPhrases ) => ( { actionType: Ac
     check( w.matched( 'In zone' ) === 1 && w.runs === runsBefore, 'zone gate: closed again, not run' );
 }
 
+// The zone line in the console is repeated on every zone change, but not on other variable changes.
+{
+    const folder = { folderId: 'folderD', name: 'Zone folder', folderConditions: [ variableIs( 'CurrentZone', 'Some Zone|Other Zone' ) ], children: [] };
+    const w = createWatcher( {
+        triggers: [ makeTrigger( 'In zone', [ '^a gnoll hits you$' ], { folderId: 'folderD' } ), makeTrigger( 'Setter', [ '^Set flag (\w+)$' ], { actions: [ storeAction( 'Flag' ) ] } ) ],
+        folders: [ folder ],
+    } );
+    w.tick();
+    const lines = () => w.console.filter( x => typeof x === 'string' && x.startsWith( 'Triggers active' ) ).length;
+    w.batch( [ 'You have entered Some Zone.' ] );
+    const afterFirst = lines();
+    w.batch( [ 'You have entered Other Zone.' ] );
+    check( lines() === afterFirst + 1, 'console: printed again when the zone changed and the count did not' );
+    w.batch( [ 'Set flag on', 'Set flag on' ] );
+    check( lines() === afterFirst + 1, 'console: not printed for other variable changes' );
+}
+
 // The built-in Capture Zone trigger and the native capture don't store the zone twice.
 {
     const w = createWatcher( { triggers: [ captureZoneTrigger ] } );
@@ -384,7 +401,7 @@ const counterAction = ( name, resetSeconds, resetPhrases ) => ( { actionType: Ac
 // Kill switch.
 {
     const folder = { folderId: 'folderC', name: 'Zone folder', folderConditions: [ variableIs( 'CurrentZone', 'Some Zone' ) ], children: [] };
-    const triggers = [ makeTrigger( 'In zone', [ '^a gnoll hits you$' ], { folderId: 'folderC' } ), makeTrigger( 'Other', [ '^a gnoll misses you$' ] ) ];
+    const triggers = [ captureZoneTrigger, makeTrigger( 'In zone', [ '^a gnoll hits you$' ], { folderId: 'folderC' } ), makeTrigger( 'Other', [ '^a gnoll misses you$' ] ) ];
     const off = createWatcher( { triggers: triggers, folders: [ folder ], env: { NAG_NO_TRIGGER_GATE: '1' } } );
     off.tick();
     check( off.internals.triggerGate === null, 'kill switch: no gate' );
@@ -392,6 +409,11 @@ const counterAction = ( name, resetSeconds, resetPhrases ) => ( { actionType: Ac
     off.batch( [ 'a gnoll hits you', 'You have entered Some Zone.', 'a gnoll hits you', 'a gnoll misses you' ] );
     check( off.matched( 'In zone' ) === 1 && off.matched( 'Other' ) === 1, 'kill switch: matches as before' );
     check( off.runs >= 3, 'kill switch: variable-conditioned trigger runs on every line again' );
+
+    const noCapture = createWatcher( { triggers: [ makeTrigger( 'Other', [ '^a gnoll misses you$' ] ) ], env: { NAG_NO_TRIGGER_GATE: '1' } } );
+    noCapture.tick();
+    noCapture.batch( [ 'You have entered Some Zone.' ] );
+    check( noCapture.internals.storedVariables.CurrentZone === undefined, 'kill switch: no native zone capture' );
 
     const on = createWatcher( { triggers: triggers, folders: [ folder ] } );
     on.tick();
