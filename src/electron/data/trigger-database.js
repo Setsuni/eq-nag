@@ -1852,14 +1852,17 @@ class TriggerDatabaseStore extends Store {
             pkg.model?.triggers?.forEach( pkgTrigger => {
                 pkgTrigger.actions?.forEach( pkgAction => {
 
+                    const endedTextOverlayId = overlayMap[ pkgAction.endedTextOverlayId ] ?? _userPreferences.alertOverlayId;
+                    const endingSoonTextOverlayId = overlayMap[ pkgAction.endingSoonTextOverlayId ] ?? _userPreferences.alertOverlayId;
+
                     if ( pkgAction.actionType === ActionTypes.DisplayText ) {
                         pkgAction.overlayId = overlayMap[ pkgAction.overlayId ] ?? _userPreferences.alertOverlayId;
                     } else {
                         pkgAction.overlayId = overlayMap[ pkgAction.overlayId ];
                     }
                 
-                    pkgAction.endedTextOverlayId = overlayMap[ pkgAction.overlayId ] ?? _userPreferences.alertOverlayId;
-                    pkgAction.endingSoonTextOverlayId = overlayMap[ pkgAction.overlayId ] ?? _userPreferences.alertOverlayId;
+                    pkgAction.endedTextOverlayId = endedTextOverlayId;
+                    pkgAction.endingSoonTextOverlayId = endingSoonTextOverlayId;
                 } );
             } );
 
@@ -1983,14 +1986,17 @@ class TriggerDatabaseStore extends Store {
                     quickShare.model.triggers?.forEach( trigger => {
                         trigger.actions?.forEach( action => {
 
+                            const endedTextOverlayId = overlayMap[ action.endedTextOverlayId ] ?? _userPreferences.alertOverlayId;
+                            const endingSoonTextOverlayId = overlayMap[ action.endingSoonTextOverlayId ] ?? _userPreferences.alertOverlayId;
+
                             if ( action.actionType === ActionTypes.DisplayText ) {
                                 action.overlayId = overlayMap[ action.overlayId ] ?? _userPreferences.alertOverlayId;
                             } else {
                                 action.overlayId = overlayMap[ action.overlayId ];
                             }
 
-                            action.endedTextOverlayId = overlayMap[ action.overlayId ] ?? _userPreferences.alertOverlayId;
-                            action.endingSoonTextOverlayId = overlayMap[ action.overlayId ] ?? _userPreferences.alertOverlayId;
+                            action.endedTextOverlayId = endedTextOverlayId;
+                            action.endingSoonTextOverlayId = endingSoonTextOverlayId;
 
                         } );
                     } );
