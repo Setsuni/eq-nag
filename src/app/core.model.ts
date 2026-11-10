@@ -2064,11 +2064,11 @@ export function generateRenderToken(triggerId: string, action: TriggerAction): R
     if ( action.actionType === ActionTypes.List ) {
         token.objectModel = new ListObjectModel();
         token.objectModel.listTitle = action.displayText;
-        token.objectModel.fontSize = action.textSize;
-        token.objectModel.fontFamily = action.textFont;
-        token.objectModel.fontWeight = action.textWeight;
+        token.objectModel.fontSize = action.textUseCustomSize ? action.textSize : undefined;
+        token.objectModel.fontFamily = action.textUseCustomFont ? action.textFont : undefined;
+        token.objectModel.fontWeight = action.textUseCustomFont ? action.textWeight : undefined;
         token.objectModel.listCssClass = action.useBackground ? 'background' : 'no-background';
-        token.objectModel.textSpacing = action.textSpacing ?? undefined;
+        token.objectModel.textSpacing = action.textUseCustomSize ? ( action.textSpacing ?? undefined ) : undefined;
         token.objectModel.items = [
             { name: 'Player 1', iconCssClass: 'fa-chevron-right', textCssClass: 'success' },
             { name: 'Player 2' },

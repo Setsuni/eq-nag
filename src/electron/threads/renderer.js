@@ -3907,11 +3907,11 @@ function renderListAction( component, restore ) {
     let successes = component.successNames ?? [];
 
     listObj.listTitle = component.action.displayText;
-    listObj.fontSize = component.action.textSize;
-    listObj.fontFamily = component.action.textFont;
-    listObj.fontWeight = component.action.textWeight;
+    listObj.fontSize = component.action.textUseCustomSize ? component.action.textSize : undefined;
+    listObj.fontFamily = component.action.textUseCustomFont ? component.action.textFont : undefined;
+    listObj.fontWeight = component.action.textUseCustomFont ? component.action.textWeight : undefined;
     listObj.listCssClass = component.action.useBackground ? 'background' : 'no-background';
-    listObj.textSpacing = component.action.textSpacing || undefined;
+    listObj.textSpacing = component.action.textUseCustomSize ? ( component.action.textSpacing || undefined ) : undefined;
 
     listObj.items = component.listNames.map( name => {
         return {
