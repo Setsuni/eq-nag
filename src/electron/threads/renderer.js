@@ -1850,6 +1850,11 @@ function Renderer( originX, originY, glowOnStart ) {
         } );
 
     ipcRenderer.on( 'renderer:window:enable-edit', function ( event, overlayId ) {
+        if ( !overlayInstances[ overlayId ] ) {
+            logInfo( `[Error:Undefined:Overlay] (renderer:window:enable-edit) Overlay does not exit! {overlayId: '${overlayId}'}` );
+            return;
+        }
+
         moveToTop( overlayInstances[ overlayId ].dom );
         enableMoveResize( overlayInstances[ overlayId ].dom );
         MouseUtilities.refreshDom();
@@ -2462,6 +2467,10 @@ function deleteOverlay( overlayId ) {
  */
 function updateOverlay( overlayId, model ) {
     
+    if ( !overlayInstances[ overlayId ] ) {
+        return;
+    }
+
     overlayInstances[ overlayId ].model = model;
     overlayInstances[ overlayId ].title.innerText = model.name ? model.name : 'Overlay';
 
