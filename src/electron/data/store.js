@@ -252,15 +252,29 @@ class Store {
      * Creates a backup of the database.
      * 
      * @param {(string) => void)} onComplete Callback function executed when the backup file is created that receives the backup file location.
+     * @param {(error: Error) => void} onError Callback function executed if the backup file could not be written.
      */
-    backupDatafile( onComplete ) {
+    backupDatafile( onComplete, onError ) {
         let backupFile = path.join( this.userDataPath, `-${FsUtilities.getFileTimestamp()}-backup.zip` );
         let output = fs.createWriteStream( backupFile );
         let zip = archiver( 'zip' );
 
+        let failed = false;
+        const fail = error => {
+            if ( !failed ) {
+                failed = true;
+                log.error( `Store > Could not back up ${this.configName}.`, error );
+                onError?.( error );
+            }
+        };
+
         output.on( 'close', () => {
-            onComplete( backupFile );
+            if ( !failed ) {
+                onComplete( backupFile );
+            }
         } );
+        output.on( 'error', fail );
+        zip.on( 'error', fail );
 
         zip.pipe( output );
         zip.file( this.#path, { name: this.configName + '.json' } );

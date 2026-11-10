@@ -260,6 +260,8 @@ class UserPreferencesStoreModel {
     minimizeToTrayOnLoad;
     /** @type {string} */
     lastViewedUpdateNotes;
+    /** @type {string} */
+    healthCheckSeenVersion;
     /** @type {LogMaintenanceRules} */
     logMaintenanceRules;
     /** @type {LogMaintenanceHistory[]} */

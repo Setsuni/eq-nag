@@ -1,5 +1,5 @@
 import { FlatTreeControl } from '@angular/cdk/tree';
-import { Component, ElementRef, HostListener, NgZone, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, NgZone, OnInit, Output, ViewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';
 import { DeathRecapPreferences, ExternalDataSources, QuickShareFileModel, QuickShareMetaModel, Tag, TriggerAction, TriggerFolder, TriggerModel } from '../core.model';
@@ -19,6 +19,7 @@ import { ShareFileService } from '../core/share-file.service';
 import { FolderConditionsDialogComponent } from './folder-conditions-dialog/folder-conditions-dialog.component';
 import { MatDialog, MatDialogRef } from '@angular/material/dialog';
 import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getErrorReason, getSkippedSounds, remapAudioFileIds, toSkippedSound } from '../utilities/package-file-ids';
+import { TriggerHealthService } from '../trigger-health/trigger-health.service';
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
 
@@ -98,6 +99,10 @@ export class TriggersComponent implements OnInit {
     private triggerFolders: TriggerFolder[] = [];
 
     public deathRecapPreferences: DeathRecapPreferences = null;
+    /** The number of trigger health findings from the latest check. */
+    public healthCount: number = 0;
+
+    @Output() public openHealth: EventEmitter<void> = new EventEmitter<void>();
     
     constructor(
         private readonly snackBar: MatSnackBar,
@@ -108,6 +113,7 @@ export class TriggersComponent implements OnInit {
         private readonly quickShareService: QuickShareService,
         private readonly shareFileService: ShareFileService,
         private readonly dialog: MatDialog,
+        private readonly healthService: TriggerHealthService,
     ) {
         
         this.dataSource.data = [];
@@ -147,6 +153,7 @@ export class TriggersComponent implements OnInit {
             
         } );
 
+        this.healthService.summary$.subscribe( summary => this.healthCount = summary?.defaultCount ?? 0 );
         this.ipcService.getDeathRecapPreferences().subscribe( recapPrefs => this.deathRecapPreferences = recapPrefs ?? null );
         this.ipcService.getAppIsDev().subscribe( isDev => this.isDev = isDev );
         this.ipcService.getTriggerFolders().subscribe( folders => {
@@ -1640,6 +1647,27 @@ export class TriggersComponent implements OnInit {
             this.updateViewTriggerData( this.triggerFolders );
             this.updateTriggerFolders();
 
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Opens the folder conditions of the given folder.
+     *
+     * @param folderId The id of the folder.
+     */
+    public showFolderConditions( folderId: string ): void {
+        if ( this.findFolderById( folderId ) ) {
+            this.expandParents( folderId );
+            this.editFolderConditions( folderId );
         }
     }
 

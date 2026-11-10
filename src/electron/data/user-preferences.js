@@ -134,6 +134,15 @@ class UserPreferencesStore extends Store {
         this.storeDataFile( this.#data );
     }
 
+    /** @type {string} */
+    get healthCheckSeenVersion() {
+        return this.#data.healthCheckSeenVersion;
+    }
+    set healthCheckSeenVersion( val ) {
+        this.#data.healthCheckSeenVersion = val;
+        this.storeDataFile( this.#data );
+    }
+
     /** @type {DeathRecapPreferences} */
     get deathRecap() {
         return this.#data.deathRecap;
@@ -928,6 +937,14 @@ class UserPreferencesStore extends Store {
 
         ipcMain.on( 'settings:get:lastViewedUpdateNotes', ( event ) => {
             event.sender.send( 'settings:get:lastViewedUpdateNotes', this.lastViewedUpdateNotes );
+        } );
+
+        ipcMain.on( 'settings:set:healthCheckSeenVersion', ( event, healthCheckSeenVersion ) => {
+            this.healthCheckSeenVersion = healthCheckSeenVersion;
+        } );
+
+        ipcMain.on( 'settings:get:healthCheckSeenVersion', ( event ) => {
+            event.sender.send( 'settings:get:healthCheckSeenVersion', this.healthCheckSeenVersion );
         } );
 
         ipcMain.on( 'settings:set:deathRecap', ( event, deathRecap ) => {

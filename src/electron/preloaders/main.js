@@ -51,6 +51,7 @@ const channelPrefixes = [
     'combat',
     'show-settings',
     'rolls',
+    'health',
 ];
 
 const styleSheetUtil = new StyleSheetUtil();

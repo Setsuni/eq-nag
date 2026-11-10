@@ -8,6 +8,7 @@ const { QuickShareAuthorListTypes, SimulationProgress, NConditionalModel, VCondi
 const { PhraseParse, LogTrigger, LogList } = require( './log.model' );
 const { OverlayComponent, OverlayWindow, TriggerSecondaryActionModel } = require( '../data/models/overlay-window' );
 const { CharacterModel } = require( '../data/models/character' );
+const ZoneTracker = require( '../data/zone-tracker' );
 const customAlphabet = require( 'nanoid' ).customAlphabet;
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
@@ -2353,10 +2354,18 @@ function executeTriggerAction( trigger, action, timestamp, res, deltaTime, simul
             } else {
                 saveVariable( action.variableName, res.result[ 1 ], action.onlyStoreUsedValues );
             }
+
+            if ( action.variableName === 'CurrentZone' && !simulating ) {
+                reportZoneKnowledge( res );
+            }
         }
 
     } else if ( action.actionType === ActionTypes.ClearVariable ) {
         /* --== Clear Variable ==-- */
+
+        if ( action.variableName === 'CurrentZone' && res.phraseId === 'PhraseLoadingPls' ) {
+            zoneTracker.loading();
+        }
 
         if ( res.result.groups && res.result.groups[ action.variableName ] ) {
             clearStoredVariable( action.variableName, res.result.groups[ action.variableName ] );
@@ -4057,6 +4066,36 @@ function loadCachedStoredVariables( callback ) {
         }
     } );
     ipcRenderer.send( 'cache:retrieve', cacheKey );
+}
+
+
+
+
+
+
+
+
+
+
+/** Follows zone-in and /who messages to learn which name /who reports for a zone-in name. */
+const zoneTracker = new ZoneTracker();
+
+/**
+ * Tells the main process which zone names were seen, and when /who reports a zone under another name than the zone-in message.
+ *
+ * @param {PhraseParse} res The match that stored the CurrentZone value.
+ */
+function reportZoneKnowledge( res ) {
+    const zone = res.result.length === 1 ? res.result[ 0 ] : res.result[ 1 ];
+    if ( typeof zone !== 'string' ) {
+        return;
+    }
+
+    if ( res.phraseId === 'PhraseEnterZoneX' ) {
+        ipcRenderer.send( 'zone-knowledge:record', zoneTracker.entered( zone, Date.now() ) );
+    } else if ( res.phraseId === 'PhraseCharInZone' ) {
+        ipcRenderer.send( 'zone-knowledge:record', zoneTracker.who( zone, Date.now() ) );
+    }
 }
 
 

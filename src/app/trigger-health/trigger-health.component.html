@@ -1,0 +1,65 @@
+<p>Finds triggers that can never fire and zone conditions that may stop matching in instances. Under Advanced it also lists triggers that cost the most time. Nothing changes until you click a fix.</p>
+
+<div class="health-actions">
+    <button mat-flat-button color="accent" (click)="check()" [disabled]="busy"><mat-icon>play_arrow</mat-icon> Check now</button>
+    <button mat-button class="color-green" (click)="fixSafe()" [disabled]="busy || !report?.summary.bulkFixes">Fix {{report?.summary.bulkFixes || 0}} safe {{report?.summary.bulkFixes === 1 ? 'item' : 'items'}}</button>
+    <button mat-button (click)="copyReport()" [disabled]="!report">Copy report</button>
+    <span class="spacer"></span>
+    <mat-slide-toggle [(ngModel)]="advanced" name="healthAdvanced">Advanced</mat-slide-toggle>
+</div>
+
+<p class="health-status" *ngIf="report">
+    Last check: {{report.summary.checkedAt | date:'MMM d, h:mm a'}} &middot; {{report.summary.triggers | number}} triggers &middot;
+    {{report.summary.defaultCount}} {{report.summary.defaultCount === 1 ? 'finding' : 'findings'}}
+    <span *ngIf="report.summary.defaultCount > 0">({{report.summary.defaultCounts.never}} will never fire, {{report.summary.defaultCounts.may}} may stop firing)</span>
+    <a class="color-blue undo-all" *ngIf="report.summary.undoCount > 0" (click)="undoAll()">Undo all changes from this check</a>
+</p>
+
+<p class="health-status" *ngIf="!report">Press "Check now" to look through your triggers.</p>
+
+<div class="health-empty" *ngIf="report && defaultGroups.length === 0">
+    <mat-icon class="material-icons-outlined color-green">check_circle</mat-icon>
+    <span>All {{report.summary.triggers | number}} triggers look fine.</span>
+</div>
+
+<ng-template #findingList let-groups="groups">
+    <div class="health-group" *ngFor="let group of groups; trackBy: trackGroup">
+        <div class="group-header" (click)="toggle(group)">
+            <mat-icon>{{isOpen(group) ? 'expand_more' : 'chevron_right'}}</mat-icon>
+            <span class="group-path">{{group.path}}</span>
+            <span class="package-badge" *ngIf="group.installedPackage">installed package</span>
+            <span class="spacer"></span>
+            <span class="group-count">{{group.count}}</span>
+        </div>
+        <div class="group-body" *ngIf="isOpen(group)">
+            <div class="finding" *ngFor="let row of group.rows; trackBy: trackRow">
+                <div class="finding-top">
+                    <span class="finding-name">{{row.subject.kind === 'folder' ? 'Folder: ' : ''}}{{row.subject.name}}</span>
+                    <span class="severity-note" *ngIf="row.subject.disabled">turned off</span>
+                </div>
+                <div class="finding-item" *ngFor="let finding of row.findings; trackBy: trackFinding">
+                    <div class="finding-top">
+                        <span class="severity {{finding.severity}}">{{severityLabels[finding.severity]}}</span>
+                        <span class="severity-note look" *ngIf="finding.needsLook">needs a look</span>
+                    </div>
+                    <div class="finding-reason">{{finding.reason}}</div>
+                    <div class="finding-detail" *ngIf="advanced && finding.detail">{{finding.detail}}</div>
+                </div>
+                <div class="finding-warning" *ngIf="row.package && fixable(row).length > 0">This belongs to an installed package. The next package update puts the old value back.</div>
+                <div class="finding-actions">
+                    <button mat-stroked-button color="accent" *ngFor="let finding of fixable(row)" (click)="fix(finding)" [disabled]="busy">{{row.package ? 'Fix anyway: ' : ''}}{{finding.fix.label}}</button>
+                    <button mat-button (click)="open(row.findings[0])">{{row.subject.kind === 'folder' ? 'Open folder' : 'Open trigger'}}</button>
+                    <button mat-button *ngIf="row.package" (click)="messageAuthor(row)">Message author</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</ng-template>
+
+<ng-container *ngTemplateOutlet="findingList; context: { groups: defaultGroups }"></ng-container>
+
+<ng-container *ngIf="advanced && advancedGroups.length > 0">
+    <h3 class="advanced-title">Advanced &middot; odd, unused or slow phrases</h3>
+    <p class="advanced-note">Most of these still fire. They are listed because they are skipped, unusual, or cost time on every log line.</p>
+    <ng-container *ngTemplateOutlet="findingList; context: { groups: advancedGroups }"></ng-container>
+</ng-container>

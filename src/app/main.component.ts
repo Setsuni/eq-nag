@@ -1,6 +1,7 @@
 import { Component, ViewChild, ElementRef, OnInit, HostListener } from '@angular/core';
 import * as _ from 'lodash-es';
 import { MatSnackBar } from '@angular/material/snack-bar';
+import { MatDialog } from '@angular/material/dialog';
 import { IpcService } from './ipc.service';
 import { DkpEntryModel, OverlayWindowModel, FocusEffectSettings, StylePropertiesModel, FctStylesModel, QuickShareMetaModel, QuickShareFileModel, TriggerPackageMetaModel, VersionNumber, AuthorModel, SettingsKeys } from './core.model';
 import { DialogService } from './dialogs/dialog.service';
@@ -17,6 +18,8 @@ import { ShareFileService } from './core/share-file.service';
 import { TriggersComponent } from './triggers/triggers.component';
 import { JoinChatRoomDialogResult } from './dialogs/join-chat-room-dialog/join-chat-room-dialog.component';
 import { buildFileIdMap, describeSkippedSounds, findSoundTotalProblem, getErrorReason, getSkippedSounds, remapAudioFileIds, SkippedSound, toSkippedSound } from './utilities/package-file-ids';
+import { TriggerHealthService } from './trigger-health/trigger-health.service';
+import { TriggerHealthDialogComponent, TriggerHealthDialogData, TriggerHealthDialogResult } from './trigger-health/trigger-health-dialog.component';
 
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
@@ -68,6 +71,7 @@ export class MainComponent implements OnInit {
     private failedUpdateKeys = new Set<string>();
     public dropActive: boolean = false;
     private _dragDepth: number = 0;
+    public selectedTabIndex: number = 0;
 
     @ViewChild( 'fileSelector' ) private fileSelector: ElementRef<HTMLInputElement>;
     @ViewChild( 'characterList', { static: true } ) private characterList: CharactersListComponent;
@@ -86,6 +90,8 @@ export class MainComponent implements OnInit {
         private readonly libraryService: TriggerLibraryService,
         private readonly quickShareService: QuickShareService,
         private readonly shareFileService: ShareFileService,
+        private readonly healthService: TriggerHealthService,
+        private readonly dialog: MatDialog,
     ) {
     }
 
@@ -365,6 +371,8 @@ export class MainComponent implements OnInit {
                 }
             } );
         } );
+
+        this.startTriggerHealthCheck();
 
         this.ipcService.onBackupProgress().subscribe( progress => {
             
@@ -705,11 +713,99 @@ export class MainComponent implements OnInit {
     }
 
     onChangeTabs( selectedIndex: number ): void {
+        this.selectedTabIndex = selectedIndex;
         this.showConsole = selectedIndex === 0;
 
         if ( selectedIndex === 5 ) {
             this.settingsPanel.loadSettings();
+            this.settingsPanel.refreshTriggerHealth();
         }
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Shows the Trigger Health section in Settings.
+     */
+    public openTriggerHealth(): void {
+        this.selectedTabIndex = 5;
+        setTimeout( () => this.settingsPanel.scrollToTriggerHealth(), 150 );
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Runs the callback once the setup wizard and any other dialog are closed.
+     * 
+     * @param callback The function to run.
+     * @param attempts The number of checks left before giving up.
+     */
+    private whenNoStartupDialog( callback: () => void, attempts: number = 200 ): void {
+        if ( this.setupCompleted && this.dialog.openDialogs.length === 0 && !this.showingUpdateConfirmation ) {
+            callback();
+        } else if ( attempts > 0 ) {
+            timer( 3000 ).subscribe( () => this.whenNoStartupDialog( callback, attempts - 1 ) );
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Checks the triggers a little after start, and offers a review when something was found and the pop-up was not dismissed for this version.
+     */
+    private startTriggerHealthCheck(): void {
+        this.healthService.imported$.subscribe( data => {
+            this.snackBar
+                .open( `${data.count} imported ${data.count === 1 ? 'trigger needs' : 'triggers need'} a look`, 'Review', { duration: 12000 } )
+                .onAction().subscribe( () => this.openTriggerHealth() );
+        } );
+        this.healthService.showSection$.subscribe( () => this.openTriggerHealth() );
+        this.healthService.openFolder$.subscribe( folderId => {
+            this.selectedTabIndex = 1;
+            setTimeout( () => this.triggersList.showFolderConditions( folderId ), 150 );
+        } );
+
+        timer( 10000 ).subscribe( () => {
+            forkJoin( [ this.healthService.check( true ), this.ipcService.getAppVersion(), this.healthService.getSeenVersion() ] )
+                .subscribe( ( [ report, version, seenVersion ] ) => {
+                    if ( report.summary.defaultCount === 0 || seenVersion === version ) {
+                        return;
+                    }
+
+                    const data: TriggerHealthDialogData = { version: version, summary: report.summary };
+                    this.whenNoStartupDialog( () => {
+                        this.dialog
+                            .open<TriggerHealthDialogComponent, TriggerHealthDialogData, TriggerHealthDialogResult>( TriggerHealthDialogComponent, { width: '520px', data: data, panelClass: 'app-dialog' } )
+                            .afterClosed().subscribe( result => {
+                                this.healthService.setSeenVersion( version );
+                                if ( result?.review ) {
+                                    this.openTriggerHealth();
+                                }
+                            } );
+                    } );
+                } );
+        } );
     }
 
     onEnableFctChange(): void {

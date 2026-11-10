@@ -150,6 +150,8 @@ const installedIdSubscribers = [];
 var onCreatedHandlers = [];
 /** @type {((trigger: Trigger) => void)[]} */
 var onRemovedHandlers = [];
+/** @type {((triggerIds: string[]) => void)[]} */
+var onImportedHandlers = [];
 
 class TriggerDatabaseStore extends Store {
 
@@ -208,6 +210,24 @@ class TriggerDatabaseStore extends Store {
         } else {
             onCreatedHandlers[ i ] = fn;
         }
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Executes the given function, passing in the ids of the new triggers, after triggers are imported or installed.
+     * 
+     * @param {(triggerIds: string[]) => void} fn The callback function.
+     */
+    onTriggersImported( fn ) {
+        onImportedHandlers.push( fn );
     }
 
 
@@ -482,6 +502,7 @@ class TriggerDatabaseStore extends Store {
                 }
                 event.sender.send( 'trigger:mass-create', triggerIds );
                 sendTick();
+                onImportedHandlers.forEach( fn => fn( triggerIds ) );
             } );
 
         ipcMain.on( 'trigger:create', ( event, trigger ) => {
@@ -1924,6 +1945,7 @@ class TriggerDatabaseStore extends Store {
             }
             
             done( true );
+            onImportedHandlers.forEach( fn => fn( pkg.model?.triggers?.map( f => f.triggerId ) ?? [] ) );
         };
 
         // An error while installing reaches the caller instead of leaving it waiting.
@@ -2034,6 +2056,7 @@ class TriggerDatabaseStore extends Store {
                 }
 
                 resolve( true );
+                onImportedHandlers.forEach( fn => fn( quickShare.model?.triggers?.map( f => f.triggerId ) ?? [] ) );
             }, reject );
         } );
     }
@@ -2383,6 +2406,23 @@ class TriggerDatabaseStore extends Store {
             this.installPackageFolder( folder, pkgChild, folderMap );
         } );
 
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Saves the trigger data after it was changed in place.
+     */
+    save() {
+        this.processPredefinedTriggers();
+        this.storeDataFile( this.#data );
     }
 
 

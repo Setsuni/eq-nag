@@ -14,6 +14,8 @@ import { WebComponentsModule } from '../web-components/web-components.module';
 import { NgxMatTimepickerModule } from 'ngx-mat-timepicker';
 import { CombatStatisticsComponent } from './combat-statistics/combat-statistics.component';
 import { LogFileComponent } from './log-file/log-file.component';
+import { TriggerHealthComponent } from '../trigger-health/trigger-health.component';
+import { TriggerHealthDialogComponent } from '../trigger-health/trigger-health-dialog.component';
 
 @NgModule({
     imports: [
@@ -35,6 +37,8 @@ import { LogFileComponent } from './log-file/log-file.component';
         CombatStatisticsComponent,
         SettingsComponent,
         LogFileComponent,
+        TriggerHealthComponent,
+        TriggerHealthDialogComponent,
     ],
     exports: [
         CombatStatisticsComponent,
