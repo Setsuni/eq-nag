@@ -1,6 +1,6 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { IpcService } from 'src/app/ipc.service';
-import { OverlayWindowModel, TriggerAction, TimerSortTypes, StylePropertiesModel } from 'src/app/core.model';
+import { OverlayWindowModel, TextOverflowModel, TriggerAction, TimerSortTypes, StylePropertiesModel } from 'src/app/core.model';
 import { ActivatedRoute } from '@angular/router';
 import { ThemePalette } from '@angular/material/core';
 import { AbstractControl, FormControl } from '@angular/forms';
@@ -57,7 +57,7 @@ export class OverlayEditorDialogComponent implements OnInit {
     private _baseline: string = null;
     
     public get maxFontWeightIndex(): number {
-        if ( this.model?.fontFamily != null ) {
+        if ( availableFonts[ this.model?.fontFamily ] != null ) {
             return availableFonts[ this.model.fontFamily ].length - 1;
         } else {
             return 1;
@@ -65,7 +65,7 @@ export class OverlayEditorDialogComponent implements OnInit {
     }
 
     public get fontWeight(): string {
-        if ( this.fontWeightIndex >= 0 ) {
+        if ( this.fontWeightIndex >= 0 && availableFonts[ this.model.fontFamily ] != null ) {
             return `${availableFonts[ this.model.fontFamily ][ this.fontWeightIndex ]}`;
         } else {
             return null;
@@ -148,11 +148,11 @@ export class OverlayEditorDialogComponent implements OnInit {
 
     public get typeLabel(): string {
         switch ( this.model.overlayType ) {
-            case 'Timer': return 'Timer overlay';
-            case 'Alert': return 'Text overlay';
-            case 'FCT': return 'Floating combat text overlay';
-            case 'Log': return 'Debug log overlay';
-            default: return 'Overlay';
+            case 'Timer': return 'Timer';
+            case 'Alert': return 'Text';
+            case 'FCT': return 'Floating combat text';
+            case 'Log': return 'Debug log';
+            default: return 'Other';
         }
     }
 
@@ -195,11 +195,20 @@ export class OverlayEditorDialogComponent implements OnInit {
                     this.model = overlay;
                     this.enterDescription = this.model.description?.length > 0;
 
-                    this.model.fontFamily = this.model.fontFamily ? this.model.fontFamily : 'Roboto';
+                    this.model.textOverflow = Object.assign( new TextOverflowModel(), this.model.textOverflow );
+                    this.model.fontColor = this.model.fontColor ? this.model.fontColor : '#ffffff';
+                    this.model.backgroundColor = this.model.backgroundColor ? this.model.backgroundColor : '#000000';
+                    this.model.borderColor = this.model.borderColor ? this.model.borderColor : '#000000';
+                    this.model.textBorderColor = this.model.textBorderColor ? this.model.textBorderColor : '#000000';
+                    this.model.textGlowColor = this.model.textGlowColor ? this.model.textGlowColor : '#000000';
+                    this.model.fontTransparency = this.model.fontTransparency ?? 1;
+                    this.model.backgroundTransparency = this.model.backgroundTransparency ?? 0;
+                    this.model.borderTransparency = this.model.borderTransparency ?? 0;
+                    this.model.fontFamily = availableFonts[ this.model.fontFamily ] ? this.model.fontFamily : 'Roboto';
                     this.model.fontSize = this.model.fontSize > 0 ? this.model.fontSize : 14;
                     this.model.lineHeight = this.model.lineHeight > 0 ? this.model.lineHeight : 90;
                     this.model.fontWeight = this.model.fontWeight > 100 ? this.model.fontWeight : 400;
-                    this.fontWeightIndex = availableFonts[ this.model.fontFamily ].indexOf( this.model.fontWeight );
+                    this.fontWeightIndex = Math.max( 0, availableFonts[ this.model.fontFamily ].indexOf( this.model.fontWeight ) );
                     this.fontTransparency = Math.round( this.model.fontTransparency * 100 );
                     this.backgroundTransparency = Math.round( this.model.backgroundTransparency * 100 );
                     this.borderTransparency = Math.round( this.model.borderTransparency * 100 );
@@ -207,7 +216,7 @@ export class OverlayEditorDialogComponent implements OnInit {
                     this.textGlowColor = ColorUtility.FromHex( this.model.textGlowColor ).toHexString( 1 );
                     this.textBorderIntensity = ColorUtility.FromHex( this.model.textBorderColor ).a * 100;
                     this.textGlowIntensity = ColorUtility.FromHex( this.model.textGlowColor ).a * 100;
-                    this.dotGroupHeaderWeightIndex = availableFonts[ this.model.fontFamily ].indexOf( this.model.groupHeaderWeight );
+                    this.dotGroupHeaderWeightIndex = Math.max( 0, availableFonts[ this.model.fontFamily ].indexOf( this.model.groupHeaderWeight ) );
                     window.setTimeout( () => this._baseline = JSON.stringify( this.model ) );
                 } );
 

@@ -209,10 +209,10 @@ export class OverlaysComponent implements OnInit {
      */
     getOverlayTypeLabel( overlayType: string ): string {
         switch ( overlayType ) {
-            case 'Log': return 'Debug Log';
+            case 'Log': return 'Debug log';
             case 'Alert': return 'Text';
-            case 'Timer': return 'Timer & Countdown';
-            case 'FCT': return 'Floating Combat Text';
+            case 'Timer': return 'Timer';
+            case 'FCT': return 'Floating combat text';
             case 'Chart': return 'Chart';
             default: return overlayType ?? '';
         }
