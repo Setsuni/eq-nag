@@ -59,6 +59,110 @@ mat-panel-description {
 
 }
 
+.status-chip {
+    display: inline-flex;
+    align-items: center;
+    height: 24px;
+    margin-left: 10px;
+    padding: 0 10px 0 6px;
+    border: 1px solid #ffffff2e;
+    border-radius: 12px;
+    background: transparent;
+    color: #ffffff8c;
+    font-family: inherit;
+    font-size: 12px;
+    line-height: 22px;
+    text-transform: none;
+    white-space: nowrap;
+
+    mat-icon {
+        width: 16px;
+        height: 16px;
+        margin: 0 4px 0 0;
+        font-size: 16px;
+        line-height: 16px;
+    }
+
+    &.watching {
+        border-color: #69f0ae80;
+        color: #69f0ae;
+    }
+
+    &.dps {
+        cursor: pointer;
+
+        &.active {
+            border-color: #f0c66980;
+            color: #f0c669;
+        }
+
+        &:hover {
+            background: #ffffff14;
+        }
+    }
+}
+
+.log-file-card {
+    .log-file-path {
+        padding: 8px 10px;
+        background: #0000003d;
+        border-radius: 4px;
+        font-family: "Roboto Mono", Consolas, monospace;
+        font-size: 13px;
+        word-break: break-all;
+
+        &.missing {
+            color: #f0c669;
+        }
+    }
+
+    .log-file-meta {
+        display: flex;
+        flex-flow: row wrap;
+        gap: 6px 32px;
+        margin: 12px 0 4px;
+
+        small {
+            display: block;
+            color: #ffffff8c;
+        }
+    }
+
+    .log-file-missing {
+        display: inline-flex;
+        align-items: center;
+        color: #f0c669;
+
+        mat-icon {
+            margin-right: 4px;
+        }
+    }
+
+    .log-file-actions {
+        margin-top: 8px;
+        margin-left: -8px;
+    }
+}
+
+.collapsible-header {
+    cursor: pointer;
+    align-items: center;
+
+    mat-card-title {
+        margin-bottom: 0;
+    }
+
+    .collapsible-summary {
+        margin-left: 16px;
+        color: #ffffff8c;
+        font-size: 13px;
+    }
+
+    mat-icon {
+        margin-left: auto;
+    }
+}
+
 mat-panel-title {
     small {
         margin-left: 15px;

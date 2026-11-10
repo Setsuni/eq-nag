@@ -45,107 +45,94 @@ div.tab-content {
     flex: 1 1 auto;
 }
 
-.server-console {
-    background-color: #242424;
-    padding: 1em 0.5em 1em 1em;
-    height: 10em;
+.dps-off-notice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 1em 16px;
+    padding: 6px 8px 6px 16px;
+    border-left: 3px solid #69f0ae;
+    background-color: #2b2b2b;
 
-    .server-console-lines {
-        overflow: auto;
-        margin: 0px;
-        padding: 0.3em 0.15em;
-        direction: ltr;
-        width: calc(100% - 0.6em);
-        height: calc(100% - 0.6em);
-        border: 2px solid #0000006b;
-        background-color: #0000002e;
+    span:not(.spacer) {
+        opacity: 0.85;
+    }
+}
 
-        .server-console-line {
-            display: flex;
-            flex-flow: row nowrap;
+.dps-layout {
+    display: flex;
+    flex-flow: row wrap;
+    gap: 0 24px;
+    align-items: flex-start;
 
-            p {
-                overflow: hidden;
-                white-space: wrap;
-                margin: 0;
-                padding: 1px 0;
-                display:inline-block;
-                font-weight: 300;
-                color: #bdbdbd;
-                font-family: "Roboto Mono", Consolas, monospace;
-                font-size: 0.9em;
-                line-height: 1;
+    > fieldset {
+        flex: 1 1 360px;
+        width: auto !important;
+        margin-top: 0 !important;
+    }
 
-                &.color-red {
-                    color: #f06969;
-                }
-    
-                &.color-blue {
-                    color: #69b2f0;
-                }
-    
-                &.color-green {
-                    color: #69f0ae;
-                }
-                
-                &.color-yellow {
-                    color: #f0e069;
-                }
-                
-                &.color-orange {
-                    color: #f0c669;
-                }
-            }
-    
-            .time-stamp {
-                display: inline-block;
-                opacity: 0.5;
-                margin-right: 0.5em;
-                flex: 0 0 auto;
-                font-weight: 300 !important;
-                color: #bdbdbd !important;
-                font-family: "Roboto Mono", Consolas, monospace;
-                font-size: 0.9em;
-                line-height: 1;
-                padding-top: 1px;
-            }
+    mat-checkbox {
+        display: block;
+        margin-bottom: 8px;
+    }
+
+    .min-damage {
+        width: 100%;
+        margin-top: 12px;
+    }
+}
+
+.meter-preview {
+    background-color: #1c1c1c;
+    border: 1px solid #ffffff1f;
+    border-radius: 4px;
+    padding: 8px;
+
+    &.is-off {
+        opacity: 0.45;
+    }
+
+    .meter-row {
+        position: relative;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        height: 26px;
+        margin: 3px 0;
+        padding: 0 8px;
+        overflow: hidden;
+        border-radius: 3px;
+
+        &.mine .meter-name {
+            color: #69f0ae;
+            font-weight: 500;
         }
     }
 
-}
+    .meter-bar {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        background-color: #3f51b5a8;
+    }
 
-.server-trust-content {
-    > div {
-        width: calc(50% - 36px);
-        padding: 1em;
-        display: inline-block;
-        vertical-align: top;
+    .meter-name,
+    .meter-value {
+        position: relative;
+        font-size: 13px;
+        white-space: nowrap;
+    }
+
+    .meter-value small {
+        display: inline;
+        margin-left: 8px;
+        opacity: 0.6;
     }
 }
 
-.section-text-content {
-    background-color: #252525;
-    min-height: 5em;
-    padding: 0.5em 1em;
-}
-
-.fieldset-section {
-
-    &:not(:last-of-type) {
-        margin-bottom: 3em;
-    }
-}
-
-.connected-peers {
-    display: flex;
-    flex-flow: column wrap;
-    justify-content: flex-start;
-    align-items: flex-start;
-    max-height: 150px;
-
-    p {
-        padding: 0;
-        margin: 0.25em 0;
-        padding-right: 1em;
-    }
+.preview-note {
+    margin: 10px 0 0;
+    font-size: 12px;
+    opacity: 0.6;
 }

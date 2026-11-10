@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = require( "electron" );
+const { app, BrowserWindow, ipcMain, shell } = require( "electron" );
 const Store = require( './store' );
 const ForwardRef = require( '../forward-ref' );
 const _ = require( 'lodash' );
@@ -8,6 +8,7 @@ const idLen = 16;
 const nanoid = customAlphabet( alphabet, 16 );
 const { CharacterModel, CharacterStoreModel, TriggersProfileModel } = require( "./models/character" );
 const fs = require( 'fs' );
+const path = require( 'path' );
 const { migrateCharacterData } = require( "./migrations/character-database-migration" );
 
 /** @type {((character: CharacterModel) => void)[]} */
@@ -398,6 +399,35 @@ class CharacterDatabaseStore extends Store {
             let deleted = this.remove( characterId );
             event.sender.send( 'character:delete', deleted );
             sendTick();
+        } );
+
+        ipcMain.handle( 'character:log-file-info', async ( event, characterId ) => {
+            const logFile = typeof characterId === 'string' ? this.find( characterId )?.logFile : undefined;
+            if ( !logFile ) {
+                return { path: '', exists: false, size: 0, modified: 0 };
+            }
+            try {
+                const stats = await fs.promises.stat( logFile );
+                return { path: logFile, exists: true, size: stats.size, modified: stats.mtimeMs };
+            } catch ( error ) {
+                return { path: logFile, exists: false, size: 0, modified: 0 };
+            }
+        } );
+
+        ipcMain.handle( 'character:show-log-folder', async ( event, characterId ) => {
+            const logFile = typeof characterId === 'string' ? this.find( characterId )?.logFile : undefined;
+            if ( !logFile ) {
+                return 'noFile';
+            }
+            if ( fs.existsSync( logFile ) ) {
+                shell.showItemInFolder( logFile );
+                return 'ok';
+            }
+            const folder = path.dirname( logFile );
+            if ( fs.existsSync( folder ) && !( await shell.openPath( folder ) ) ) {
+                return 'ok';
+            }
+            return 'folderMissing';
         } );
 
         ipcMain.handle( 'character:get:options', async ( event, logsPath ) => {

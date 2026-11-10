@@ -63,7 +63,7 @@
         </mat-tab>
         <mat-tab label="Combat">
             <mat-tab-group class=".sub-tabs">
-                <mat-tab label="Combat Statistics">
+                <mat-tab label="DPS meter">
                     <app-combat-statistics></app-combat-statistics>
                 </mat-tab>
                 <mat-tab label="Floating Combat Text">
@@ -78,6 +78,10 @@
 
             <app-settings [characterList]="characterList" #settingsPanel></app-settings>
 
+        </mat-tab>
+        <mat-tab>
+            <ng-template mat-tab-label>Log Sync<span class="tab-dev-chip">in development</span></ng-template>
+            <app-log-sync></app-log-sync>
         </mat-tab>
     </mat-tab-group>
 

@@ -2,7 +2,7 @@ import { Component, ElementRef, OnInit, ViewChild } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { CharacterModel, TriggerFolder, TriggerModel, TriggersProfileModel } from '../core.model';
 import { DialogService } from '../dialogs/dialog.service';
-import { IpcService } from '../ipc.service';
+import { CharacterLogFileInfo, IpcService } from '../ipc.service';
 import * as _ from 'lodash-es';
 import { FlatTreeControl } from '@angular/cdk/tree';
 import { MatTree, MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';
@@ -62,6 +62,9 @@ export class CharactersListComponent implements OnInit {
     public characters: CharacterModel[] = [];
     public selectedTabIndex: number = -1;
     public activeLogFilesDictionary: any = {};
+    public logFileInfo: Record<string, CharacterLogFileInfo> = {};
+    public focusOpen: Record<string, boolean> = {};
+    private reloadingCharacters: boolean = false;
     public triggerProfiles: TriggersProfileModel[] = [];
     public combatCharacter: CharacterModel | undefined = undefined;
     
@@ -84,11 +87,26 @@ export class CharactersListComponent implements OnInit {
         
         this.ipcService.tickReceived().subscribe( tick => {
 
-            tick.characterOptions.forEach( character => {
+            let unknownCharacter = false;
+            tick.characterOptions?.forEach( character => {
                 // Update the class for each character.
                 let index = this.characters.findIndex( f => f.characterId === character.characterId );
-                this.characters[ index ].class = character.class;
+                if ( index > -1 ) {
+                    this.characters[ index ].class = character.class;
+                } else {
+                    unknownCharacter = true;
+                }
             } );
+
+            // A character was added elsewhere while this tab was open.
+            if ( unknownCharacter && !this.reloadingCharacters ) {
+                this.reloadingCharacters = true;
+                this.ipcService.getCharacters().subscribe( {
+                    next: data => this.mergeNewCharacters( data ),
+                    error: () => this.reloadingCharacters = false,
+                    complete: () => this.reloadingCharacters = false,
+                } );
+            }
             
             if ( tick.triggerProfileDisabledTriggers?.length > 0 ) {
                 tick.triggerProfileDisabledTriggers.forEach( tp => {
@@ -151,6 +169,30 @@ export class CharactersListComponent implements OnInit {
 
     
     /**
+     * Adds characters that are not in the list yet, keeping the existing entries and their open panels.
+     * 
+     * @param data The current characters from the main process.
+     */
+    private mergeNewCharacters( data: CharacterModel[] ): void {
+        const added = data.filter( c => !this.characters.some( f => f.characterId === c.characterId ) );
+        if ( added.length > 0 ) {
+            const selectedId = this.characters[ this.selectedTabIndex ]?.characterId;
+            added.forEach( character => character.disabledTriggers = character.disabledTriggers ?? [] );
+            this.characters = _.sortBy( [ ...this.characters, ...added ], [ 'server', 'name' ] );
+            this.selectedTabIndex = selectedId ? _.findIndex( this.characters, f => f.characterId === selectedId ) : -1;
+        }
+    }
+
+
+
+
+
+
+
+
+
+    
+    /**
      * Loads the specified character into the character list.
      * 
      * @param characterId The id of the character to load.
@@ -184,6 +226,7 @@ export class CharactersListComponent implements OnInit {
      */
     public onCharacterSelected( character: CharacterModel, index: number | undefined = undefined ): void {
         this.selectedTabIndex = index === 0 || index > 0 ? index : _.findIndex( this.characters, f => f.characterId === character.characterId );
+        this.loadLogFileInfo( character );
 
         if ( !this.characterData[ character.characterId ] ) {
             this.ipcService.getTriggerFolders().subscribe( folders => {
@@ -909,6 +952,7 @@ export class CharactersListComponent implements OnInit {
             this.ipcService.updateCharacter( this.characters[ index ] ).subscribe( updated => {
                 if ( updated ) {
                     this.snackBar.open( 'Character updated!', 'Dismiss', { duration: 2500 } );
+                    this.loadLogFileInfo( this.characters[ index ] );
                 }
             } );
 
@@ -924,6 +968,129 @@ export class CharactersListComponent implements OnInit {
 
 
     
+    /**
+     * Loads the size and last write time of the character's log file.
+     *
+     * @param character The character to load the log file details for.
+     */
+    public loadLogFileInfo( character: CharacterModel ): void {
+        this.ipcService.getCharacterLogFileInfo( character.characterId ).subscribe( info => this.logFileInfo[ character.characterId ] = info );
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Opens the folder that contains the character's log file.
+     *
+     * @param character The character to show the log folder for.
+     */
+    public openLogFolder( character: CharacterModel ): void {
+        this.ipcService.showCharacterLogFolder( character.characterId ).subscribe( result => {
+            if ( result === 'folderMissing' ) {
+                this.snackBar.open( 'That folder no longer exists.', 'Dismiss', { duration: 4000 } );
+            }
+        } );
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns a short, readable file size.
+     *
+     * @param bytes The size in bytes.
+     */
+    public formatFileSize( bytes: number ): string {
+        if ( bytes >= 1073741824 ) {
+            return `${( bytes / 1073741824 ).toFixed( 1 )} GB`;
+        } else if ( bytes >= 1048576 ) {
+            return `${( bytes / 1048576 ).toFixed( 1 )} MB`;
+        } else if ( bytes >= 1024 ) {
+            return `${Math.round( bytes / 1024 )} KB`;
+        }
+        return `${bytes} bytes`;
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns how long ago the given time was, in plain words.
+     *
+     * @param time The time in milliseconds since the epoch.
+     */
+    public formatAge( time: number ): string {
+        const seconds = Math.max( 0, Math.round( ( Date.now() - time ) / 1000 ) );
+        if ( seconds < 60 ) {
+            return 'just now';
+        }
+        const minutes = Math.floor( seconds / 60 );
+        if ( minutes < 60 ) {
+            return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} ago`;
+        }
+        const hours = Math.floor( minutes / 60 );
+        if ( hours < 48 ) {
+            return `${hours} ${hours === 1 ? 'hour' : 'hours'} ago`;
+        }
+        return `${Math.floor( hours / 24 )} days ago`;
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Returns a one-line summary of the focus effects that are turned on.
+     *
+     * @param character The character to summarize.
+     */
+    public getFocusSummary( character: CharacterModel ): string {
+        const active: string[] = [];
+        if ( character.hasExtendedDotFocus ) {
+            active.push( 'DoT' );
+        }
+        if ( character.hasExtendedBeneficialFocus ) {
+            active.push( 'Beneficial' );
+        }
+        if ( character.hasBeneficialCastingSpeedFocus ) {
+            active.push( 'Spell haste' );
+        }
+        return active.length > 0 ? active.join( ', ' ) : 'None';
+    }
+
+
+
+
+
+
+
+
+
+
     /**
      * Toggle combat tracking for the given character.
      * 
