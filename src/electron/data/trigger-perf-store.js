@@ -24,7 +24,7 @@ function sanitizeReport( report ) {
         if ( !row || typeof row.triggerId !== 'string' || typeof row.name !== 'string' || rowNumbers.some( key => !Number.isFinite( row[ key ] ) ) ) {
             continue;
         }
-        const codes = Array.isArray( row.hints ) ? row.hints.map( h => typeof h === 'string' ? h : h?.code ).filter( code => typeof code === 'string' && hintTexts[ code ] ) : [];
+        const codes = Array.isArray( row.hints ) ? row.hints.map( h => typeof h === 'string' ? h : h?.code ).filter( code => typeof code === 'string' && Object.hasOwn( hintTexts, code ) ) : [];
         rows.push( {
             triggerId: row.triggerId.slice( 0, maxTextLength ),
             name: row.name.slice( 0, maxTextLength ),
@@ -53,10 +53,10 @@ function sanitizeCounters( counters ) {
     if ( !counters || typeof counters !== 'object' || Array.isArray( counters ) ) {
         return null;
     }
-    const result = {};
+    const result = Object.create( null );
     for ( const id of Object.keys( counters ).slice( 0, maxRows ) ) {
         const c = counters[ id ];
-        if ( id !== '__proto__' && c && typeof c.name === 'string' && Number.isFinite( c.checked ) && Number.isFinite( c.fired ) ) {
+        if ( c && typeof c.name === 'string' && Number.isFinite( c.checked ) && Number.isFinite( c.fired ) ) {
             result[ id.slice( 0, maxTextLength ) ] = { name: c.name.slice( 0, maxTextLength ), checked: c.checked, fired: c.fired };
         }
     }
@@ -85,7 +85,7 @@ class TriggerPerfStore {
         if ( this.#reports ) {
             return this.#reports;
         }
-        this.#reports = {};
+        this.#reports = Object.create( null );
         try {
             const data = JSON.parse( fs.readFileSync( this.#file, 'utf8' ) );
             if ( data && typeof data === 'object' && !Array.isArray( data ) ) {

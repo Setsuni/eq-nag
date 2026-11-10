@@ -1033,7 +1033,8 @@ function generateTriggerFns() {
 
         try {
 
-            trigger._stats = triggerMetrics.statsFor( trigger.triggerId );
+            const _stats = triggerMetrics.statsFor( trigger.triggerId );
+            trigger._stats = _stats;
 
             if ( ( isDev || !trigger.onlyExecuteInDev ) && trigger.capturePhrases?.length > 0 ) {
     
@@ -1472,7 +1473,7 @@ function generateTriggerFns() {
         
                             // If all conditions passed, then parse the phrase.
                             if ( trigger._checkConditions() ) {
-                                trigger._stats.checked++;
+                                _stats.checked++;
                                 _phraseParsers.forEach( ( parser, i ) => {
                                     let _res = parser( value );
                                     if ( _res?.match ) {
@@ -1514,7 +1515,7 @@ function generateTriggerFns() {
                             let passed = false;
         
                             if ( trigger._checkConditions() ) {
-                                trigger._stats.checked++;
+                                _stats.checked++;
         
                                 let _res = _phraseParsers[ 0 ]( value );
         
@@ -1918,61 +1919,74 @@ function parseLogEntries( raw, simulating, padTime ) {
 
         let entryMatched = false;
         const perfTriggers = perf.enabled && ++perfTriggerSample % 10 === 0;
-        triggerMetrics.sampleWindow( activeTriggers.length );
-        const timedFirst = triggerMetrics.first;
-        const timedSecond = triggerMetrics.second;
-        activeTriggers.forEach( ( trigger, index ) => {
+        const runTrigger = trigger => {
+            trigger._parse( log, ( res, deltaTime ) => {
 
-            if ( !!trigger.enabled && !trigger._profileDisabled ) {
-                const perfStart = perfTriggers ? perf.now() : 0;
-                const timed = index === timedFirst || index === timedSecond;
-                const timerStart = timed ? process.hrtime.bigint() : 0n;
-                trigger._parse( log, ( res, deltaTime ) => {
+            trigger._stats.fired++;
 
-                    trigger._stats.fired++;
-
-                    try {
-                            
-                        trigger.actions.forEach( action => {
-                            // This used to execute actions if there are no phrases on the action, but now it doesn't because the action may exist only as a subaction
-                            // ( action.phrases == null || action.phrases?.length === 0 || action.phrases?.indexOf( res.phraseId ) > -1 )
-                            if ( ( isDev || !action.onlyExecuteInDev ) && ( action.actionType === ActionTypes.List || action.phrases?.indexOf( res.phraseId ) > -1 ) ) {
-
-                                enableLogging && sendInformationToLog( `Execute trigger action [${trigger.name}] : ${ActionTypes[ action.actionType ]}`, 24 );
-                                enableLogging && sendInformationToLog( `    ||${raw}||`, 24 );
-
-                                executeTriggerAction( trigger, action, timestamp, res, deltaTime, simulating );
-                                
-                                logHistoryMgr.addSuccessfulTriggerParsedEvent(
-                                    log,
-                                    trigger.triggerId,
-                                    action.actionId,
-                                    trigger.captureMethod === 'Sequential' ? 'Trigger Sequential Action' : 'Trigger Action',
-                                    res.renderedPhrase,
-                                    trigger.capturePhrases.find( p => p.phraseId === res.phraseId )?.phrase,
-                                    res,
-                                    trigger._conditionResults,
-                                    undefined );
-                            }
-                        } );
-                        entryMatched = true;
-
-                        // If the trigger has a cooldown, start the cooldown now.
-                        if ( trigger.useCooldown ) {
-                            trigger._onCooldown = true;
-                            trigger._cooldownStart = new Date();
-                        }
-                            
-                    } catch ( error ) {
-                        logHistoryMgr.logError( error, raw, simulating, padTime, ErrorMessages.triggerExecution(), trigger );
-                    }
+            try {
                     
+                trigger.actions.forEach( action => {
+                    // This used to execute actions if there are no phrases on the action, but now it doesn't because the action may exist only as a subaction
+                    // ( action.phrases == null || action.phrases?.length === 0 || action.phrases?.indexOf( res.phraseId ) > -1 )
+                    if ( ( isDev || !action.onlyExecuteInDev ) && ( action.actionType === ActionTypes.List || action.phrases?.indexOf( res.phraseId ) > -1 ) ) {
+
+                        enableLogging && sendInformationToLog( `Execute trigger action [${trigger.name}] : ${ActionTypes[ action.actionType ]}`, 24 );
+                        enableLogging && sendInformationToLog( `    ||${raw}||`, 24 );
+
+                        executeTriggerAction( trigger, action, timestamp, res, deltaTime, simulating );
+                        
+                        logHistoryMgr.addSuccessfulTriggerParsedEvent(
+                            log,
+                            trigger.triggerId,
+                            action.actionId,
+                            trigger.captureMethod === 'Sequential' ? 'Trigger Sequential Action' : 'Trigger Action',
+                            res.renderedPhrase,
+                            trigger.capturePhrases.find( p => p.phraseId === res.phraseId )?.phrase,
+                            res,
+                            trigger._conditionResults,
+                            undefined );
+                    }
                 } );
-                timed && triggerMetrics.record( trigger._stats, process.hrtime.bigint() - timerStart );
-                perfTriggers && perf.record( trigger._perfName ??= `trigger: ${trigger.name}`, perfStart, 10 );
+                entryMatched = true;
+
+                // If the trigger has a cooldown, start the cooldown now.
+                if ( trigger.useCooldown ) {
+                    trigger._onCooldown = true;
+                    trigger._cooldownStart = new Date();
+                }
+                    
+            } catch ( error ) {
+                logHistoryMgr.logError( error, raw, simulating, padTime, ErrorMessages.triggerExecution(), trigger );
             }
             
-        } );
+            } );
+        };
+
+        if ( triggerMetrics.measuring ) {
+            // A measurement times two triggers on each line; the idle path below does no timing work.
+            triggerMetrics.sampleWindow( activeTriggers.length );
+            const timedFirst = triggerMetrics.first;
+            const timedSecond = triggerMetrics.second;
+            activeTriggers.forEach( ( trigger, index ) => {
+                if ( !!trigger.enabled && !trigger._profileDisabled ) {
+                    const perfStart = perfTriggers ? perf.now() : 0;
+                    const timed = index === timedFirst || index === timedSecond;
+                    const timerStart = timed ? process.hrtime.bigint() : 0n;
+                    runTrigger( trigger );
+                    timed && triggerMetrics.record( trigger._stats, process.hrtime.bigint() - timerStart );
+                    perfTriggers && perf.record( trigger._perfName ??= `trigger: ${trigger.name}`, perfStart, 10 );
+                }
+            } );
+        } else {
+            activeTriggers.forEach( trigger => {
+                if ( !!trigger.enabled && !trigger._profileDisabled ) {
+                    const perfStart = perfTriggers ? perf.now() : 0;
+                    runTrigger( trigger );
+                    perfTriggers && perf.record( trigger._perfName ??= `trigger: ${trigger.name}`, perfStart, 10 );
+                }
+            } );
+        }
 
         if ( entryMatched ) {
             let t = timestamp.getTime();
