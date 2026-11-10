@@ -8,6 +8,7 @@ class ZoneTracker {
     /** @type {string | null} */
     #enteredZone = null;
     #enteredAt = 0;
+    #paired = false;
 
     /**
      * Call when the loading screen message is seen. A /who after it needs a new zone-in message to pair with.
@@ -26,6 +27,7 @@ class ZoneTracker {
     entered( zone, now ) {
         this.#enteredZone = this.#clean( zone );
         this.#enteredAt = now;
+        this.#paired = false;
         return { zone: this.#enteredZone };
     }
 
@@ -39,7 +41,8 @@ class ZoneTracker {
     who( zone, now ) {
         const name = this.#clean( zone );
 
-        if ( this.#enteredZone && now - this.#enteredAt < windowMs && this.#enteredZone.toLowerCase() !== name.toLowerCase() ) {
+        if ( this.#enteredZone && !this.#paired && now - this.#enteredAt < windowMs && this.#enteredZone.toLowerCase() !== name.toLowerCase() ) {
+            this.#paired = true;
             return { zone: name, from: this.#enteredZone, to: name };
         }
 

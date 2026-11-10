@@ -506,6 +506,15 @@ test( 'a /who shortly after a zone-in pairs the two names, ignoring the instance
     assert.deepEqual( tracker.who( 'Soandso Keep 3', 9 * minute ), { zone: 'Soandso Keep' } );
 } );
 
+test( 'a zone-in pairs only once, however many /who lines follow', () => {
+    const tracker = new ZoneTracker();
+    tracker.entered( 'Soandso Keep', 0 );
+    assert.equal( tracker.who( 'Soandso Hold', minute ).from, 'Soandso Keep' );
+    assert.deepEqual( tracker.who( 'Soandso Hold', 2 * minute ), { zone: 'Soandso Hold' } );
+    tracker.entered( 'Soandso Keep', 5 * minute );
+    assert.equal( tracker.who( 'Soandso Hold', 6 * minute ).from, 'Soandso Keep' );
+} );
+
 test( 'a /who after the window is ignored', () => {
     const tracker = new ZoneTracker();
     tracker.entered( 'Soandso Keep', 0 );
