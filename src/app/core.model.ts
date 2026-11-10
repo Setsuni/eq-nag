@@ -1745,6 +1745,8 @@ export class ConsoleMessageModel {
     public logId: string;
     public payload: any;
     public present: boolean | undefined = undefined;
+    /** True for messages a player wants in the Activity view. */
+    public activity: boolean | undefined = undefined;
 
 }
 

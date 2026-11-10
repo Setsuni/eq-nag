@@ -3,7 +3,7 @@
         <button mat-button class="view-button" [ngClass]="{'selected': !developer}" (click)="developer = false" matTooltip="Trigger matches and status messages">Activity</button>
         <button mat-button class="view-button" [ngClass]="{'selected': developer}" (click)="developer = true" matTooltip="Everything the app logs, with a command prompt">Developer log</button>
         <button mat-button (click)="clear()">Clear</button>
-        <button mat-button (click)="copyLog()" *ngIf="developer" matTooltip="Copy the developer log to paste into a support request">Copy log</button>
+        <button mat-button (click)="copyLog()" *ngIf="developer" matTooltip="Copy the whole developer log, ignoring the search and filters, to paste into a support request">Copy whole log</button>
         <button mat-button (click)="show = false">Hide</button>
         
         <mat-form-field>

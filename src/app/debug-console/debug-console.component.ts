@@ -30,6 +30,9 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
     }
     public set developer( value: boolean ) {
         this._developer = value;
+        if ( !value ) {
+            this.consoleList?.setParseType( 'successful' );
+        }
         DebugConsoleComponent.store( 'nagConsoleDeveloper', value ? 'true' : 'false' );
     }
     public get showInput(): boolean {
@@ -283,11 +286,11 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
 
     
     /**
-     * Copies the visible developer log to the clipboard.
+     * Copies the whole developer log to the clipboard, whatever the filters.
      */
     public copyLog(): void {
         this.ipcService.sendTextToClipboard( this.consoleList.getCopyText() );
-        this.snackBar.open( 'Developer log copied to clipboard', 'Dismiss', { duration: 3000 } );
+        this.snackBar.open( `Whole developer log copied (${this.consoleList.getCopyCount()} lines)`, 'Dismiss', { duration: 3000 } );
     }
 
 

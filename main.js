@@ -1121,7 +1121,7 @@ const consoleMessage = async ( data ) => {
     if ( typeof data === 'string' ) {
         mainWindow?.webContents.send( 'console:success', { label: 'System Message', message: data, timestamp: new Date() } );
     } else if ( data?.message ) {
-        mainWindow?.webContents.send( 'console:success', { label: data.label ?? 'System Message', message: data.message, payload: data.payload, timestamp: new Date() } );
+        mainWindow?.webContents.send( 'console:success', { label: data.label ?? 'System Message', message: data.message, payload: data.payload, activity: data.activity, timestamp: new Date() } );
     }
  }
 

@@ -56,6 +56,19 @@ const log = ( message, payload ) => {
     } );
 }
 
+/**
+ * Sends to the main thread to log a message that is shown in the Activity view.
+ *
+ * @param {string} message The message to log.
+ */
+const logActivity = message => {
+    nagLog( {
+        label: 'Log Watcher',
+        message: message,
+        activity: true,
+    } );
+}
+
 /** @type {OverlayWindow} */
 var overlays = [];
 /** @type {LogTrigger[]} */
@@ -175,8 +188,8 @@ let parsingLiveLine = false;
 /** True while the live line being parsed is stale (older than staleLineMs): its attention actions are muted. */
 let parsingStaleLine = false;
 const staleTracker = new StaleLineTracker( {
-    onCatchingUp: () => log( `Nag is catching up: alerts for lines older than ${staleLineMs / 1000} s are muted.` ),
-    onCaughtUp: () => log( 'Nag has caught up: alerts are no longer muted.' ),
+    onCatchingUp: () => logActivity( `Nag is catching up: alerts for lines older than ${staleLineMs / 1000} s are muted.` ),
+    onCaughtUp: () => logActivity( 'Nag has caught up: alerts are no longer muted.' ),
 } );
 /** The log file the stale line tracker has learned its clock offset for. */
 let staleTrackerLogPath = null;
@@ -1239,7 +1252,7 @@ function logTriggerGate() {
     if ( triggerGate && ( triggerGate.openCount !== triggerGateLoggedCount || triggerGateZoneChanged ) ) {
         triggerGateLoggedCount = triggerGate.openCount;
         triggerGateZoneChanged = false;
-        log( `Triggers active in this zone: ${triggerGate.openCount} of ${activeTriggers.length}` );
+        logActivity( `Triggers active in this zone: ${triggerGate.openCount} of ${activeTriggers.length}` );
     }
 }
 
