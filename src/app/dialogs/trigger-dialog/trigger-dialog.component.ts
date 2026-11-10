@@ -29,6 +29,13 @@ export class TriggerDialogComponent implements OnInit {
     public actionTypes: typeof ActionTypes = ActionTypes;
     public operatorTypes: typeof OperatorTypes = OperatorTypes;
     public isDev: boolean = false;
+    public tabIndex: number = 0;
+    private _baseline: string = null;
+    private _docsUrl: string = 'https://guildantix.github.io/eq-nag/triggers/';
+    private _docsPages: string[] = [ 'capture-phrases/', 'actions/', 'triggers-101/' ];
+    public get helpUrl(): string {
+        return this._docsUrl + this._docsPages[ this.tabIndex ];
+    }
     private _fullName: string = '';
     public get fullName(): string {
         return this._fullName;
@@ -93,8 +100,11 @@ export class TriggerDialogComponent implements OnInit {
             if ( this.triggerId != null ) {
                 this.ipcService.getTrigger( this.triggerId ).subscribe( trigger => {
                     this.model = trigger;
+                    this.captureBaseline();
                 } );
                 this.ipcService.getTriggerFullName( this.triggerId ).subscribe( fullName => this.fullName = fullName );
+            } else {
+                this.captureBaseline();
             }
 
             // In a real app: dispatch action to load the details here.
@@ -107,8 +117,37 @@ export class TriggerDialogComponent implements OnInit {
         this.ipcService.closeThisChild();
     }
 
+    /** Records the model as it looks once the editor has finished rendering it. */
+    private captureBaseline(): void {
+        window.setTimeout( () => this._baseline = JSON.stringify( this.model ) );
+    }
+
+    public get hasUnsavedChanges(): boolean {
+        return this._baseline != null && JSON.stringify( this.model ) !== this._baseline;
+    }
+
+    /** Closes the editor, asking first when there are unsaved changes. */
+    public requestClose(): void {
+        if ( !this.hasUnsavedChanges ) {
+            this.closeModal();
+            return;
+        }
+        this.dialogService
+            .showConfirmationDialog(
+                'Close without saving?',
+                'Click "Discard" to close the editor and lose your changes.',
+                'Click "Keep editing" to go back to the editor.',
+                null, 'normal', null,
+                { Yes: 'Discard', No: 'Keep editing' } )
+            .subscribe( discard => {
+                if ( discard ) {
+                    this.closeModal();
+                }
+            } );
+    }
+
     public onChangeTabs( index: number ): void {
-        
+        this.tabIndex = index;
     }
 
     public save(): Observable<boolean> {
@@ -172,11 +211,15 @@ export class TriggerDialogComponent implements OnInit {
                 this.ipcService.createNewTrigger( this.model ).subscribe( triggerId => {
                     this.triggerId = triggerId;
                     this.model.triggerId = triggerId;
+                    this._baseline = JSON.stringify( this.model );
                     observer.next( true );
                     observer.complete();
                 } );
             } else {
                 this.ipcService.updateTrigger( this.model ).subscribe( success => {
+                    if ( success ) {
+                        this._baseline = JSON.stringify( this.model );
+                    }
                     observer.next( success );
                     observer.complete();
                 } );

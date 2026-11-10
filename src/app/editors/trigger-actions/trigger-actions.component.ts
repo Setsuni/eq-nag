@@ -93,10 +93,30 @@ export class TriggerActionsComponent implements OnInit {
 
     
     /**
-     * Adds a new empty action.
+     * Returns true if the trigger has a single capture phrase and the given
+     * action runs for it, so there is nothing to choose.
+     * 
+     * @param action The action to check.
+     */
+    public runsForAnyPhrase( action: TriggerAction ): boolean {
+        return this.capturePhrases?.length === 1 && action.phrases?.includes( this.capturePhrases[ 0 ].phraseId ) === true;
+    }
+
+
+
+
+
+
+
+
+
+    /**
+     * Adds a new action that runs for every current capture phrase.
      */
     public addNewAction(): void {
-        this.actions.push( new TriggerAction() );
+        const action = new TriggerAction();
+        action.phrases = this.capturePhrases?.map( f => f.phraseId ) ?? [];
+        this.actions.push( action );
         this.actionsChange.emit( this.actions );
     }
 

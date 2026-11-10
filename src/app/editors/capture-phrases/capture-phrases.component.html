@@ -4,14 +4,12 @@
     <div class="options-container">
 
         <div>
-            <mat-form-field style="width: 200px;">
-                <mat-label></mat-label>
+            <mat-form-field style="width: 200px;" floatLabel="always">
+                <mat-label>Match mode</mat-label>
                 <mat-select [(ngModel)]="captureMethod" name="ddlCaptureMethod" (ngModelChange)="captureMethodChange.emit(captureMethod)">
                     <mat-option value="Any match" matTooltip="Execute this trigger if any phrase matches a single log entry" matTooltipPosition="right">Any match</mat-option>
                     <mat-option value="Sequential" matTooltip="Execute this trigger if all phrases match sequentially across multiple log entries" matTooltipPosition="right">Sequential</mat-option>
-                    <mat-option value="Concurrent" disabled matTooltip="Execute this trigger if all phrases match in a single log entry" matTooltipPosition="right">Concurrent</mat-option>
                 </mat-select>
-                <mat-hint>Capture Method</mat-hint>
             </mat-form-field>
         </div>
         <div class="spacer"></div>
@@ -70,7 +68,7 @@
 
                     <div class="regex-highlight-inline" *ngIf="overlayOpenIndex === i" [innerHTML]="highlightedPhrases[i]"></div>
                     <mat-hint style="display: flex; justify-content: space-between; align-items: center;">
-                        <span>Capture Phrase</span>
+                        <span>Text to match</span>
                         <span *ngIf="element.useRegEx"
                             class="toggle-icon"
                             (click)="toggleOverlay(i)"

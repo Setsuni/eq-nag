@@ -5,22 +5,20 @@
 
             <div class="card-property">
                 <div class="full-width content-middle">
-                    <mat-form-field>
-                        <mat-label></mat-label>
+                    <mat-form-field floatLabel="always">
+                        <mat-label>Display Text</mat-label>
                         <input matInput [(ngModel)]="action.displayText" name="txtDisplayText" />
-                        <mat-hint>Display Text</mat-hint>
                     </mat-form-field>
                 </div>
             </div>
 
             <div class="card-property">
                 <div class="content-middle">
-                    <mat-form-field>
-                        <mat-label></mat-label>
+                    <mat-form-field floatLabel="always">
+                        <mat-label>Overlay Window</mat-label>
                         <mat-select [(ngModel)]="action.overlayId" name="ddlLogOverlay">
                             <mat-option *ngFor="let option of overlayOptions" [value]="option.overlayId">{{option.name}}</mat-option>
                         </mat-select>
-                        <mat-hint>Overlay Window</mat-hint>
                     </mat-form-field>
                 </div>
                 <div class="content-middle"><app-duration [(ngModel)]="action.duration" name="durActionDuration"></app-duration></div>
@@ -59,8 +57,8 @@
             <div class="card-property">
                 <div class="content-middle"><mat-checkbox [(ngModel)]="action.textUseCustomFont" name="cbxUseCustomFont">Custom font</mat-checkbox></div>
                 <div class="content-middle content-right">
-                    <mat-form-field *ngIf="action.textUseCustomFont">
-                        <mat-label></mat-label>
+                    <mat-form-field *ngIf="action.textUseCustomFont" floatLabel="always">
+                        <mat-label>Font</mat-label>
                         <mat-select class="font-ddl" [(ngModel)]="action.textFont" name="ddlFontFamily" disableOptionCentering style="max-width: unset;" (selectionChange)="onChangeFontFamily()">
                             <mat-option class="font-option" value="Roboto" style="font-family: Roboto, sans-serif; font-size: 16px;"><small>Roboto</small></mat-option>
                             <mat-option class="font-option" value="Red Rose" style="font-family: 'Red Rose', sans-serif; font-size: 16px;"><small>Red Rose</small></mat-option>
@@ -70,7 +68,6 @@
                             <mat-option class="font-option" value="Ranchers" style="font-family: Ranchers, sans-serif; font-size: 16px;"><small>Ranchers</small></mat-option>
                             <mat-option class="font-option" value="Press Start 2P" style="font-family: 'Press Start 2P', sans-serif; font-size: 14px;"><small>Press Start 2P</small></mat-option>
                         </mat-select>
-                        <mat-hint>Font</mat-hint>
                     </mat-form-field>
                     <mat-slider thumbLabel tickInterval="1" step="1" min="0" [max]="maxFontWeightIndex" style="width: 100%;" [(ngModel)]="fontWeightIndex" name="sldrFontWeight" (change)="onFontWeightChange()" *ngIf="action.textUseCustomFont"></mat-slider>
                 </div>

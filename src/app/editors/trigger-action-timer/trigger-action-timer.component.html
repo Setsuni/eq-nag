@@ -5,19 +5,17 @@
 
             <div class="card-property">
                 <div>
-                    <mat-form-field style="width: 100%;">
-                        <mat-label></mat-label>
+                    <mat-form-field style="width: 100%;" floatLabel="always">
+                        <mat-label>Overlay Window</mat-label>
                         <mat-select [(ngModel)]="action.overlayId" name="ddlDotTimerOverlay">
                             <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                         </mat-select>
-                        <mat-hint>Overlay Window</mat-hint>
                     </mat-form-field>
                 </div>
                 <div>
-                    <mat-form-field style="width: 100%;">
-                        <mat-label></mat-label>
+                    <mat-form-field style="width: 100%;" floatLabel="always">
+                        <mat-label>Timer name</mat-label>
                         <input matInput [(ngModel)]="action.displayText" name="txtDisplayText" />
-                        <mat-hint>Timer name</mat-hint>
                     </mat-form-field>
                 </div>
             </div>
@@ -39,15 +37,14 @@
             <div class="card-property">
                 <div class="content-middle">When triggered again, how do you want the timer to behave?</div>
                 <div>
-                    <mat-form-field style="width: 100%;">
-                        <mat-label></mat-label>
+                    <mat-form-field style="width: 100%;" floatLabel="always">
+                        <mat-label>Restart behavior</mat-label>
                         <mat-select [(ngModel)]="action.restartBehavior" name="rdoRestartBehavior_{{action.actionId}}">
                             <mat-option [value]="timerRestartBehaviors.StartNewTimer">Always start new timer</mat-option>
                             <mat-option [value]="timerRestartBehaviors.RestartOnDuplicate">Restart only if the name matches</mat-option>
                             <mat-option [value]="timerRestartBehaviors.RestartTimer">Restart timer regardless of the name</mat-option>
                             <mat-option [value]="timerRestartBehaviors.DoNothing">Do nothing and ignore trigger</mat-option>
                         </mat-select>
-                        <mat-hint>Restart behavior</mat-hint>
                     </mat-form-field>
                 </div>
             </div>
@@ -60,10 +57,9 @@
             <div class="card-property">
                 <div class="content-middle"><mat-checkbox [(ngModel)]="action.repeatTimer" name="cbxRepeatTimer">Repeat timer</mat-checkbox></div>
                 <div class="content-middle content-right">
-                    <mat-form-field *ngIf="action.repeatTimer">
-                        <mat-label></mat-label>
+                    <mat-form-field *ngIf="action.repeatTimer" floatLabel="always">
+                        <mat-label>Leave blank to repeat indefinitely</mat-label>
                         <input matInput type="number" [(ngModel)]="action.repeatCount" name="txtRepeatCount" />
-                        <mat-hint>Leave blank to repeat indefinitely</mat-hint>
                     </mat-form-field>
                 </div>
             </div>
@@ -171,18 +167,16 @@
                 <div class="content-top"><mat-checkbox [(ngModel)]="action.endingSoonDisplayText" name="cbxEndingSoonDisplayText" *ngIf="action.endingDuration > 0">Display text</mat-checkbox></div>
 
                 <div class="content-vertical content-right">
-                    <mat-form-field *ngIf="action.endingSoonDisplayText">
-                        <mat-label></mat-label>
+                    <mat-form-field *ngIf="action.endingSoonDisplayText" floatLabel="always">
+                        <mat-label>Display Text</mat-label>
                         <input matInput [(ngModel)]="action.endingSoonText" name="txtEndingSoonText" placeholder="Enter the text to display" />
-                        <mat-hint>Display Text</mat-hint>
                     </mat-form-field>
 
-                    <mat-form-field *ngIf="action.endingSoonDisplayText">
-                        <mat-label></mat-label>
+                    <mat-form-field *ngIf="action.endingSoonDisplayText" floatLabel="always">
+                        <mat-label>Overlay Window</mat-label>
                         <mat-select [(ngModel)]="action.endingSoonTextOverlayId" name="ddlEndingSoonTextOverlayId">
                             <mat-option *ngFor="let option of alertOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                         </mat-select>
-                        <mat-hint>Overlay Window</mat-hint>
                     </mat-form-field>
 
                     <app-duration [(ngModel)]="action.endingSoonTextDuration" name="durEndingSoonTextDuration" *ngIf="action.endingSoonDisplayText"></app-duration>
@@ -196,10 +190,9 @@
                 <div class="content-top"><mat-checkbox [(ngModel)]="action.endingSoonSpeak" name="cbxEndingSoonSpeak" *ngIf="action.endingDuration > 0">Speak phrase</mat-checkbox></div>
 
                 <div class="content-vertical content-right">
-                    <mat-form-field *ngIf="action.endingSoonSpeak">
-                        <mat-label></mat-label>
+                    <mat-form-field *ngIf="action.endingSoonSpeak" floatLabel="always">
+                        <mat-label>Phrase</mat-label>
                         <input matInput [(ngModel)]="action.endingSoonSpeakPhrase" name="txtEndingSoonSpeakPhrase" placeholder="Enter text to speak." />
-                        <mat-hint>Phrase</mat-hint>
                     </mat-form-field>
                     <mat-checkbox class="align-left head-room" [(ngModel)]="action.endingSoonInterruptSpeech" name="cbxEndingSoonInterruptSpeech" *ngIf="action.endingSoonSpeak" title="If the TTS engine is currently speaking, that speech will be interrupted when this trigger action executes.">Interrupt speech</mat-checkbox>
                 </div>
@@ -212,10 +205,9 @@
                 <div class="content-middle"><mat-checkbox [(ngModel)]="action.endingClipboard" name="cbxEndingClipboard">Send text to clipboard</mat-checkbox></div>
 
                 <div class="content-right">
-                    <mat-form-field class="fill-width" *ngIf="action.endingClipboard">
-                        <mat-label></mat-label>
+                    <mat-form-field class="fill-width" *ngIf="action.endingClipboard" floatLabel="always">
+                        <mat-label>Clipboard text</mat-label>
                         <input matInput [(ngModel)]="action.endingClipboardText" name="txtEndingClipboardText" placeholder="Enter text to copy." />
-                        <mat-hint>Clipboard text</mat-hint>
                     </mat-form-field>
                 </div>
                 
@@ -231,12 +223,11 @@
                     <p class="align-content-left">Select an audio file from the list or upload a new file.</p>
 
                     <div class="align-content-justify">
-                        <mat-form-field>
-                            <mat-label></mat-label>
+                        <mat-form-field floatLabel="always">
+                            <mat-label>Saved audio clips</mat-label>
                             <mat-select [(ngModel)]="action.endingPlayAudioFileId" name="ddlEndingPlayAudioFileId">
                                 <mat-option *ngFor="let option of audioFiles" [value]="option.fileId">{{option.fileName}}</mat-option>
                             </mat-select>
-                            <mat-hint>Saved audio clips</mat-hint>
                         </mat-form-field>
 
                         <div class="self-center"><button mat-icon-button *ngIf="action.endingPlayAudioFileId != null" (click)="playAudioFile(action.endingPlayAudioFileId)"><mat-icon>play_circle_outline</mat-icon></button></div>
@@ -316,18 +307,16 @@
 
                 <div class="content-vertical content-right">
 
-                    <mat-form-field *ngIf="action.endedDisplayText">
-                        <mat-label></mat-label>
+                    <mat-form-field *ngIf="action.endedDisplayText" floatLabel="always">
+                        <mat-label>Display Text</mat-label>
                         <input matInput [(ngModel)]="action.endedText" name="txtEndedText" placeholder="Enter the text to display" />
-                        <mat-hint>Display Text</mat-hint>
                     </mat-form-field>
 
-                    <mat-form-field *ngIf="action.endedDisplayText">
-                        <mat-label></mat-label>
+                    <mat-form-field *ngIf="action.endedDisplayText" floatLabel="always">
+                        <mat-label>Overlay Window</mat-label>
                         <mat-select [(ngModel)]="action.endedTextOverlayId" name="ddlEndedTextOverlayId">
                             <mat-option *ngFor="let option of alertOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
                         </mat-select>
-                        <mat-hint>Overlay Window</mat-hint>
                     </mat-form-field>
 
                     <app-duration [(ngModel)]="action.endedTextDuration" name="durEndedTextDuration" *ngIf="action.endedDisplayText"></app-duration>
@@ -342,10 +331,9 @@
                 <div class="content-top"><mat-checkbox [(ngModel)]="action.endedSpeak" name="cbxEndedSpeak">Speak phrase</mat-checkbox></div>
 
                 <div class="content-vertical content-right">
-                    <mat-form-field *ngIf="action.endedSpeak">
-                        <mat-label></mat-label>
+                    <mat-form-field *ngIf="action.endedSpeak" floatLabel="always">
+                        <mat-label>Phrase</mat-label>
                         <input matInput [(ngModel)]="action.endedSpeakPhrase" name="txtEndedSpeakPhrase" placeholder="Enter text to speak." />
-                        <mat-hint>Phrase</mat-hint>
                     </mat-form-field>
                     <mat-checkbox class="align-left head-room" [(ngModel)]="action.endedInterruptSpeech" name="cbxEndedInterruptSpeech" *ngIf="action.endedSpeak" title="If the TTS engine is currently speaking, that speech will be interrupted when this trigger action executes.">Interrupt speech</mat-checkbox>
                 </div>
@@ -358,10 +346,9 @@
                 <div class="content-middle"><mat-checkbox [(ngModel)]="action.endedClipboard" name="cbxEndedClipboard">Send text to clipboard</mat-checkbox></div>
 
                 <div class="content-right">
-                    <mat-form-field class="fill-width" *ngIf="action.endedClipboard">
-                        <mat-label></mat-label>
+                    <mat-form-field class="fill-width" *ngIf="action.endedClipboard" floatLabel="always">
+                        <mat-label>Clipboard text</mat-label>
                         <input matInput [(ngModel)]="action.endedClipboardText" name="txtEndedClipboardText" placeholder="Enter text to copy." />
-                        <mat-hint>Clipboard text</mat-hint>
                     </mat-form-field>
                 </div>
                 
@@ -377,12 +364,11 @@
                     <p class="align-content-left">Select an audio file from the list or upload a new file.</p>
 
                     <div class="align-content-justify">
-                        <mat-form-field>
-                            <mat-label></mat-label>
+                        <mat-form-field floatLabel="always">
+                            <mat-label>Saved audio clips</mat-label>
                             <mat-select [(ngModel)]="action.endedPlayAudioFileId" name="ddlEndedPlayAudioFileId">
                                 <mat-option *ngFor="let option of audioFiles" [value]="option.fileId">{{option.fileName}}</mat-option>
                             </mat-select>
-                            <mat-hint>Saved audio clips</mat-hint>
                         </mat-form-field>
 
                         <div class="self-center"><button mat-icon-button *ngIf="action.endedPlayAudioFileId != null" (click)="playAudioFile(action.endedPlayAudioFileId)"><mat-icon>play_circle_outline</mat-icon></button></div>
