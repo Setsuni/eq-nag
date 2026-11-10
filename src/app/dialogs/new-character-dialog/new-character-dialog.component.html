@@ -2,8 +2,8 @@
 
 <mat-dialog-content>
 
-    <p class="loading" *ngIf="panel === 'missingInstallFolder'"><mat-spinner></mat-spinner><span>Searching for EverQuest folder.</span></p>
-    <p *ngIf="eqFolder === null">
+    <p class="loading" *ngIf="eqFolder === undefined"><mat-spinner></mat-spinner><span>Searching for EverQuest folder.</span></p>
+    <p *ngIf="eqFolder == null && panel === 'missingInstallFolder'">
         <span>Could not locate your EverQuest folder.  Please select your character's log file.</span>
         <br />
         <button mat-button color="accent" (click)="showFileSelector()">Select Log File</button>
