@@ -24,3 +24,7 @@ mat-option {
         text-transform: capitalize;
     }
 }
+
+p mat-form-field:nth-of-type( odd ) {
+    margin-right: 16px;
+}

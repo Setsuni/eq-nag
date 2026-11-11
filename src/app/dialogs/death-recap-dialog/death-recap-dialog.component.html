@@ -7,14 +7,14 @@
                 <p>Please select the server of the character.</p>
 
                 <p>
-                    <mat-form-field style="width: 50%;">
+                    <mat-form-field style="width: calc( 50% - 10px );">
                         <mat-label>Server</mat-label>
                         <mat-select (selectionChange)="selectServerModel($event)">
                             <mat-option *ngFor="let server of serverOptions" [value]="server">{{server.server}}</mat-option>
                         </mat-select>
                     </mat-form-field>
                     
-                    <mat-form-field style="width: 50%;">
+                    <mat-form-field style="width: calc( 50% - 10px );">
                         <mat-label>Character</mat-label>
                         <mat-select (selectionChange)="selectModel($event)" [disabled]="server == null">
                             <mat-option *ngFor="let chr of server?.options" [value]="chr">{{chr.name}}</mat-option>
