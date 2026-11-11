@@ -1,5 +1,5 @@
 <div class="map-wrap" *ngIf="displays.length > 0">
-    <div #mapArea class="map-area" [style.aspect-ratio]="space.width + ' / ' + space.height" [style.max-width.px]="ratio * 240">
+    <div #mapArea class="map-area" [style.aspect-ratio]="space.width + ' / ' + space.height" [style.max-width]="'calc( var( --map-max-height, 420px ) * ' + ratio + ' )'">
         <div class="monitor" *ngFor="let display of displays" [class.label-inside]="labelInside( display )"
             [style.left.%]="( display.bounds.x - space.x ) / space.width * 100"
             [style.top.%]="( display.bounds.y - space.y ) / space.height * 100"
@@ -24,8 +24,8 @@
         </div>
     </div>
     <div class="legend">
-        <span><i class="swatch type-timer"></i> Timer</span>
-        <span><i class="swatch type-text"></i> Text</span>
-        <span><i class="swatch type-fct"></i> Floating combat text</span>
+        <span *ngIf="hasType( 'type-timer' )"><i class="swatch type-timer"></i> Timer</span>
+        <span *ngIf="hasType( 'type-text' )"><i class="swatch type-text"></i> Text</span>
+        <span *ngIf="hasType( 'type-fct' )"><i class="swatch type-fct"></i> Floating combat text</span>
     </div>
 </div>

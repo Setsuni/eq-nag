@@ -15,14 +15,14 @@
             <p>Please select the server of the character you are adding.</p>
 
             <p>
-                <mat-form-field floatLabel="always" style="width: 50%;">
+                <mat-form-field floatLabel="always" style="width: calc( 50% - 10px );">
                     <mat-label>Server</mat-label>
                     <mat-select (selectionChange)="selectServerModel($event)">
                         <mat-option *ngFor="let server of serverOptions" [value]="server">{{server.server}}</mat-option>
                     </mat-select>
                 </mat-form-field>
                 
-                <mat-form-field floatLabel="always" style="width: 50%;">
+                <mat-form-field floatLabel="always" style="width: calc( 50% - 10px );">
                     <mat-label>Character</mat-label>
                     <mat-select (selectionChange)="selectModel($event, false, false)" [disabled]="server == null">
                         <mat-option *ngFor="let chr of server?.options" [value]="chr" [disabled]="chr.characterId?.length > 0">{{chr.name}} <small *ngIf="chr.characterId?.length > 0">Added</small></mat-option>
@@ -36,19 +36,14 @@
         </ng-template>
         <ng-template [ngIf]="panel === 'modelReview'">
 
-            <p></p>
+            <h3 class="details-title">Character details</h3>
 
-            <fieldset class="trigger-property-group">
-                <legend>Character Information</legend>
-                
-                <div class="field-list">
-                    <div class="field-line"><label>Character Name</label><span>{{model.name}}</span></div>
-                    <div class="field-line"><label>Service</label><span *ngIf="model.p99">P1999</span><span *ngIf="model.daybreak">Daybreak</span><span *ngIf="model.takp">TAKP</span><span *ngIf="model.thj">THJ</span></div>
-                    <div class="field-line"><label>Server</label><span style="text-transform: capitalize;">{{model.server}}</span></div>
-                    <div class="field-line"><label>Log file</label><span>{{model.logFile}}</span></div>
-                </div>
-
-            </fieldset>
+            <div class="details">
+                <div class="detail-row"><span class="detail-label">Character name</span><span class="detail-value">{{model.name}}</span></div>
+                <div class="detail-row"><span class="detail-label">Service</span><span class="detail-value"><ng-container *ngIf="model.p99">P1999</ng-container><ng-container *ngIf="model.daybreak">Daybreak</ng-container><ng-container *ngIf="model.takp">TAKP</ng-container><ng-container *ngIf="model.thj">THJ</ng-container></span></div>
+                <div class="detail-row"><span class="detail-label">Server</span><span class="detail-value" style="text-transform: capitalize;">{{model.server}}</span></div>
+                <div class="detail-row"><span class="detail-label">Log file</span><span class="detail-value">{{model.logFile}}</span></div>
+            </div>
 
         </ng-template>
         <ng-template [ngIf]="panel === 'manualInput'">
@@ -56,12 +51,12 @@
             <p>Unrecognized log file definition.  Please enter your character details below.</p>
 
             <p>
-                <mat-form-field floatLabel="always" style="width: 50%;">
+                <mat-form-field floatLabel="always" style="width: calc( 50% - 10px );">
                     <mat-label>Character name</mat-label>
                     <input matInput [(ngModel)]="model.name" name="manualName" />
                 </mat-form-field>
 
-                <mat-form-field floatLabel="always" style="width: 50%;">
+                <mat-form-field floatLabel="always" style="width: calc( 50% - 10px );">
                     <mat-label>Service</mat-label>
                     <mat-select [(ngModel)]="selectedService" name="manualService">
                         <mat-option value="p99">P1999</mat-option>
@@ -72,7 +67,7 @@
                     </mat-select>
                 </mat-form-field>
 
-                <mat-form-field floatLabel="always" style="width: 50%;">
+                <mat-form-field floatLabel="always" style="width: calc( 50% - 10px );">
                     <mat-label>Server</mat-label>
                     <input matInput [(ngModel)]="model.server" name="manualServer" />
                 </mat-form-field>

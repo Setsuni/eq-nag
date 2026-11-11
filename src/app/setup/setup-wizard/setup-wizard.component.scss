@@ -1,5 +1,6 @@
 mat-dialog-content.setup-wizard {
-    min-height: 420px;
+    height: 460px;
+    overflow-y: auto;
 }
 
 mat-dialog-actions {
@@ -116,6 +117,7 @@ h3 {
 }
 
 .overlay-map {
+    --map-max-height: 220px;
     display: block;
     margin-bottom: 8px;
 }

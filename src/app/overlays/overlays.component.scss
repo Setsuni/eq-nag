@@ -17,7 +17,7 @@
     min-width: 0;
 
     @media (min-width: 1200px) {
-        flex: 0 0 min(46%, 640px);
+        flex: 0 0 min(52%, 720px);
     }
 }
 
@@ -64,7 +64,7 @@ div.tab-content {
     left: 0;
     right: 0;
     bottom: var(--nag-console-height, 24px);
-    top: 176px;
+    top: 153px;
     padding: 16px;
 
     > fieldset:not(:first-child) {
