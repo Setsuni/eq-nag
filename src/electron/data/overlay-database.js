@@ -757,11 +757,11 @@ class OverlayDatabaseStore extends Store {
                 const displays = screen.getAllDisplays();
                 const display = displays.find( f => f.id === overlay.displayId ) ?? screen.getPrimaryDisplay();
 
-                if ( ( !overlay.x && !overlay.y ) || overlay.x < display.bounds.x || overlay.x > display.bounds.x + display.bounds.width || overlay.y < display.bounds.y || overlay.y > display.bounds.y + display.bounds.height ) {
+                if ( ( !overlay.x && !overlay.y ) || overlay.x < 0 || overlay.x > display.bounds.width || overlay.y < 0 || overlay.y > display.bounds.height ) {
                     // If the overlay bounds are offscreen, then center it on the primary display.
                     // New overlays should be centered on the selected/primary display.
-                    overlay.x = display.bounds.x + ( display.bounds.width - overlay.windowWidth ) / 2;
-                    overlay.y = display.bounds.y + ( display.bounds.height - overlay.windowHeight ) / 2;
+                    overlay.x = ( display.bounds.width - overlay.windowWidth ) / 2;
+                    overlay.y = ( display.bounds.height - overlay.windowHeight ) / 2;
                 }
                 
                 overlay.displayId = display.id;
