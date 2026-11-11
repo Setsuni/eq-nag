@@ -205,6 +205,23 @@ legend.full-width {
     }
 }
 
+.editor-page ::ng-deep fieldset {
+    margin-bottom: 16px;
+    padding-top: 0 !important;
+    background-color: transparent !important;
+
+    legend {
+        position: static;
+        padding: 0 0 8px;
+        background-color: transparent;
+
+        > button {
+            top: -4px;
+            right: 0;
+        }
+    }
+}
+
 .editor-page ::ng-deep fieldset legend {
     span.title {
         font-size: 15px !important;

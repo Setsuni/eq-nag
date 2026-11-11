@@ -135,7 +135,7 @@
                             tabindex="0"
                             aria-label="Toggle regex highlight overlay"
                             [attr.aria-pressed]="overlayOpenIndex === i">
-                            Regex Visualizer
+                            {{ overlayOpenIndex === i ? 'Hide pattern diagram' : 'Show pattern diagram' }}
                             <mat-icon>{{ overlayOpenIndex === i ? 'expand_less' : 'expand_more' }}</mat-icon>
                         </span>
                     </mat-hint>
