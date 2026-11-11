@@ -1,24 +1,29 @@
-<!-- [ngClass]="{'duration-inline': inline, 'duration-stretch': !inline}" -->
 <div class="duration-wrapper">
     <div class="time-element">
-        <input type="number" [(ngModel)]="hours" [disabled]="disabled" (change)="valueChanged($event)" />
+        <input type="number" [(ngModel)]="hours" [disabled]="disabled" (change)="valueChanged($event)" aria-label="Hours" />
         <span>Hrs</span>
-        <button mat-icon-button class="spinner spinner-top" (click)="hours = add(hours)"><mat-icon [inline]="true">add</mat-icon></button>
-        <button mat-icon-button class="spinner spinner-btm" (click)="hours = subtract(hours)" [disabled]="hours == null"><mat-icon [inline]="true">remove</mat-icon></button>
+        <div class="spinners">
+            <button mat-icon-button type="button" class="spinner" (click)="hours = add(hours)" [disabled]="disabled" aria-label="More hours"><mat-icon [inline]="true">add</mat-icon></button>
+            <button mat-icon-button type="button" class="spinner" (click)="hours = subtract(hours)" [disabled]="hours == null || disabled" aria-label="Fewer hours"><mat-icon [inline]="true">remove</mat-icon></button>
+        </div>
     </div>
 
     <div class="time-element">
-        <input type="number" [(ngModel)]="minutes" [disabled]="disabled" (change)="valueChanged($event)" style="margin-right: 18px;" />
+        <input type="number" [(ngModel)]="minutes" [disabled]="disabled" (change)="valueChanged($event)" aria-label="Minutes" />
         <span>Mins</span>
-        <button mat-icon-button class="spinner spinner-top" (click)="minutes = add(minutes)"><mat-icon [inline]="true">add</mat-icon></button>
-        <button mat-icon-button class="spinner spinner-btm" (click)="minutes = subtract(minutes)" [disabled]="minutes == null"><mat-icon [inline]="true">remove</mat-icon></button>
+        <div class="spinners">
+            <button mat-icon-button type="button" class="spinner" (click)="minutes = add(minutes)" [disabled]="disabled" aria-label="More minutes"><mat-icon [inline]="true">add</mat-icon></button>
+            <button mat-icon-button type="button" class="spinner" (click)="minutes = subtract(minutes)" [disabled]="minutes == null || disabled" aria-label="Fewer minutes"><mat-icon [inline]="true">remove</mat-icon></button>
+        </div>
     </div>
-    
+
     <div class="time-element">
-        <input type="number" [(ngModel)]="seconds" [disabled]="disabled" (change)="valueChanged($event)" />
+        <input type="number" [(ngModel)]="seconds" [disabled]="disabled" (change)="valueChanged($event)" aria-label="Seconds" />
         <span>Sec</span>
-        <button mat-icon-button class="spinner spinner-top" (click)="seconds = add(seconds)"><mat-icon [inline]="true">add</mat-icon></button>
-        <button mat-icon-button class="spinner spinner-btm" (click)="seconds = subtract(seconds)" [disabled]="seconds == null"><mat-icon [inline]="true">remove</mat-icon></button>
+        <div class="spinners">
+            <button mat-icon-button type="button" class="spinner" (click)="seconds = add(seconds)" [disabled]="disabled" aria-label="More seconds"><mat-icon [inline]="true">add</mat-icon></button>
+            <button mat-icon-button type="button" class="spinner" (click)="seconds = subtract(seconds)" [disabled]="seconds == null || disabled" aria-label="Fewer seconds"><mat-icon [inline]="true">remove</mat-icon></button>
+        </div>
     </div>
 
 </div>
