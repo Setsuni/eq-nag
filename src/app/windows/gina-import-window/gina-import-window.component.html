@@ -16,7 +16,6 @@
             </div>
             <div *ngIf="loadFailed" class="load-failed">
                 <p>Nag couldn't read your GINA triggers.</p>
-                <button mat-flat-button color="primary" type="button" (click)="closeModal()">Close</button>
             </div>
             <div class="tab-content" *ngIf="!loadingGinaConfig && !loadFailed" #scrollingElement>
 
@@ -329,12 +328,12 @@
         </form>
     </section>
     <footer>
-        <button mat-stroked-button (click)="closeModal()">Cancel</button>
+        <button mat-stroked-button (click)="closeModal()">{{ loadFailed ? 'Close' : 'Cancel' }}</button>
         <ng-container *ngIf="!loadingGinaConfig && !loadFailed">
             <button mat-flat-button color="primary" *ngIf="hasMultipleSelected && !startReview" (click)="startReviews()">Import selected</button>
             <button mat-flat-button color="primary" *ngIf="!hasMultipleSelected && selectedPhoneticTransform != null" (click)="importPhoneticTransform(selectedPhoneticTransform)">Import selected</button>
             <button mat-flat-button color="primary" *ngIf="!hasMultipleSelected && selectedTrigger != null && nTrigger == null" (click)="createTriggerModel()">Import selected</button>
-            <button mat-flat-button color="primary" *ngIf="!hasMultipleSelected && nTrigger != null" (click)="importTrigger()">Import</button>
+            <button mat-flat-button color="primary" *ngIf="!hasMultipleSelected && nTrigger != null" (click)="importTrigger()">Import selected</button>
         </ng-container>
     </footer>
 </div>

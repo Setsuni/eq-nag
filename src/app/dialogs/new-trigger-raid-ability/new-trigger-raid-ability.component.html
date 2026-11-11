@@ -1,16 +1,14 @@
-<h2 mat-dialog-title>Raid ability tracker (Allakhazam)</h2>
+<h2 mat-dialog-title>Raid ability timer</h2>
 
 <mat-dialog-content>
     
     <p *ngIf="data?.trigger?.triggerId != null">WARNING: This may overwrite any custom setting you have applied to this trigger.  Are you sure you want to continue?</p>
 
     <p *ngIf="getUrl">
-        <mat-form-field style="width: 100%;">
+        <mat-form-field floatLabel="always" style="width: 100%;">
             <mat-label>Allakhazam URL</mat-label>
             <input matInput type="text" [(ngModel)]="url" />
         </mat-form-field>
-
-        <button mat-stroked-button (click)="scrape()" class="t-confirm-yes">Scrape Information</button>
     </p>
     <div *ngIf="getRecastInfo">
         <ng-template [ngIf]="this.ability?.npcsWithAbility?.length > 1" [ngIfElse]="singleRecast">
@@ -30,8 +28,6 @@
             <p>Enter the recast timer for this ability.</p>
             <app-duration [(ngModel)]="recastDelay" name="durSingleRecastDelay"></app-duration>
         </ng-template>
-        
-        <button mat-flat-button (click)="nextStep()" class="t-confirm-yes" color="primary">Next</button>
     </div>
     <div *ngIf="getIsDeathTouch">
         <p>Is this a death touch ability?</p>
@@ -42,7 +38,6 @@
         <p><mat-slide-toggle [(ngModel)]="deathTouchDispellable" name="togDtDispellable">Dispellable</mat-slide-toggle></p>
         <p>How long does the player have?</p>
         <app-duration [(ngModel)]="deathTouchDuration" name="durDeathTouchDuration"></app-duration>
-        <button mat-flat-button (click)="nextStep()" class="t-confirm-yes" color="primary">Next</button>
     </div>
     <div *ngIf="getNotificationInfo">
         <p><mat-slide-toggle [(ngModel)]="recastNotify" name="togRecastNotify">Notify when recast is imminent?</mat-slide-toggle></p>
@@ -59,20 +54,18 @@
             <p>Would you like to track this effect on other players?</p>
             <p><mat-slide-toggle [(ngModel)]="trackOther" name="trackOther">Track debuff on others</mat-slide-toggle></p>
         </ng-template>
-
-        <button mat-flat-button (click)="nextStep()" class="t-confirm-yes" color="primary">Next</button>
     </div>
     <div *ngIf="readyForImport">
         <p>Select the overlays for the different action groups.</p>
         
-        <mat-form-field style="width: 100%;">
+        <mat-form-field floatLabel="always" style="width: 100%;">
             <mat-label>Recast timer overlay</mat-label>
             <mat-select [(ngModel)]="recastTimerOverlayId" name="ddlRecastTimerOverlay">
                 <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
             </mat-select>
         </mat-form-field>
         
-        <mat-form-field style="width: 100%;">
+        <mat-form-field floatLabel="always" style="width: 100%;">
             <mat-label>Effect timer overlay</mat-label>
             <mat-select [(ngModel)]="effectTimerOverlayId" name="ddlEffectTimerOverlay">
                 <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
@@ -80,7 +73,7 @@
             <mat-hint>This timer displays how long until the DT hits, or the duration of the debuff.</mat-hint>
         </mat-form-field>
         
-        <mat-form-field style="width: 100%;">
+        <mat-form-field floatLabel="always" style="width: 100%;">
             <mat-label>Display text overlay</mat-label>
             <mat-select [(ngModel)]="alertOverlayId" name="ddlAlertOverlay">
                 <mat-option *ngFor="let option of alertOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
@@ -99,6 +92,6 @@
 <mat-dialog-actions>
 
   <button mat-stroked-button mat-dialog-close class="t-confirm-no">Cancel</button>
-        <button mat-flat-button (click)="import()" class="t-confirm-yes" color="primary" [disabled]="!readyForImport">Import</button>
+        <button mat-flat-button *ngIf="!getIsDeathTouch" (click)="next()" class="t-confirm-yes" color="primary" [disabled]="nextDisabled">{{ readyForImport ? 'Import' : 'Next' }}</button>
 
 </mat-dialog-actions>
