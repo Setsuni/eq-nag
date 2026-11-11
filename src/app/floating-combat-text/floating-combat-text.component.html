@@ -1,20 +1,18 @@
 <mat-toolbar>
-    <span>Floating Combat Text</span>
+    <span>Floating combat text</span>
     <span class="spacer"></span>
     <!-- <button mat-button [disabled]="true">Export</button> -->
-    <button mat-button (click)="createQuickShare()" title="Export your settings to share with other players!" class="color-blue"><mat-icon class="material-icons-outlined">share</mat-icon> Quickshare</button>
-    <button mat-button (click)="installQuickShare()" title="Import settings from another player." class="color-orange"><mat-icon class="material-icons-outlined">cloud_download</mat-icon> Import</button>
-    <button mat-button color="accent" (click)="newCombatGroup()"><mat-icon class="material-icons-outlined">add</mat-icon> New</button>
+    <mat-slide-toggle [(ngModel)]="enableFct" (change)="onEnableFctChange()">Show floating combat text</mat-slide-toggle>
+    <button mat-button (click)="createQuickShare()" title="Export your settings to share with other players!"><mat-icon class="material-icons-outlined">share</mat-icon> Quick Share</button>
+    <button mat-button (click)="installQuickShare()" title="Import settings from another player."><mat-icon class="material-icons-outlined">cloud_download</mat-icon> Import</button>
+    <button mat-button color="accent" (click)="newCombatGroup()"><mat-icon class="material-icons-outlined">add</mat-icon> New group</button>
 </mat-toolbar>
 <div class="tab-content">
     
-    <!-- TODO: This checkbox doesn't work immediately -->
-    <div style="text-align: right; padding: 0 25px 20px;"><mat-checkbox [(ngModel)]="enableFct" (change)="onEnableFctChange()">Enable FCT</mat-checkbox></div>
-
     <div class="empty-state" *ngIf="combatGroupsLoaded && combatGroups.length === 0">
         <h2>No combat text groups yet</h2>
         <p>Floating combat text shows your hits and heals as numbers on screen. A group picks which ones appear and how they look.</p>
-        <button mat-button color="accent" (click)="newCombatGroup()"><mat-icon class="material-icons-outlined">add</mat-icon> New</button>
+        <button mat-button color="accent" (click)="newCombatGroup()"><mat-icon class="material-icons-outlined">add</mat-icon> New group</button>
     </div>
 
     <mat-accordion class="example-headers-align">
@@ -36,20 +34,20 @@
             <div class="modifiers-list-container">
             
                 <div style="display: flex; flex-flow: column wrap; min-width: 225px;">
-                    <h3 class="sub-header full-width header-glow">Combat Types</h3>
-                    <mat-checkbox [(ngModel)]="group.combatTypes.myHits" name="myHits_{{i}}">Your Melee Hits</mat-checkbox>
-                    <mat-checkbox [(ngModel)]="group.combatTypes.otherHitsOnMe" name="otherHitsOnMe_{{i}}">You Being Hit by Melee</mat-checkbox>
-                    <mat-checkbox [(ngModel)]="group.combatTypes.mySpellHits" name="mySpellHits_{{i}}">Your Spell Hits</mat-checkbox>
-                    <mat-checkbox [(ngModel)]="group.combatTypes.otherSpellHitsOnMe" name="otherSpellHitsOnMe_{{i}}">You Being Hit by Spells</mat-checkbox>
-                    <mat-checkbox [(ngModel)]="group.combatTypes.myHealing" name="myHealing_{{i}}">Your Healing Done</mat-checkbox>
-                    <mat-checkbox [(ngModel)]="group.combatTypes.otherHealingOnMe" name="otherHealingOnMe_{{i}}">You Being Healed</mat-checkbox>
-                    <h4 class="sub-header full-width header-glow">Pet Combat Types</h4>
-                    <mat-checkbox [(ngModel)]="group.combatTypes.myPetHits" name="myPetHits_{{i}}">Your Pet's Melee Hits</mat-checkbox>
-                    <mat-checkbox [(ngModel)]="group.combatTypes.otherHitsOnMyPet" name="otherHitsOnMyPet_{{i}}">Pets Being hit by Melee</mat-checkbox>
-                    <mat-checkbox [(ngModel)]="group.combatTypes.myPetSpellHits" name="myPetSpellHits_{{i}}">Your Pet's Spell Hits</mat-checkbox>
-                    <mat-checkbox [(ngModel)]="group.combatTypes.otherSpellHitsOnMyPet" name="otherSpellHitsOnMyPet_{{i}}">Pets Being Hit by Spells</mat-checkbox>
-                    <mat-checkbox [(ngModel)]="group.combatTypes.myPetHealing" name="myPetHealing_{{i}}">Your Pet's Healing Done</mat-checkbox>
-                    <mat-checkbox [(ngModel)]="group.combatTypes.otherHealingOnMyPet" name="otherHealingOnMyPet_{{i}}">Pets Being Healed</mat-checkbox>
+                    <h3 class="sub-header full-width header-glow">Combat types</h3>
+                    <mat-checkbox [(ngModel)]="group.combatTypes.myHits" name="myHits_{{i}}">Your melee hits</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="group.combatTypes.otherHitsOnMe" name="otherHitsOnMe_{{i}}">You being hit by melee</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="group.combatTypes.mySpellHits" name="mySpellHits_{{i}}">Your spell hits</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="group.combatTypes.otherSpellHitsOnMe" name="otherSpellHitsOnMe_{{i}}">You being hit by spells</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="group.combatTypes.myHealing" name="myHealing_{{i}}">Your healing done</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="group.combatTypes.otherHealingOnMe" name="otherHealingOnMe_{{i}}">You being healed</mat-checkbox>
+                    <h4 class="sub-header full-width header-glow">Pet combat types</h4>
+                    <mat-checkbox [(ngModel)]="group.combatTypes.myPetHits" name="myPetHits_{{i}}">Your pet's melee hits</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="group.combatTypes.otherHitsOnMyPet" name="otherHitsOnMyPet_{{i}}">Pets being hit by melee</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="group.combatTypes.myPetSpellHits" name="myPetSpellHits_{{i}}">Your pet's spell hits</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="group.combatTypes.otherSpellHitsOnMyPet" name="otherSpellHitsOnMyPet_{{i}}">Pets being hit by spells</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="group.combatTypes.myPetHealing" name="myPetHealing_{{i}}">Your pet's healing done</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="group.combatTypes.otherHealingOnMyPet" name="otherHealingOnMyPet_{{i}}">Pets being healed</mat-checkbox>
                 </div>
                 
                 <div style="padding-left: 25px; min-width: 170px;">
@@ -57,24 +55,24 @@
                     <mat-button-toggle-group name="combatModifiers" aria-label="Modifiers" class="vertical" style="float: right;" [(ngModel)]="group.combatModifiers" name="combatModifiers_{{i}}" multiple>
                         <mat-button-toggle value="normal">Normal</mat-button-toggle>
                         <mat-button-toggle value="critical">Critical</mat-button-toggle>
-                        <mat-button-toggle value="crippling_blow">Crippling Blow</mat-button-toggle>
+                        <mat-button-toggle value="crippling_blow">Crippling blow</mat-button-toggle>
                         <mat-button-toggle value="flurry">Flurry</mat-button-toggle>
                         <mat-button-toggle value="lucky">Lucky</mat-button-toggle>
                         <mat-button-toggle value="twincast">Twincast</mat-button-toggle>
                         <mat-button-toggle value="riposte">Riposte</mat-button-toggle>
                         <mat-button-toggle value="strikethrough">Strikethrough</mat-button-toggle>
-                        <mat-button-toggle value="wild_rampage">Wild Rampage</mat-button-toggle>
+                        <mat-button-toggle value="wild_rampage">Wild rampage</mat-button-toggle>
                         <mat-button-toggle value="rampage">Rampage</mat-button-toggle>
                         <mat-button-toggle value="assassinate">Assassinate</mat-button-toggle>
                         <mat-button-toggle value="headshot">Headshot</mat-button-toggle>
-                        <mat-button-toggle value="double_bow_shot">Double Bow Shot</mat-button-toggle>
-                        <mat-button-toggle value="deadly_strike">Deadly Strike</mat-button-toggle>
-                        <mat-button-toggle value="finishing_blow">Finishing Blow</mat-button-toggle>
+                        <mat-button-toggle value="double_bow_shot">Double bow shot</mat-button-toggle>
+                        <mat-button-toggle value="deadly_strike">Deadly strike</mat-button-toggle>
+                        <mat-button-toggle value="finishing_blow">Finishing blow</mat-button-toggle>
                     </mat-button-toggle-group>
                 </div>
     
                 <div style="flex: 1 1 auto; margin-left: 25px; max-width: calc(100% - 490px);">
-                    <h3 class="sub-header full-width header-glow">Group Settings</h3>
+                    <h3 class="sub-header full-width header-glow">Group settings</h3>
     
                     <mat-tab-group animationDuration="0ms" [selectedIndex]="group.editorTabIndex">
     
@@ -133,12 +131,12 @@
                                         <mat-checkbox [(ngModel)]="group.combatAnimations.blowout" name="animation_blowOut_{{i}}" (change)="applyGroupAnimations(group, fctGroupA, fctGroupB, $event)">Blowout</mat-checkbox>
                                         <mat-checkbox [(ngModel)]="group.combatAnimations.grow" name="animation_grow_{{i}}" (change)="applyGroupAnimations(group, fctGroupA, fctGroupB)">Grow</mat-checkbox>
                                         <mat-checkbox [(ngModel)]="group.combatAnimations.shrink" name="animation_shrink_{{i}}" (change)="applyGroupAnimations(group, fctGroupA, fctGroupB)">Shrink</mat-checkbox>
-                                        <mat-checkbox [(ngModel)]="group.combatAnimations.fadeIn" name="animation_fadeIn_{{i}}" (change)="applyGroupAnimations(group, fctGroupA, fctGroupB)">Fade In</mat-checkbox>
-                                        <mat-checkbox [(ngModel)]="group.combatAnimations.fadeOut" name="animation_fadeOut_{{i}}" (change)="applyGroupAnimations(group, fctGroupA, fctGroupB)">Fade Out</mat-checkbox>
+                                        <mat-checkbox [(ngModel)]="group.combatAnimations.fadeIn" name="animation_fadeIn_{{i}}" (change)="applyGroupAnimations(group, fctGroupA, fctGroupB)">Fade in</mat-checkbox>
+                                        <mat-checkbox [(ngModel)]="group.combatAnimations.fadeOut" name="animation_fadeOut_{{i}}" (change)="applyGroupAnimations(group, fctGroupA, fctGroupB)">Fade out</mat-checkbox>
                                     </div>
                                     <div>
-                                        <h4>Starting Positions</h4>
-                                        <mat-checkbox [checked]="hasFlag(group.startingPosition, hitPositionTypes.random)" (change)="toggleStartingPositionFlag(group, hitPositionTypes.random, fctGroupA, fctGroupB, $event)">Random Position</mat-checkbox>
+                                        <h4>Starting positions</h4>
+                                        <mat-checkbox [checked]="hasFlag(group.startingPosition, hitPositionTypes.random)" (change)="toggleStartingPositionFlag(group, hitPositionTypes.random, fctGroupA, fctGroupB, $event)">Random position</mat-checkbox>
                                         <mat-checkbox [checked]="hasFlag(group.startingPosition, hitPositionTypes.right)" (change)="toggleStartingPositionFlag(group, hitPositionTypes.right, fctGroupA, fctGroupB, $event)">Right</mat-checkbox>
                                         <mat-checkbox [checked]="hasFlag(group.startingPosition, hitPositionTypes.left)" (change)="toggleStartingPositionFlag(group, hitPositionTypes.left, fctGroupA, fctGroupB, $event)">Left</mat-checkbox>
                                         <mat-checkbox [checked]="hasFlag(group.startingPosition, hitPositionTypes.top)" (change)="toggleStartingPositionFlag(group, hitPositionTypes.top, fctGroupA, fctGroupB, $event)">Top</mat-checkbox>
@@ -162,16 +160,16 @@
     
                                 <div class="group-options-container">
                                     <div>
-                                        <h4 class="header-glow" style="margin-left: -11px;">Hit Data</h4>
-                                        <mat-checkbox [(ngModel)]="group.accumulateHits" name="accumulateHits_{{i}}" (ngModelChange)="onAccumulateHitsChange(group)">Consolidate Hits</mat-checkbox>
-                                        <mat-checkbox [(ngModel)]="group.ignoreHits" name="ignoreHits_{{i}}" (ngModelChange)="onIgnoreHitsChange(group)">Ignore Hits</mat-checkbox>
+                                        <h4 class="header-glow" style="margin-left: -11px;">Hit data</h4>
+                                        <mat-checkbox [(ngModel)]="group.accumulateHits" name="accumulateHits_{{i}}" (ngModelChange)="onAccumulateHitsChange(group)">Consolidate hits</mat-checkbox>
+                                        <mat-checkbox [(ngModel)]="group.ignoreHits" name="ignoreHits_{{i}}" (ngModelChange)="onIgnoreHitsChange(group)">Ignore hits</mat-checkbox>
                                     </div>
                                 </div>
     
                             </div>
                         </mat-tab>
     
-                        <mat-tab label="Ignore Hits" *ngIf="group.ignoreHits">
+                        <mat-tab label="Ignore hits" *ngIf="group.ignoreHits">
                             <div class="card-tab-content color-light">
                                 <p>When ignore hits is enabled, damage below a specified threshold will be be ignored.</p>
                                 <label>Threshold
@@ -208,7 +206,7 @@
                             </div>
                         </mat-tab>
     
-                        <mat-tab label="Consolidate Hits" *ngIf="group.accumulateHits">
+                        <mat-tab label="Consolidate hits" *ngIf="group.accumulateHits">
                             <div class="card-tab-content color-light">
                                 <p>When hit consolidation is enabled, damage below a specified threshold will be added up until a hit that meats the threshold is reached.</p>
                                 <label>Threshold
@@ -253,8 +251,8 @@
             </div>
     
             <div>
-                <button mat-button class="color-green" [disabled]="!hasChanges(group.combatGroupId)" (click)="saveChanges(group)">Save Changes</button>
-                <button mat-button class="color-red" [disabled]="!hasChanges(group.combatGroupId)" (click)="rollbackChanges(group.combatGroupId)">Revert Changes</button>
+                <button mat-button class="color-green" [disabled]="!hasChanges(group.combatGroupId)" (click)="saveChanges(group)">Save changes</button>
+                <button mat-button class="color-red" [disabled]="!hasChanges(group.combatGroupId)" (click)="rollbackChanges(group.combatGroupId)">Revert changes</button>
                 <button mat-button class="color-light" *ngIf="isDev" (click)="copyJson(group)">Copy JSON</button>
             </div>
 
