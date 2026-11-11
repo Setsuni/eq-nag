@@ -6,3 +6,13 @@
 .mat-dialog-content {
     color: #ebebeb;
 }
+
+:host ::ng-deep .mat-step-header .mat-step-icon {
+    background-color: rgba(255, 255, 255, .2);
+    color: #fff;
+}
+
+:host ::ng-deep .mat-step-header .mat-step-icon-selected,
+:host ::ng-deep .mat-step-header .mat-step-icon-state-edit {
+    background-color: #7b1fa2;
+}

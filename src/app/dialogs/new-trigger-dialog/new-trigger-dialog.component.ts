@@ -39,6 +39,18 @@ export class NewTriggerDialogComponent implements OnInit {
     
     @ViewChild( 'stepper', { static: false, read: MatStepper } ) public stepper: MatStepper;
 
+    public get stepIndex(): number {
+        return this.stepper?.selectedIndex ?? 0;
+    }
+
+    public get isLastStep(): boolean {
+        return this.stepper != null && this.stepIndex === this.stepper.steps.length - 1;
+    }
+
+    public get nextDisabled(): boolean {
+        return this.stepper == null || this.stepper.selected?.stepControl?.invalid === true;
+    }
+
     constructor(
         public dialogRef: MatDialogRef<NewTriggerDialogComponent>,
         @Inject( MAT_DIALOG_DATA ) public data: NewTriggerDialogModel,
@@ -68,6 +80,19 @@ export class NewTriggerDialogComponent implements OnInit {
 
 
     
+    /**
+     * Moves to the next step; the first step scrapes the spell and the last one imports.
+     */
+    public next(): void {
+        if ( this.stepIndex === 0 ) {
+            this.scrape();
+        } else if ( this.isLastStep ) {
+            this.generateTrigger();
+        } else {
+            this.stepper.next();
+        }
+    }
+
     /**
      * Scrapes the entered URL for spell data.
      */

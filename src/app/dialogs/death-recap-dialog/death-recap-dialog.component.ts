@@ -23,6 +23,10 @@ export class DeathRecapDialogComponent implements OnInit {
     @ViewChild( 'fileSelector' ) private fileSelector: ElementRef<HTMLInputElement>;
     @ViewChild( 'stepper', { static: false, read: MatStepper } ) public stepper: MatStepper;
 
+    public get stepIndex(): number {
+        return this.stepper?.selectedIndex ?? 0;
+    }
+
     constructor(
         public dialogRef: MatDialogRef<DeathRecapDialogComponent>,
         @Inject( MAT_DIALOG_DATA ) public data: any,
@@ -87,6 +91,7 @@ export class DeathRecapDialogComponent implements OnInit {
     }
 
     findDeaths() {
+        this.loadingDeaths = true;
         this.ipcService
             .findPlayerCharacterDeaths( this.model.logFile )
             .subscribe( deathsFound => {

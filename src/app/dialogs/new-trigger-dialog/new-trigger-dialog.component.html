@@ -1,54 +1,34 @@
-<h2 mat-dialog-title>Import DoT timer ({{serviceName}})</h2>
+<h2 mat-dialog-title>DoT timer from a spell</h2>
 
 <mat-dialog-content>
-    
+
     <p *ngIf="data?.trigger?.triggerId != null">WARNING: This may overwrite any custom setting you have applied to this trigger.  Are you sure you want to continue?</p>
 
     <mat-stepper [linear]="true" #stepper>
-        <mat-step [stepControl]="stepOneForm.control" label="Scrape">
+        <mat-step [stepControl]="stepOneForm.control" label="Find the spell">
             <form #stepOneForm="ngForm">
-                <p>
-                    
-                    <mat-form-field style="width: 100%;">
-                        <mat-label>{{serviceName}} URL</mat-label>
-                        <input matInput type="text" [(ngModel)]="url" name="url" required />
-                    </mat-form-field>
-                </p>
-                            
-                <div>
-                    <button mat-button (click)="scrape()">Next</button>
-                </div>
+                <mat-form-field floatLabel="always" style="width: 100%;">
+                    <mat-label>{{serviceName}} URL</mat-label>
+                    <input matInput type="text" [(ngModel)]="url" name="url" required />
+                </mat-form-field>
             </form>
         </mat-step>
         <mat-step [stepControl]="stepTwoForm.control" label="Tracking">
             <form #stepTwoForm="ngForm">
 
-                <p>
-                                
-                    <mat-form-field style="width: 50%;">
-                        <mat-label>Overlay window</mat-label>
-                        <mat-select [(ngModel)]="overlayId" name="ddlDotTimerOverlay" required>
-                            <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
-                        </mat-select>
-                    </mat-form-field>
-                </p>
-                <p><mat-checkbox [(ngModel)]="onlyExecuteForRareEqTargets" name="onlyExecuteForRareEqTargets">Only execute for rare and raid targets.</mat-checkbox></p>
-                <p><mat-checkbox [(ngModel)]="cancelTimerIfTargetDies" name="cancelTimerIfTargetDies">End timer early if your target dies.</mat-checkbox></p>
-                
-                <div>
-                    <button mat-button matStepperPrevious>Prev</button>
-                    <button mat-button matStepperNext [disabled]="stepTwoForm.invalid">Next</button>
-                </div>
+                <mat-form-field floatLabel="always" style="width: 50%;">
+                    <mat-label>Overlay window</mat-label>
+                    <mat-select [(ngModel)]="overlayId" name="ddlDotTimerOverlay" required>
+                        <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
+                    </mat-select>
+                </mat-form-field>
+                <p><mat-checkbox [(ngModel)]="onlyExecuteForRareEqTargets" name="onlyExecuteForRareEqTargets">Only execute for rare and raid targets</mat-checkbox></p>
+                <p><mat-checkbox [(ngModel)]="cancelTimerIfTargetDies" name="cancelTimerIfTargetDies">End timer early if your target dies</mat-checkbox></p>
 
             </form>
         </mat-step>
         <mat-step label="Import">
-            <form>
-                <p>Ready for import!</p>
-                <div>
-                    <button mat-button (click)="generateTrigger()" class="t-confirm-yes" color="accent">Import</button>
-                </div>
-            </form>
+            <p>Ready to import.</p>
         </mat-step>
     </mat-stepper>
 </mat-dialog-content>
@@ -56,5 +36,7 @@
 <mat-dialog-actions>
 
   <button mat-stroked-button mat-dialog-close class="t-confirm-no">Cancel</button>
+  <button mat-stroked-button *ngIf="stepIndex > 0" (click)="stepper.previous()">Back</button>
+  <button mat-flat-button color="primary" class="t-confirm-yes" [disabled]="nextDisabled" (click)="next()">{{ isLastStep ? 'Import' : 'Next' }}</button>
 
 </mat-dialog-actions>

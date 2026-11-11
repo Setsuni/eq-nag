@@ -54,6 +54,28 @@ export class NewTriggerBuffDialogComponent implements OnInit {
     
     @ViewChild( 'stepper', { static: false, read: MatStepper } ) public stepper: MatStepper;
 
+    public get stepIndex(): number {
+        return this.stepper?.selectedIndex ?? 0;
+    }
+
+    public get isLastStep(): boolean {
+        return this.stepper != null && this.stepIndex === this.stepper.steps.length - 1;
+    }
+
+    public get nextDisabled(): boolean {
+        const step = this.stepper?.selected;
+        if ( step == null || step.stepControl?.invalid === true || this.loadingItemDetails ) {
+            return true;
+        }
+        if ( step.label === 'Tracking type' ) {
+            return this.cannotTrack;
+        }
+        if ( step.label === 'Tracking' && this.trackType === 'mine' ) {
+            return !this.useSelfTimer && !this.useTargetTimer && !this.alertWhenBuffFades && !this.alertWhenBuffOverwritten;
+        }
+        return false;
+    }
+
     public spell: ScrapedSpell;
     
     constructor(
@@ -91,6 +113,26 @@ export class NewTriggerBuffDialogComponent implements OnInit {
 
 
     
+    /**
+     * Moves to the next step; the first step scrapes the spell, the item step reads the items and the last one imports.
+     */
+    public next(): void {
+        const label = this.stepper.selected?.label;
+        if ( label === 'Find the spell' ) {
+            this.scrape();
+        } else if ( label === 'Items with this effect' ) {
+            this.processSelectedItemClickies();
+        } else if ( this.isLastStep ) {
+            if ( this.trackType === 'others' ) {
+                this.importOthers();
+            } else {
+                this.import();
+            }
+        } else {
+            this.stepper.next();
+        }
+    }
+
     /**
      * Scrapes the entered URL for spell data.
      */

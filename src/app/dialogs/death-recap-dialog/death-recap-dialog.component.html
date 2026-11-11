@@ -4,33 +4,29 @@
     <mat-stepper [linear]="true" #stepper>
         <mat-step [stepControl]="stepOneForm.control" label="Character">
             <form #stepOneForm="ngForm">
-                <p>Please select the server of the character.</p>
+                <p>Choose the server and the character.</p>
 
-                <p>
-                    <mat-form-field style="width: 50%;">
+                <div class="character-fields">
+                    <mat-form-field floatLabel="always">
                         <mat-label>Server</mat-label>
                         <mat-select (selectionChange)="selectServerModel($event)">
                             <mat-option *ngFor="let server of serverOptions" [value]="server">{{server.server}}</mat-option>
                         </mat-select>
                     </mat-form-field>
-                    
-                    <mat-form-field style="width: 50%;">
+
+                    <mat-form-field floatLabel="always">
                         <mat-label>Character</mat-label>
                         <mat-select (selectionChange)="selectModel($event)" [disabled]="server == null">
                             <mat-option *ngFor="let chr of server?.options" [value]="chr">{{chr.name}}</mat-option>
                         </mat-select>
                     </mat-form-field>
-                </p>
-                
-                <p>If you don't see your character in the list you can select the character's log file instead.</p>
-                <button mat-button color="accent" (click)="showFileSelector()">Choose a log file…</button>
-                            
-                <div>
-                    <button mat-flat-button color="primary" (click)="findDeaths()">Next</button>
                 </div>
+
+                <p>If you don't see your character in the list, choose the character's log file instead.</p>
+                <button mat-stroked-button type="button" (click)="showFileSelector()">Choose a log file…</button>
             </form>
         </mat-step>
-        <mat-step [stepControl]="stepTwoForm.control" label="Select Death">
+        <mat-step [stepControl]="stepTwoForm.control" label="Choose a death">
             <form #stepTwoForm="ngForm">
                 <div *ngIf="loadingDeaths" class="loading">
                     <p>Loading ...</p>
@@ -66,6 +62,7 @@
 <mat-dialog-actions>
 
   <button mat-stroked-button mat-dialog-close class="t-confirm-no">Cancel</button>
-  <!-- <button mat-button [mat-dialog-close]="true" class="t-confirm-yes" color="accent">Yes</button> -->
+  <button mat-stroked-button *ngIf="stepIndex > 0" (click)="stepper.previous()">Back</button>
+  <button mat-flat-button color="primary" *ngIf="stepIndex === 0" [disabled]="model == null" (click)="findDeaths()">Next</button>
 
 </mat-dialog-actions>
