@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, ElementRef, Input, NgZone, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { ChangeDetectorRef, Component, ElementRef, EventEmitter, Input, NgZone, OnDestroy, OnInit, Output, ViewChild } from '@angular/core';
 import { DialogService } from 'src/app/dialogs/dialog.service';
 import { IpcService } from 'src/app/ipc.service';
 import { MatTable } from '@angular/material/table';
@@ -59,7 +59,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
         { id: 'diagnostics', label: 'Diagnostics' },
     ];
     public section: string = 'status';
-    public advancedOpen: Record<string, boolean> = {};
+    public advancedOpen: boolean = false;
     public watchStatus: IWatchStatus[] = [];
     public statusNow: number = Date.now();
     public triggerCount: number = 0;
@@ -105,6 +105,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     public rollSettings: RollTrackerSettings | null = null;
     public rollDefaults: RollTrackerSettings | null = null;
     private fileReadDelays: FileReadDelays | null = null;
+    private rollAdvancedChecked: boolean = false;
 
     public get timerOverlays(): OverlayWindowModel[] {
         return this.overlays?.filter( m => m.overlayType === 'Timer' );
@@ -117,6 +118,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     private overlays: OverlayWindowModel[] = [];
 
     @Input() public characterList: CharactersListComponent;
+    @Output() public openCombat = new EventEmitter<void>();
     @ViewChild( 'triggerHealthSection', { static: true } ) public triggerHealthSection: ElementRef<HTMLElement>;
     @ViewChild( 'triggerHealth', { static: true } ) public triggerHealth: TriggerHealthComponent;
 
@@ -136,11 +138,11 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
     ngOnInit() {
 
+        let storedAdvanced: any = null;
         try {
-            this.advancedOpen = JSON.parse( localStorage.getItem( advancedStorageKey ) ) ?? {};
-        } catch ( error ) {
-            this.advancedOpen = {};
-        }
+            storedAdvanced = JSON.parse( localStorage.getItem( advancedStorageKey ) );
+        } catch ( error ) { }
+        this.advancedOpen = storedAdvanced != null && typeof storedAdvanced === 'object' ? Object.values( storedAdvanced ).some( open => open === true ) : storedAdvanced === true;
 
         this.healthService.summary$.subscribe( summary => this.healthSummary = summary );
 
@@ -169,6 +171,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
             this.ngZone.run( () => {
                 this.rollSettings = state.settings;
                 this.rollDefaults = state.defaults;
+                if ( !this.advancedOpen && !this.rollAdvancedChecked && state.settings?.advancedOpen ) {
+                    this.advancedOpen = true;
+                }
+                this.rollAdvancedChecked = true;
             } );
         } );
         window.api.ipc.send( 'rolls:get', null );
@@ -567,13 +573,23 @@ export class SettingsComponent implements OnInit, OnDestroy {
     }
 
     /**
-     * Shows or hides the Advanced part of a section; the choice is remembered.
+     * Shows or hides the Advanced part of every section; the choice is remembered.
      */
-    toggleAdvanced( id: string ): void {
-        this.advancedOpen = { ...this.advancedOpen, [ id ]: !this.advancedOpen[ id ] };
+    toggleAdvanced(): void {
+        this.advancedOpen = !this.advancedOpen;
         try {
             localStorage.setItem( advancedStorageKey, JSON.stringify( this.advancedOpen ) );
         } catch ( error ) { }
+        if ( this.rollSettings ) {
+            this.updateRollSettings( { advancedOpen: this.advancedOpen } );
+        }
+    }
+
+    /**
+     * Opens the Combat tab, where the DPS meter settings live.
+     */
+    showCombatTab(): void {
+        this.openCombat.emit();
     }
 
     /**

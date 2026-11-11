@@ -12,7 +12,7 @@
             <mat-option *ngFor="let option of characterOptions" [value]="option.characterId">{{option.name}}<small style="float: right;">{{option.server}}</small></mat-option>
         </mat-select>
     </mat-form-field>
-    <button mat-icon-button (click)="openCombatStatsSettings()" matTooltip="Player and pet database" matTooltipPosition="below"><mat-icon class="material-icons-outlined" style="opacity: 0.75;">settings</mat-icon></button>
+    <button mat-icon-button (click)="openCombatStatsSettings()" matTooltip="More settings" aria-label="More settings" matTooltipPosition="below"><mat-icon class="material-icons-outlined" style="opacity: 0.75;">settings</mat-icon></button>
 </mat-toolbar>
 <div class="tab-content no-scroller">
 

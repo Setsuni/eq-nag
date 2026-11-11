@@ -34,40 +34,28 @@ div.tab-content {
     flex: 1 1 auto;
 }
 
+:host ::ng-deep mat-toolbar .mat-slide-toggle-content {
+    font-size: 14px;
+    font-weight: 400;
+}
+
 h2,
 h3 {
     &.header-glow {
-        margin-top: -15px;
-        font-size: 21px;
-        font-weight: 300;
+        margin-top: 0;
+        font-size: 16px;
+        font-weight: 500;
     }
     &.sub-header {
-        font-weight: 100;
-        opacity: 0.9;
-        margin-top: -16px;
-        padding-bottom: 6px;
-        // font-size: 22px;
-        padding-bottom: 4px;
-        position: relative;
-        padding-right: 11px;
-        text-align: right;
-
-        &.half-width {
-            width: calc(50% - 11px);
-        }
-        &.full-width {
-            width: calc(100% - 11px);
-        }
+        margin: 16px 0 8px;
+        font-size: 16px;
+        font-weight: 500;
+        text-align: left;
+        padding: 0;
+        opacity: 1;
 
         &::before {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 18px;
-            z-index: -1;
-            background-color: #0000002e;
+            content: none;
         }
     }
 }
@@ -85,15 +73,15 @@ h3 {
         }
 
         > h3 {
-            font-weight: 300;
-            margin: 4px 0 7px;
-            font-size: 27px;
+            font-weight: 500;
+            margin: 0 0 8px;
+            font-size: 16px;
         }
 
         > h4 {
-            margin: 9px 0 3px 7px;
-            font-size: 19px;
-            font-weight: 100;
+            margin: 16px 0 8px;
+            font-size: 16px;
+            font-weight: 500;
         }
     }
 }
@@ -352,4 +340,9 @@ mat-expansion-panel {
             margin-bottom: 32px;
         }
     }
+}
+
+div.tab-content .empty-state h2 {
+    font-size: 16px;
+    font-weight: 500;
 }

@@ -24,6 +24,7 @@ import { TriggerHealthDialogComponent, TriggerHealthDialogData, TriggerHealthDia
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
 const settingsTabIndex = 5;
+const combatTabIndex = 3;
 const updateIntervalDuration = 5 * 60 * 1000;
 
 @Component( {
@@ -739,6 +740,13 @@ export class MainComponent implements OnInit {
     public openTriggerHealth(): void {
         this.selectedTabIndex = settingsTabIndex;
         setTimeout( () => this.settingsPanel.scrollToTriggerHealth(), 150 );
+    }
+
+    /**
+     * Shows the Combat tab.
+     */
+    public openCombatTab(): void {
+        this.selectedTabIndex = combatTabIndex;
     }
 
 
