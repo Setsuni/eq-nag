@@ -153,8 +153,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
             this.baseSpeakingRate = data.baseSpeakingRate;
             this.voiceIndex = data.voiceIndex;
             this.overlays = data.overlays;
-            this.triggerCount = data.triggers?.length ?? 0;
-            this.activeTriggerCount = data.triggers?.filter( t => t.enabled !== false ).length ?? 0;
+            let userTriggers = data.triggers?.filter( t => !t.predefined ) ?? [];
+            this.triggerCount = userTriggers.length;
+            this.activeTriggerCount = userTriggers.filter( t => t.enabled !== false ).length;
 
             this.phoneticTransforms = [];
             if ( data.phoneticTransforms ) {

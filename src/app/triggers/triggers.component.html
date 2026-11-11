@@ -89,7 +89,7 @@
 
     <mat-progress-bar mode="indeterminate" *ngIf="processing"></mat-progress-bar>
 
-    <div class="ft-row" style="position: fixed; top: 200px; left: 10px; right: 0; bottom: calc( 10px + var(--nag-console-height, 24px) );">
+    <div class="ft-row">
         <div class="ft-item" style="margin: 3px; width: 32%; flex: 0 0 auto; min-width: 160px;" #folderPane>
 
             <div class="ft-content">
@@ -170,7 +170,7 @@
                         </span>
                     </ng-template>
                 </div>
-                <cdk-virtual-scroll-viewport tvsItemSize itemSize="52" class="wrapper mat-elevation-z2" style="height: 100%" #triggerScroller [style.display]="filteredTriggers?.length === 0 ? 'none' : null">
+                <cdk-virtual-scroll-viewport tvsItemSize itemSize="52" class="wrapper mat-elevation-z2 show-scrollbar" style="height: 100%" #triggerScroller [style.display]="filteredTriggers?.length === 0 ? 'none' : null">
                     <table mat-table #triggersTable="matTable" style="width: 100%; min-width: 600px;" 
                         [dataSource]="dataSourceTest"
                         class="capture-phrases">

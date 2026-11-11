@@ -1170,10 +1170,9 @@ export class TriggersComponent implements OnInit {
      * query.
      */
     public searchTriggers(): void {
-        let folderIds = this.selectedFolderId == null ? null : this.getFolderLineageIds( this.selectedFolderId, this.triggerFolders );
         if ( this.searchTerm ) {
             this.ipcService
-                .searchTriggers( this.searchTerm, folderIds )
+                .searchTriggers( this.searchTerm, null )
                 .subscribe( results => {
                     this.triggerSearchResults = results;
                     this.filteredTriggers = results;
@@ -1810,7 +1809,7 @@ export class TriggersComponent implements OnInit {
             matIcon: 'sort',
             children: [
                 {
-                    label: 'Sort Alphabetically',
+                    label: 'Sort alphabetically',
                     action: () => this.sortAlphabetically( folderId ),
                     disabled: () => false,
                     hide: () => false,
@@ -1850,11 +1849,11 @@ export class TriggersComponent implements OnInit {
                     hide: () => false,
                 },
                 {
-                    label: 'Change parent',
+                    label: 'Move to folder…',
                     action: () => this.selectParentFolder( folderId ),
                     disabled: () => false,
                     hide: () => false,
-                    matIcon: 'sort',
+                    matIcon: 'drive_file_move',
                 },
             ]
         }, <ContextMenuModel>{
@@ -1874,7 +1873,7 @@ export class TriggersComponent implements OnInit {
             disabled: () => false,
             hide: () => false,
         }, {
-            label: 'Folder Conditions',
+            label: 'Folder conditions',
             action: () => this.editFolderConditions( folderId ),
             disabled: () => false,
             hide: () => false,
@@ -1885,21 +1884,21 @@ export class TriggersComponent implements OnInit {
             disabled: () => false,
             hide: () => false,
         }, <ContextMenuModel>{
-            label: 'Disable All Triggers',
+            label: 'Turn off all triggers',
             action: () => this.disableFolderTriggers( folderId ),
             disabled: () => false,
             hide: () => !this.hasSomeTriggersToDisable( folderId ),
             matIcon: 'unpublished',
             matIconCssClass: 'material-icons-outlined',
         }, <ContextMenuModel>{
-            label: 'Enable All Triggers',
+            label: 'Turn on all triggers',
             action: () => this.enableFolderTriggers( folderId ),
             disabled: () => false,
             hide: () => !this.hasSomeTriggersToEnable( folderId ),
             matIcon: 'check_circle',
             matIconCssClass: 'material-icons-outlined',
         }, <ContextMenuModel>{
-            label: 'Delete Folder',
+            label: 'Delete folder',
             action: () => this.deleteFolder( folderId, name ),
             disabled: () => false,
             hide: () => false,
@@ -2082,11 +2081,11 @@ export class TriggersComponent implements OnInit {
             hide: () => false,
             matIcon: 'edit',
         }, {
-            label: 'Change parent',
+            label: 'Move to folder…',
             action: () => this.selectTriggerFolder( trigger ),
             disabled: () => false,
             hide: () => false,
-            matIcon: 'sort',
+            matIcon: 'drive_file_move',
         }, {
             label: 'Duplicate',
             action: () => this.duplicateTrigger( trigger ),
@@ -2110,7 +2109,7 @@ export class TriggersComponent implements OnInit {
             disabled: () => false,
             hide: () => false,
         }, <ContextMenuModel>{
-            label: 'Delete Trigger',
+            label: 'Delete trigger',
             action: () => this.deleteTrigger( trigger.triggerId ),
             disabled: () => false,
             hide: () => false,

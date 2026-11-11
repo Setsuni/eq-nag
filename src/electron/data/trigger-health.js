@@ -679,7 +679,7 @@ function checkTriggerHealth( input ) {
         a.subject.name.localeCompare( b.subject.name ) ||
         a.checkNumber - b.checkNumber );
 
-    return { summary: summarize( findings, triggers.length, folderInfo.size ), findings };
+    return { summary: summarize( findings, triggers.filter( t => !t.predefined ).length, folderInfo.size ), findings };
 }
 
 /**
