@@ -20,7 +20,7 @@
             <div class="character-list" *ngIf="characterOptions.length > 0">
                 <div class="character-row" *ngFor="let option of characterOptions">
                     <mat-checkbox [(ngModel)]="option.checked" [disabled]="option.added" [name]="option.logFile" color="accent">{{option.name}}</mat-checkbox>
-                    <span class="hint">{{option.server ? ( option.server | titlecase ) + ' · ' : ''}}{{option.added ? 'already added' : option.lastPlayed}}</span>
+                    <span class="hint">{{option.server ? serverLabel( option.server ) + ' · ' : ''}}{{option.added ? 'already added' : option.lastPlayed}}</span>
                 </div>
             </div>
 

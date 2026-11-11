@@ -5,6 +5,7 @@ import { ActionTypes, CharacterModel, DpsMeterSettings, OverlayWindowModel, Rect
 import { IpcService } from 'src/app/ipc.service';
 import { customAlphabet } from 'nanoid';
 import { forkJoin, Observable, of } from 'rxjs';
+import { serverLabel } from 'src/app/utilities/string.utilities';
 const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 const nanoid = customAlphabet( alphabet, 16 );
 
@@ -53,6 +54,10 @@ export interface SetupPreviewBox {
     styleUrls: [ 'setup-wizard.component.scss' ]
 } )
 export class SetupWizardComponent implements OnInit {
+
+    public serverLabel( server: string ): string {
+        return serverLabel( server );
+    }
 
     public readonly stepLabels: string[] = [ 'Your characters', 'Place your overlays', 'Try it', 'Extras' ];
     private _step: number = 0;
@@ -437,6 +442,19 @@ export class SetupWizardComponent implements OnInit {
         } );
 
         list.sort( ( a, b ) => ( b.modified ?? 0 ) - ( a.modified ?? 0 ) );
+
+        // Keep one row per name and server: the newest log, or the one that is already added.
+        const unique: SetupCharacterOption[] = [];
+        list.forEach( option => {
+            const key = `${option.name}|${option.server}`.toLowerCase();
+            const index = unique.findIndex( u => `${u.name}|${u.server}`.toLowerCase() === key );
+            if ( index < 0 ) {
+                unique.push( option );
+            } else if ( option.added && !unique[ index ].added ) {
+                unique[ index ] = option;
+            }
+        } );
+        list.splice( 0, list.length, ...unique );
 
         // With nothing recent, tick the newest log so the list does not start empty.
         if ( list.length > 0 && !list.some( c => c.checked ) ) {
