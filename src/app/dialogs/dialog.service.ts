@@ -434,7 +434,7 @@ export class DialogService {
         externalSource = externalSource ? externalSource : ExternalDataSources.Allakhazam;
 
         this.dialog.open( NewTriggerBuffDialogComponent, {
-            width: '750px',
+            width: '900px',
             data: <NewTriggerDialogModel>{ selectedFolderId: folderId, trigger: null, dataSource: externalSource },
             panelClass: 'app-dialog',
         } ).afterClosed();
@@ -494,7 +494,7 @@ export class DialogService {
      */
     public showReimportBuffDialog( model: TriggerModel, externalSource: ExternalDataSources ): void {
         this.dialog.open( NewTriggerBuffDialogComponent, {
-            width: '750px',
+            width: '900px',
             data: <NewTriggerDialogModel>{ selectedFolderId: null, trigger: model, dataSource: externalSource },
             panelClass: 'app-dialog',
         } ).afterClosed();

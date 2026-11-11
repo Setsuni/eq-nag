@@ -39,10 +39,16 @@ mat-card {
     padding:15px;
 
     position: fixed;
-    bottom: 4px;
+    bottom: 77px;
     right: 0;
     z-index: 2;
     left: 32%;
+    background-color: #1a1a1a;
+}
+
+:host {
+    display: block;
+    padding-bottom: 72px;
 }
 
 .fade-out {

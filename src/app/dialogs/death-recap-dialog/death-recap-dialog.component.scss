@@ -1,3 +1,8 @@
-p mat-form-field:nth-of-type( odd ) {
-    margin-right: 16px;
+.character-fields {
+    display: flex;
+    gap: 16px;
+
+    mat-form-field {
+        flex: 1 1 0;
+    }
 }

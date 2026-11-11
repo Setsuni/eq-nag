@@ -1,9 +1,9 @@
 <div class="modal">
     <header>
         <mat-toolbar class="titlebar" color="default">
-            <span>Log Simulation</span>
+            <span>Test with log lines</span>
             <span class="spacer"></span>
-            <button mat-icon-button aria-label="Exit GINA import" (click)="closeModal()">
+            <button mat-icon-button aria-label="Close" (click)="closeModal()">
                 <mat-icon>clear</mat-icon>
             </button>
         </mat-toolbar>
@@ -11,7 +11,7 @@
     <section>
         <div class="menu">
 
-            <button mat-button class="color-blue" (click)="showPasteDialog()" style="align-self: center;">Paste Log Entries</button>
+            <button mat-stroked-button (click)="showPasteDialog()" style="align-self: center;">Paste log lines</button>
 
             <span class="spacer">
                 <div class="progress-wrapper" *ngIf="simulationStatus === 'running'">
@@ -20,22 +20,22 @@
                 </div>
             </span>
             
-            <mat-form-field style="width: 220px;">
-                <mat-label>Characters to test with</mat-label>
+            <mat-form-field floatLabel="always" style="width: 220px;">
+                <mat-label>Test as</mat-label>
                 <mat-select [(ngModel)]="characterId" name="ddlCharacters">
                     <mat-select-trigger>
                         {{getSelectValue()}}
                     </mat-select-trigger>
                     <mat-option *ngFor="let option of characters" [value]="option.characterId">{{option.name}}<span>{{option.server}}</span></mat-option>
                 </mat-select>
-                <mat-hint>Select the character(s) to execute simulation.</mat-hint>
+                <mat-hint>Choose who to test as.</mat-hint>
             </mat-form-field>
 
-            <button mat-icon-button class="color-blue" [disabled]="characterId == null || true"><mat-icon>fast_rewind</mat-icon></button>
-            <button mat-icon-button class="material-icons-outlined color-green" [disabled]="characterId == null || rawData == null" (click)="beginSimulation()"><mat-icon>play_circle</mat-icon></button>
-            <button mat-icon-button class="color-red" [disabled]="characterId == null || rawData == null" (click)="stopSimulation()"><mat-icon>stop</mat-icon></button>
-            <button mat-icon-button class="color-yellow" [disabled]="characterId == null || true"><mat-icon>pause</mat-icon></button>
-            <button mat-icon-button class="color-blue" [disabled]="characterId == null || true"><mat-icon>fast_forward</mat-icon></button>
+            <button mat-icon-button class="color-blue" aria-label="Back to the start" matTooltip="Back to the start" [disabled]="characterId == null || true"><mat-icon>fast_rewind</mat-icon></button>
+            <button mat-icon-button class="material-icons-outlined color-green" aria-label="Start the test" matTooltip="Start the test" [disabled]="characterId == null || rawData == null" (click)="beginSimulation()"><mat-icon>play_circle</mat-icon></button>
+            <button mat-icon-button class="color-red" aria-label="Stop the test" matTooltip="Stop the test" [disabled]="characterId == null || rawData == null" (click)="stopSimulation()"><mat-icon>stop</mat-icon></button>
+            <button mat-icon-button class="color-yellow" aria-label="Pause the test" matTooltip="Pause the test" [disabled]="characterId == null || true"><mat-icon>pause</mat-icon></button>
+            <button mat-icon-button class="color-blue" aria-label="Skip ahead" matTooltip="Skip ahead" [disabled]="characterId == null || true"><mat-icon>fast_forward</mat-icon></button>
 
         </div>
         <div class="table-container">

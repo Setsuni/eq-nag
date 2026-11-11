@@ -46,6 +46,13 @@ export class NewTriggerRaidAbilityComponent implements OnInit {
     public alertOverlayId: string = null;
     public trackOther: boolean = false;
 
+    public get nextDisabled(): boolean {
+        if ( this.getUrl ) {
+            return !( this.url?.length > 0 );
+        }
+        return !this.readyForImport && !( this.getRecastInfo || this.getDeathTouchInfo || this.getNotificationInfo );
+    }
+
     public get timerOverlays(): OverlayWindowModel[] {
         return this.overlays.filter( f => f.overlayType === 'Timer' );
     }
@@ -89,6 +96,19 @@ export class NewTriggerRaidAbilityComponent implements OnInit {
 
 
     
+    /**
+     * Moves to the next step; the first step scrapes the page and the last one imports.
+     */
+    public next(): void {
+        if ( this.getUrl ) {
+            this.scrape();
+        } else if ( this.readyForImport ) {
+            this.import();
+        } else {
+            this.nextStep();
+        }
+    }
+
     /**
      * Scrapes the entered URL for spell data.
      */

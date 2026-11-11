@@ -2578,6 +2578,11 @@ export class IpcService {
                             return;
                         }
 
+                        if ( ( ginaConfig as any ).readFailed === true ) {
+                            observer.error( new Error( 'The GINA configuration could not be read.' ) );
+                            return;
+                        }
+
                         // Because the source is XML, we need to process all arrays so that even if an array has a single element it's still an array.  I just don't want a bunch of "if property is array" statements in other areas of the code.
                         // Any top-level element can be missing from the GINA file; a missing one is treated as empty.
                         if ( ginaConfig.BehaviorGroups?.Behavior != null && !( ginaConfig.BehaviorGroups.Behavior instanceof Array ) ) {
@@ -2587,6 +2592,10 @@ export class IpcService {
                         let transforms = ginaConfig.Settings?.PhoneticTransforms;
                         if ( transforms?.Transform != null && !( transforms.Transform instanceof Array ) ) {
                             transforms.Transform = [ transforms.Transform ];
+                        }
+
+                        if ( ginaConfig.Categories?.Category != null && !( ginaConfig.Categories.Category instanceof Array ) ) {
+                            ginaConfig.Categories.Category = [ ginaConfig.Categories.Category ];
                         }
 
                         if ( ginaConfig.TriggerGroups == null ) {

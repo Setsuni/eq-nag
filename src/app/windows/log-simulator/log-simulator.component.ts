@@ -27,7 +27,7 @@ import { StringUtility } from 'src/app/utilities';
 } )
 export class LogSimulatorComponent implements OnInit {
 
-    public lines: string[] = [ 'Paste your log entries and select your character(s) to begin.' ];
+    public lines: string[] = [ 'Paste your log lines and choose who to test as to begin.' ];
     public nagId: ( size?: number ) => string = nagId;
     public rawData: string | null = null;
     public characters: CharacterModel[] = [];
@@ -133,7 +133,7 @@ export class LogSimulatorComponent implements OnInit {
      * Shows the paste dialog.
      */
     public showPasteDialog(): void {
-        this.dialogService.showInputDialog( 'Paste Log Entries', [ 'Enter the lines of the log file that you want to simulate.' ], 'Log lines', null, this.rawData, true ).subscribe( data => {
+        this.dialogService.showInputDialog( 'Paste log lines', [ 'Paste the log lines you want to test with.' ], 'Log lines', null, this.rawData, true ).subscribe( data => {
             if ( data === null || data === undefined ) {
                 return;
             }

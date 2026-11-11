@@ -18,7 +18,7 @@
                         </mat-select>
                     </mat-form-field>
                 </div>
-                <div class="content-middle"><app-duration [(ngModel)]="action.duration" name="durActionDuration"></app-duration></div>
+                <div class="content-middle"><label class="duration-label">Show for</label><app-duration [(ngModel)]="action.duration" name="durActionDuration"></app-duration></div>
             </div>
 
             <button type="button" class="look-toggle" (click)="lookOpen = !lookOpen" [attr.aria-expanded]="lookOpen">

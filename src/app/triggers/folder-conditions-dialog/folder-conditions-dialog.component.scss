@@ -3,6 +3,18 @@ mat-dialog-content {
     background-color: #222222 !important;
 }
 
+:host ::ng-deep fieldset legend {
+    span.title {
+        font-size: 15px;
+        font-weight: 500;
+    }
+
+    small {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 12px;
+    }
+}
+
 mat-dialog-actions {
     justify-content: flex-end;
     gap: 8px;
