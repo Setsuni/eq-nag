@@ -5,6 +5,7 @@
     height: 100%;
 
     .game-preview-container {
+        position: relative;
         overflow: clip;
         display: block;
         border: 2px solid black;

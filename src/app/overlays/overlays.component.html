@@ -49,7 +49,9 @@
                 <th mat-header-cell *matHeaderCellDef class="actions-cell">  </th>
                 <td mat-cell *matCellDef="let element; let i = index" class="actions-cell">
                     <button mat-stroked-button aria-label="Edit this overlay" (click)="enableOverlayEdit(element.overlayId)" matTooltip="Edit this overlay" matTooltipShowDelay="500" matTooltipPosition="above">Edit</button>
-                    <button mat-icon-button aria-label="Send test" [disabled]="!canSendTest( element.overlayType )" (click)="sendTest( element )" [matTooltip]="canSendTest( element.overlayType ) ? 'Send test: show a sample timer or text on this overlay.' : 'There is no sample for this overlay type.'" matTooltipShowDelay="500" matTooltipPosition="above"><mat-icon>play_arrow</mat-icon></button>
+                    <span class="test-wrap" [matTooltip]="canSendTest( element.overlayType ) ? 'Send test: show a sample timer or text on this overlay.' : 'There is no sample for this overlay type.'" matTooltipShowDelay="500" matTooltipPosition="above">
+                        <button mat-icon-button aria-label="Send test" [disabled]="!canSendTest( element.overlayType )" (click)="sendTest( element )"><mat-icon>play_arrow</mat-icon></button>
+                    </span>
                     <button mat-icon-button aria-label="More actions for this overlay" [matMenuTriggerFor]="rowMenu" [matMenuTriggerData]="{ overlay: element, index: i }"><mat-icon>more_vert</mat-icon></button>
                 </td>
             </ng-container>
