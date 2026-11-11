@@ -242,7 +242,7 @@ export class GinaImportWindowComponent implements OnInit {
                         data.push( transformsNode );
                     }
 
-                    data = data.concat( this.getGinaTriggerGroupNodes( ginaConfig.TriggerGroups.TriggerGroup, 'GINA:', [] ) );
+                    data = data.concat( this.getGinaTriggerGroupNodes( ginaConfig.TriggerGroups?.TriggerGroup ?? [], 'GINA:', [] ) );
                     
                     this.trimGroups( data );
                     this.dataSource.data = data;
