@@ -210,7 +210,8 @@ export class GinaImportWindowComponent implements OnInit {
             .getGinaConfiguration( refreshCache )
             .subscribe( ginaConfig => {
                 if ( ginaConfig == null ) {
-                    this.dialogService.showWarningDialog( 'GINA failure', 'Could not find the GINA data directory' );
+                    this.loadingGinaConfig = false;
+                    this.dialogService.showWarningDialog( 'No GINA data found', 'Nag could not find GINA data on this computer. Install GINA and run it once, then try again.' );
                 } else {
                     this.ginaConfig = ginaConfig;
 
@@ -241,7 +242,7 @@ export class GinaImportWindowComponent implements OnInit {
                         data.push( transformsNode );
                     }
 
-                    data = data.concat( this.getGinaTriggerGroupNodes( ginaConfig.TriggerGroups.TriggerGroup, 'GINA:', [] ) );
+                    data = data.concat( this.getGinaTriggerGroupNodes( ginaConfig.TriggerGroups?.TriggerGroup ?? [], 'GINA:', [] ) );
                     
                     this.trimGroups( data );
                     this.dataSource.data = data;
@@ -508,7 +509,7 @@ export class GinaImportWindowComponent implements OnInit {
     }
 
     public alertMissingOverlays( overlayType: string ): void {
-        this.dialogService.showErrorDialog( `Missing Overlays`, `Could not find an overlay of type [${overlayType}].` );
+        this.dialogService.showErrorDialog( `Missing overlays`, `Could not find an overlay of type [${overlayType}].` );
     }
 
     /**
@@ -600,7 +601,8 @@ export class GinaImportWindowComponent implements OnInit {
                             this.showZoneNameDialog = false;
                             this.importTrigger();
                         }
-                    } );
+                    },
+                    { Yes: 'Choose a zone', No: 'Skip zone' } );
 
         } else if ( this.showMissingOverlays ) {
             this.dialogService
@@ -662,7 +664,8 @@ export class GinaImportWindowComponent implements OnInit {
                                 this.importTrigger();
                             }
                         }
-                    } );
+                    },
+                    { Yes: 'Auto-select' } );
         } else if ( !this.skipDuplicateTriggerCheck ) {
             let phrases = [];
             let speakText = [];
@@ -730,7 +733,8 @@ export class GinaImportWindowComponent implements OnInit {
                         } else {
                             this.selectExistingFolder();
                         }
-                    } );
+                    },
+                    { Yes: 'Create folders', No: 'Choose a folder' } );
             } else {
                 this.selectExistingFolder();
             }

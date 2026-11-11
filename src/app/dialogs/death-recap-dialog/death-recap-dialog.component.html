@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>Death Recap</h2>
+<h2 mat-dialog-title>Death recap</h2>
 
 <mat-dialog-content>
     <mat-stepper [linear]="true" #stepper>
@@ -23,10 +23,10 @@
                 </p>
                 
                 <p>If you don't see your character in the list you can select the character's log file instead.</p>
-                <button mat-button color="accent" (click)="showFileSelector()">Select Log File</button>
+                <button mat-button color="accent" (click)="showFileSelector()">Choose a log file…</button>
                             
                 <div>
-                    <button mat-button (click)="findDeaths()">Next</button>
+                    <button mat-flat-button color="primary" (click)="findDeaths()">Next</button>
                 </div>
             </form>
         </mat-step>
@@ -65,7 +65,7 @@
 
 <mat-dialog-actions>
 
-  <button mat-button mat-dialog-close class="t-confirm-no" color="warn">Cancel</button>
+  <button mat-stroked-button mat-dialog-close class="t-confirm-no">Cancel</button>
   <!-- <button mat-button [mat-dialog-close]="true" class="t-confirm-yes" color="accent">Yes</button> -->
 
 </mat-dialog-actions>

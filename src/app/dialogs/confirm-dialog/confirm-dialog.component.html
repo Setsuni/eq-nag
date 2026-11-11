@@ -1,23 +1,19 @@
 <h2 mat-dialog-title>{{title}}</h2>
 
-<mat-dialog-content>
+<mat-dialog-content *ngIf="messages.length > 0">
 
     <p *ngFor="let msg of messages" [innerHtml]="msg | coloredString"></p>
-    <div class="btn-info" *ngIf="data.yesMessage != null || data.noMessage != null || data.cancelMessage != null">
-        <small *ngIf="data.yesMessage != null">{{data.yesMessage}}</small>
-        <small *ngIf="data.noMessage != null">{{data.noMessage}}</small>
-        <small *ngIf="data.cancelMessage != null">{{data.cancelMessage}}</small>
-    </div>
+
 </mat-dialog-content>
 
 <mat-dialog-actions>
 
-    <button mat-button [mat-dialog-close]="false" class="t-confirm-no" color="default">{{noText}}</button>
-    <button mat-button [mat-dialog-close]="true" class="t-confirm-yes" color="accent">{{yesText}}</button>
-    <button mat-button [mat-dialog-close]="null" class="t-confirm-yes" color="warn" *ngIf="data.cancelMessage != null">{{cancelText}}</button>
     <ng-template [ngIf]="data.moreInfo != null">
+        <button mat-button class="color-blue" (click)="data.moreInfo()">More info</button>
         <span style="flex: 1 1 auto;"></span>
-        <button mat-button class="color-blue" (click)="data.moreInfo()">More Info</button>
     </ng-template>
+    <button mat-stroked-button [mat-dialog-close]="null" class="t-confirm-no" *ngIf="showCancel">{{cancelText}}</button>
+    <button mat-stroked-button [mat-dialog-close]="false" class="t-confirm-no">{{noText}}</button>
+    <button mat-flat-button [mat-dialog-close]="true" class="t-confirm-yes" [color]="destructive ? 'warn' : 'primary'">{{yesText}}</button>
 
 </mat-dialog-actions>

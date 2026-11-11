@@ -18,7 +18,10 @@
 
 <mat-dialog-actions>
 
-  <button mat-button  *ngFor="let q of data.questions" (click)="executeAnswer(q)" class="t-confirm-yes {{q.cssClass}}">{{q.buttonText}}</button>
-  <button mat-button mat-dialog-close class="t-confirm-no" color="warn" *ngIf="data.cancellable">Cancel</button>
+  <button mat-stroked-button mat-dialog-close class="t-confirm-no" *ngIf="data.cancellable">Cancel</button>
+  <ng-container *ngFor="let q of answers">
+    <button mat-flat-button color="primary" *ngIf="isPrimary(q)" (click)="executeAnswer(q)" class="t-confirm-yes">{{q.buttonText}}</button>
+    <button mat-stroked-button *ngIf="!isPrimary(q)" (click)="executeAnswer(q)" class="t-confirm-yes">{{q.buttonText}}</button>
+  </ng-container>
 
 </mat-dialog-actions>

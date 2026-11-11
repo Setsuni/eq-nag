@@ -223,7 +223,7 @@ export class MainComponent implements OnInit {
             this.ipcService.logInfo( `captured update info; ${JSON.stringify( updateInfo ?? {} )}` );
             let msg = `Update ${updateInfo.version} is available.  Would you like to install the update now?`;
             this.dialogService.showAskDialog(
-                'Install Update?', msg, 'Click "Yes" to close Nag and install the update.', 'Click "No" to close this dialog and wait until Nag restarts to install the update.',
+                'Install update?', msg, 'Click "Yes" to close Nag and install the update.', 'Click "No" to close this dialog and wait until Nag restarts to install the update.',
                 confirmed => {
                     if ( confirmed ) {
                         this.ipcService.quitAndInstallUpdate();
@@ -232,7 +232,8 @@ export class MainComponent implements OnInit {
                     }
 
                     this.showingUpdateConfirmation = false;
-                } );
+                },
+                { Yes: 'Install now', No: 'Later' } );
             
             this.showingUpdateConfirmation = true;
         } );

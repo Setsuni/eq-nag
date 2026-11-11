@@ -42,7 +42,7 @@
 
 <mat-dialog-actions>
     
-    <button mat-button [mat-dialog-close]="data.conditions" class="t-confirm-no" color="warn">Cancel</button>
-    <button mat-button [mat-dialog-close]="model" class="t-confirm-no">OK</button>
+    <button mat-stroked-button [mat-dialog-close]="data.conditions" class="t-confirm-no">Cancel</button>
+    <button mat-flat-button color="primary" [mat-dialog-close]="model" class="t-confirm-yes">Save</button>
 
 </mat-dialog-actions>

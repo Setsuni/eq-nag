@@ -46,7 +46,11 @@ export class TriggerLibraryService {
      */
     getLatestVersionInfo(packageIds: string[]): Observable<TriggerPackageVersionInfoModel[]> {
         return this.httpClient.post<TriggerPackageVersionInfoModel[]>( `${environment.shareServiceUrl}/triggers/version-info`, packageIds )
-            .pipe( catchError( error => this.handleError( error ) ) );
+            .pipe( catchError( error => {
+                // A background check: log it for the Developer log instead of interrupting with a dialog.
+                this.ipcService.logInfo( `Could not check for trigger updates (${error?.status ?? 'no response'}). Nag will try again later.` );
+                return throwError( 'Could not check for trigger updates.' );
+            } ) );
     }
 
 
@@ -232,7 +236,7 @@ export class TriggerLibraryService {
             // A client-side or network error occurred. Handle it accordingly.
             console.error( 'An error occurred:', error.error );
             
-            this.dialogService.showErrorDialog( 'Unknown Error', [ 'An error occurred:', error.error.Message ] );
+            this.dialogService.showErrorDialog( 'Connection problem', [ error.error?.Message || 'Could not reach the Nag server. Check your connection and try again.' ] );
 
         } else {
             // The backend returned an unsuccessful response code.
@@ -241,7 +245,7 @@ export class TriggerLibraryService {
                 `Backend returned code ${error.status}, ` +
                 `body was:`, error.error );
             
-            this.dialogService.showErrorDialog( `[${error.status}] Error`, [ 'An error was thrown while attempting the request.', error.error.Message ] );
+            this.dialogService.showErrorDialog( `Request failed (${error.status})`, [ error.error?.Message || 'The Nag server could not complete the request. Try again later.' ] );
         }
 
         // Return an observable with a user-facing error message.

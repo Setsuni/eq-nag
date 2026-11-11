@@ -86,7 +86,7 @@ export class FloatingCombatTextComponent implements OnInit, DoCheck {
                 
                 questions.push( {
                     question: [ 'You have existing styles in the older format, would you like to migrate those styles?' ],
-                    buttonText: 'Migrate existing styles',
+                    buttonText: 'Migrate styles',
                     action: () => {
                         this.ipcService.migrateFctCombatGroups().subscribe( success => {
                             this.ipcService.getFctCombatGroups().subscribe( data => {
@@ -101,7 +101,7 @@ export class FloatingCombatTextComponent implements OnInit, DoCheck {
 
             questions.push( {
                 question: [ 'You could have the system initialize FCT with default combat groups.' ],
-                buttonText: 'Create default combat groups',
+                buttonText: 'Create default groups',
                 action: () => {
                     this.ipcService.initializeFctCombatGroups().subscribe( success => {
                         this.ipcService.getFctCombatGroups().subscribe( data => {
@@ -114,14 +114,14 @@ export class FloatingCombatTextComponent implements OnInit, DoCheck {
 
             questions.push( {
                 question: [ 'Do nothing and create your own combat groups from scratch.' ],
-                buttonText: 'Do nothing and stop asking',
+                buttonText: 'Stop asking',
                 action: () => {
                     this.ipcService.updateSetting<boolean>( 'askForCombatGroupMigrations', false );
                 },
                 cssClass: 'color-orange',
             } );
 
-            this.dialogService.showQuestionDialog( `Floating Combat Text ${canMigrate ? 'Migration' : 'Initialization'}`, statements, questions, true, 'wide' );
+            this.dialogService.showQuestionDialog( `Floating combat text ${canMigrate ? 'migration' : 'initialization'}`, statements, questions, true, 'wide' );
 
         } );
 
@@ -237,10 +237,11 @@ export class FloatingCombatTextComponent implements OnInit, DoCheck {
             .showInputDialog(
                 'Enter a share code',
                 [ 'To install shared combat groups, paste the code below' ],
-                'Quick share code',
+                'Share code',
                 'Paste in the quick share code',
                 null,
-                false )
+                false,
+                'Install' )
             .subscribe( response => {
                 if ( response ) {
                     let handled = false;

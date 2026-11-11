@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>New Character</h2>
+<h2 mat-dialog-title>New character</h2>
 
 <mat-dialog-content>
 
@@ -7,7 +7,7 @@
         <p *ngIf="eqFolder == null && panel === 'missingInstallFolder'">
             <span>Could not locate your EverQuest folder.  Please select your character's log file.</span>
             <br />
-            <button mat-button color="accent" (click)="showFileSelector()">Select Log File</button>
+            <button mat-button color="accent" (click)="showFileSelector()">Choose a log file…</button>
 
         </p>
         <ng-template [ngIf]="panel === 'selectCharacter'">
@@ -15,25 +15,23 @@
             <p>Please select the server of the character you are adding.</p>
 
             <p>
-                <mat-form-field style="width: 50%;">
-                    <mat-label></mat-label>
+                <mat-form-field floatLabel="always" style="width: 50%;">
+                    <mat-label>Server</mat-label>
                     <mat-select (selectionChange)="selectServerModel($event)">
                         <mat-option *ngFor="let server of serverOptions" [value]="server">{{server.server}}</mat-option>
                     </mat-select>
-                    <mat-hint>Server</mat-hint>
                 </mat-form-field>
                 
-                <mat-form-field style="width: 50%;">
-                    <mat-label></mat-label>
+                <mat-form-field floatLabel="always" style="width: 50%;">
+                    <mat-label>Character</mat-label>
                     <mat-select (selectionChange)="selectModel($event, false, false)" [disabled]="server == null">
                         <mat-option *ngFor="let chr of server?.options" [value]="chr" [disabled]="chr.characterId?.length > 0">{{chr.name}} <small *ngIf="chr.characterId?.length > 0">Added</small></mat-option>
                     </mat-select>
-                    <mat-hint>Character</mat-hint>
                 </mat-form-field>
             </p>
             
             <p>If you don't see your character in the list you can select the character's log file instead.</p>
-            <button mat-button color="accent" (click)="showFileSelector()">Select Log File</button>
+            <button mat-button color="accent" (click)="showFileSelector()">Choose a log file…</button>
 
         </ng-template>
         <ng-template [ngIf]="panel === 'modelReview'">
@@ -58,14 +56,13 @@
             <p>Unrecognized log file definition.  Please enter your character details below.</p>
 
             <p>
-                <mat-form-field style="width: 50%;">
-                    <mat-label></mat-label>
+                <mat-form-field floatLabel="always" style="width: 50%;">
+                    <mat-label>Character name</mat-label>
                     <input matInput [(ngModel)]="model.name" name="manualName" />
-                    <mat-hint>Character Name</mat-hint>
                 </mat-form-field>
 
-                <mat-form-field style="width: 50%;">
-                    <mat-label></mat-label>
+                <mat-form-field floatLabel="always" style="width: 50%;">
+                    <mat-label>Service</mat-label>
                     <mat-select [(ngModel)]="selectedService" name="manualService">
                         <mat-option value="p99">P1999</mat-option>
                         <mat-option value="daybreak">Daybreak</mat-option>
@@ -73,13 +70,11 @@
                         <mat-option value="thj">THJ</mat-option>
                         <mat-option value="other">Other</mat-option>
                     </mat-select>
-                    <mat-hint>Service</mat-hint>
                 </mat-form-field>
 
-                <mat-form-field style="width: 50%;">
-                    <mat-label></mat-label>
+                <mat-form-field floatLabel="always" style="width: 50%;">
+                    <mat-label>Server</mat-label>
                     <input matInput [(ngModel)]="model.server" name="manualServer" />
-                    <mat-hint>Server</mat-hint>
                 </mat-form-field>
 
             </p>
@@ -94,9 +89,9 @@
 
 <mat-dialog-actions>
 
-    <button mat-button class="color-orange" (click)="cancelCharacter()" *ngIf="model != null"><mat-icon>chevron_left</mat-icon>&nbsp;Back</button>
-    <button mat-button mat-dialog-close class="t-confirm-no" color="warn">Cancel</button>
-    <button mat-button (click)="create()" class="t-confirm-yes" color="accent" [disabled]="model == null || panel === 'manualInput'">Create</button>
+    <button mat-stroked-button (click)="cancelCharacter()" *ngIf="model != null"><mat-icon>chevron_left</mat-icon>&nbsp;Back</button>
+    <button mat-stroked-button mat-dialog-close class="t-confirm-no">Cancel</button>
+    <button mat-flat-button (click)="create()" class="t-confirm-yes" color="primary" [disabled]="model == null || panel === 'manualInput'">Add character</button>
     <span class="create-hint" *ngIf="model == null">Choose a character or log file first</span>
 
 </mat-dialog-actions>

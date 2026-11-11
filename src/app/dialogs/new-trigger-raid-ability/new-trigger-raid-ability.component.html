@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>Raid Ability Tracker (Allakhazam)</h2>
+<h2 mat-dialog-title>Raid ability tracker (Allakhazam)</h2>
 
 <mat-dialog-content>
     
@@ -10,7 +10,7 @@
             <input matInput type="text" [(ngModel)]="url" />
         </mat-form-field>
 
-        <button mat-button (click)="scrape()" class="t-confirm-yes" color="accent">Scrape Information</button>
+        <button mat-stroked-button (click)="scrape()" class="t-confirm-yes">Scrape Information</button>
     </p>
     <div *ngIf="getRecastInfo">
         <ng-template [ngIf]="this.ability?.npcsWithAbility?.length > 1" [ngIfElse]="singleRecast">
@@ -31,18 +31,18 @@
             <app-duration [(ngModel)]="recastDelay" name="durSingleRecastDelay"></app-duration>
         </ng-template>
         
-        <button mat-button (click)="nextStep()" class="t-confirm-yes" color="accent">Next</button>
+        <button mat-flat-button (click)="nextStep()" class="t-confirm-yes" color="primary">Next</button>
     </div>
     <div *ngIf="getIsDeathTouch">
         <p>Is this a death touch ability?</p>
-        <button mat-button (click)="yesIsDeathTouch()" class="t-confirm-yes" color="accent">Yes</button>
-        <button mat-button (click)="noIsDeathTouch()" class="t-confirm-yes" color="accent">No</button>
+        <button mat-flat-button (click)="yesIsDeathTouch()" class="t-confirm-yes" color="primary">It is a death touch</button>
+        <button mat-stroked-button (click)="noIsDeathTouch()" class="t-confirm-no">Not a death touch</button>
     </div>
     <div *ngIf="getDeathTouchInfo">
         <p><mat-slide-toggle [(ngModel)]="deathTouchDispellable" name="togDtDispellable">Dispellable</mat-slide-toggle></p>
         <p>How long does the player have?</p>
         <app-duration [(ngModel)]="deathTouchDuration" name="durDeathTouchDuration"></app-duration>
-        <button mat-button (click)="nextStep()" class="t-confirm-yes" color="accent">Next</button>
+        <button mat-flat-button (click)="nextStep()" class="t-confirm-yes" color="primary">Next</button>
     </div>
     <div *ngIf="getNotificationInfo">
         <p><mat-slide-toggle [(ngModel)]="recastNotify" name="togRecastNotify">Notify when recast is imminent?</mat-slide-toggle></p>
@@ -60,7 +60,7 @@
             <p><mat-slide-toggle [(ngModel)]="trackOther" name="trackOther">Track debuff on others</mat-slide-toggle></p>
         </ng-template>
 
-        <button mat-button (click)="nextStep()" class="t-confirm-yes" color="accent">Next</button>
+        <button mat-flat-button (click)="nextStep()" class="t-confirm-yes" color="primary">Next</button>
     </div>
     <div *ngIf="readyForImport">
         <p>Select the overlays for the different action groups.</p>
@@ -98,7 +98,7 @@
 
 <mat-dialog-actions>
 
-  <button mat-button mat-dialog-close class="t-confirm-no" color="warn">Cancel</button>
-        <button mat-button (click)="import()" class="t-confirm-yes" color="accent" [disabled]="!readyForImport">Import</button>
+  <button mat-stroked-button mat-dialog-close class="t-confirm-no">Cancel</button>
+        <button mat-flat-button (click)="import()" class="t-confirm-yes" color="primary" [disabled]="!readyForImport">Import</button>
 
 </mat-dialog-actions>

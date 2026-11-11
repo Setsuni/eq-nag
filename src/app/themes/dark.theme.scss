@@ -19,8 +19,8 @@ $color-purple: #c269f0;
 $color-magenta: #f0698e;
 $color-red-dark: #921f1f;
 $color-titlebar-bg: #4c0e67;
-$color-titlebar-txt: #00000094;
-$color-titlebar-txt-main-hover: #ffffffb3;
+$color-titlebar-txt: #ffffffde;
+$color-titlebar-txt-main-hover: #ffffff;
 $color-titlebar-green: #17e883;
 $color-titlebar-red: #ff432e;
 
@@ -238,6 +238,7 @@ $bg-extreme-dark: #191919;
             >.mat-toolbar.mat-primary {
                 background: $color-titlebar-bg !important;
                 color: $color-titlebar-txt !important;
+                height: 40px;
                 transition: color 0.4s ease-in-out;
 
                 &:hover {
@@ -479,37 +480,99 @@ $bg-extreme-dark: #191919;
     mat-form-field {
         .mat-form-field-infix {
             border-top: none !important;
+            padding: 6px 0 !important;
+            width: auto;
+        }
+        .mat-form-field-flex {
+            align-items: center;
+            box-sizing: border-box;
+            min-height: 36px;
+            padding: 0 8px;
+            border: 1px solid rgba(255, 255, 255, .16);
+            border-radius: 4px;
+            background-color: rgba(0, 0, 0, .18);
         }
         .mat-form-field-underline {
-            background-color: #00000052 !important;
-            border-top: 2px solid transparent !important;
+            display: none;
+        }
+        .mat-form-field-wrapper {
+            padding-bottom: 0;
+        }
+        .mat-form-field-subscript-wrapper {
+            position: static;
+            margin-top: 4px;
+            padding: 0;
+            font-size: 12px;
+        }
+        .mat-hint {
+            color: rgba($text, .7);
         }
         input.mat-input-element {
             color: $text;
         }
-        &.mat-form-field-disabled {
-            .mat-form-field-underline {
-                background-color: #4a4a4a52 !important;
-                background-image: unset !important;
-            }
-            border-color: #4848486b;
-            background-color: #2222222e;
+        &.mat-form-field-has-label {
+            padding-top: 18px;
+        }
+        &.mat-focused .mat-form-field-flex {
+            border-color: $color-green;
+        }
+        &.mat-form-field-disabled .mat-form-field-flex {
+            border-color: rgba(255, 255, 255, .08);
+            background-color: rgba(255, 255, 255, .03);
         }
         &.mat-form-field-invalid {
-            .mat-form-field-ripple, 
-            .mat-form-field-ripple.mat-accent {
-                background-color: unset !important;
+            .mat-form-field-flex {
+                border-color: rgba($color-red-warn, .6);
             }
             .mat-select.mat-select-invalid .mat-select-arrow {
                 color: unset !important;
             }
-            .mat-form-field-underline {
-                background-color: rgba($color-red-warn, 0.09) !important;
-            }
-            border-color: rgba($color-red-warn, 0.4196078431);
         }
-        border: 2px solid #0000006b;
-        background-color: #0000002e;
+        margin: 4px 0;
+        padding: 0;
+        border: none;
+        background: none;
+    }
+
+    mat-toolbar mat-form-field.toolbar-field {
+        &.mat-form-field-has-label {
+            padding-top: 0;
+        }
+        .mat-form-field-wrapper {
+            padding-bottom: 0;
+        }
+        .mat-form-field-subscript-wrapper {
+            display: none;
+        }
+        .mat-form-field-infix {
+            display: flex;
+            align-items: center;
+            padding: 0 !important;
+        }
+        input.mat-input-element {
+            display: block;
+        }
+        &.mat-form-field-appearance-legacy.mat-form-field-can-float {
+            .mat-form-field-label-wrapper {
+                position: static;
+                order: -1;
+                width: auto;
+                height: auto;
+                padding: 0;
+                overflow: visible;
+            }
+            .mat-form-field-label {
+                position: static;
+                width: auto;
+                margin-left: 0;
+                margin-right: 8px;
+                color: rgba($text, .7);
+                font-size: 13px;
+                transform: none !important;
+            }
+        }
+        margin: 0 8px 0 16px;
+        padding: 0;
     }
 
     .mat-table {
@@ -551,9 +614,25 @@ $bg-extreme-dark: #191919;
             border: 1px solid $color-yellow;
         }
         .mat-dialog-container {
+            padding: 0;
             background-color: #353535;
         }
+        .mat-dialog-title {
+            margin: 0;
+            padding: 16px 24px 8px;
+            font: 500 20px/28px Roboto, "Helvetica Neue", sans-serif;
+            color: $text;
+        }
+        .mat-dialog-actions {
+            justify-content: flex-end;
+            gap: 8px;
+            margin: 0;
+            padding: 12px 24px 16px;
+            min-height: 0;
+        }
         .mat-dialog-content {
+            margin: 0;
+            padding: 8px 24px 16px;
             .mat-paginator-container {
                 background-color: #252525;
             }
@@ -833,7 +912,8 @@ p.notice {
 }
 
 .mat-tooltip {
-    font-size: 14px !important;
+    font-size: 12px !important;
+    padding: 6px 8px;
     background-color: $bg-tab-content;
     border: 3px solid rgba($color-grey-80, .20);
 }

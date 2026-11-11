@@ -27,22 +27,6 @@ mat-toolbar {
     mat-form-field {
         font-size: 12px;
     }
-    mat-form-field.toolbar-field {
-        padding: 0;
-        ::ng-deep .mat-form-field-wrapper {
-            padding-bottom: 0;
-        }
-        ::ng-deep .mat-form-field-subscript-wrapper,
-        ::ng-deep .mat-form-field-underline {
-            display: none;
-        }
-        ::ng-deep .mat-form-field-infix {
-            padding: 8px 0 !important;
-        }
-        ::ng-deep input.mat-input-element {
-            display: block;
-        }
-    }
 }
 
 div.tab-content {
@@ -428,30 +412,11 @@ table {
 ::ng-deep mat-form-field {
     .mat-hint {
         font-weight: normal;
-        font-size: 10px;
-        padding-left: 5px;
+        font-size: 12px;
     }
     .mat-form-field-label {
-        .mat-placeholder-required.mat-form-field-required-marker {
-            top: 10px;
-            position: absolute;
-            left: 3px;
-        }
         overflow: unset !important;
     }
-    .mat-form-field-infix {
-        padding-left: 5px !important;
-    }
-    .mat-form-field-underline {
-        .mat-form-field-ripple {
-            top: -2px;
-        }
-        height: 18px !important;
-        bottom: -6px !important;
-    }
-    border-radius: 3px;
-    padding: 5px 0;
-    margin: 5px 0;
 }
 
 .flex-layout {
@@ -695,11 +660,7 @@ div.formless-hint {
         width: calc(100% - 10px);
     }
 
-    padding: 0px 5px 25px 5px;
-    border: 2px solid #0000006b;
-    background-color: #0000002e;
-    
-    border-radius: 3px;
+    padding: 0 0 8px 0;
     display: inline-block;
     position: relative;
     text-align: left;
@@ -729,18 +690,15 @@ div.formless-hint {
     }
 
     > mat-hint {
-        
         color: rgba(255,255,255,.7);
-        background-color: #00000052 !important;
-
         display: block;
-        padding: 5px 5px 5px 5px;
+        padding: 0;
         font-weight: normal;
-        font-size: 10px;
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        font-size: 12px;
+    }
+
+    > .formless-input:has( > mat-checkbox ) + mat-hint {
+        padding-left: 26px;
     }
 }
 

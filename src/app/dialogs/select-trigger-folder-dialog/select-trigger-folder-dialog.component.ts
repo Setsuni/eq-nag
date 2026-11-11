@@ -35,7 +35,7 @@ export class SelectTriggerFolderDialogComponent implements OnInit {
     public dataSource = new MatTreeFlatDataSource(this.treeControl, this.treeFlattener);
     hasChild = (_: number, node: ExampleFlatNode) => node.expandable;
 
-    public title: string = 'Select a parent folder';
+    public title: string = 'Choose a folder';
     public description: string|null = null;
 
     constructor(

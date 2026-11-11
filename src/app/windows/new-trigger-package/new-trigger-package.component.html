@@ -11,7 +11,7 @@
 <h1 *ngIf="packageId != null && !editName" style="position: relative; margin-bottom: 0;">{{package.name}}&nbsp;<button mat-icon-button (click)="editName = true" style="position: absolute; opacity: 0.5;"><mat-icon>edit</mat-icon></button></h1>
 
 <div class="creator-actions">
-    <button mat-button color="warn" (click)="cancel()"><mat-icon class="material-icons-outlined">undo</mat-icon> Cancel</button>
+    <button mat-stroked-button (click)="cancel()"><mat-icon class="material-icons-outlined">undo</mat-icon> Cancel</button>
     <div>
         <mat-checkbox [(ngModel)]="package.privatePackage" name="newPackagePrivate" [disabled]="!newPackage">Private Package</mat-checkbox>
         <sup class="help-sup"
@@ -101,7 +101,7 @@
 </div>
 
 <div class="creator-actions">
-    <button mat-button color="warn" (click)="cancel()"><mat-icon class="material-icons-outlined">undo</mat-icon> Cancel</button>
+    <button mat-stroked-button (click)="cancel()"><mat-icon class="material-icons-outlined">undo</mat-icon> Cancel</button>
     <span class="spacer"></span>
     <button mat-button color="accent" (click)="save()">Save Package <mat-icon class="material-icons-outlined">cloud_upload</mat-icon></button>
 </div>

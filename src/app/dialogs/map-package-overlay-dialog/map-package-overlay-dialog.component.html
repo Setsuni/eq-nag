@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>Missing an Overlay</h2>
+<h2 mat-dialog-title>Missing an overlay</h2>
 
 <mat-dialog-content>
 
@@ -40,19 +40,19 @@
 
 <mat-dialog-actions>
     
-    <button mat-button (click)="cancel()" class="t-confirm-no" color="warn">Cancel</button>
+    <button mat-stroked-button (click)="cancel()" class="t-confirm-no">Cancel</button>
 
     <ng-template [ngIf]="useExisting">
-        <button type="button" mat-button class="color-green" [disabled]="mappedOverlay == null" (click)="accept(mappedOverlay)">Use this overlay</button>
+        <button type="button" mat-flat-button color="primary" [disabled]="mappedOverlay == null" (click)="accept(mappedOverlay)">Use this overlay</button>
     </ng-template>
 
     <ng-template [ngIf]="copyOverlay">
-        <button type="button" mat-button class="color-green" [disabled]="mappedOverlay == null" (click)="updateAndAccept(mappedOverlay)">Done</button>
+        <button type="button" mat-flat-button color="primary" [disabled]="mappedOverlay == null" (click)="updateAndAccept(mappedOverlay)">Done</button>
     </ng-template>
     
     <ng-template [ngIf]="!useExisting && !copyOverlay">
-        <button type="button" mat-button class="color-blue" (click)="copyPackageOverlay()">Copy</button>
-        <button type="button" mat-button class="color-green" (click)="useExisting = true">Use Existing</button>
+        <button type="button" mat-stroked-button (click)="copyPackageOverlay()">Copy</button>
+        <button type="button" mat-flat-button color="primary" (click)="useExisting = true">Use existing</button>
     </ng-template>
 
 </mat-dialog-actions>

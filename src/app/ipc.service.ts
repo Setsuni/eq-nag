@@ -2552,16 +2552,35 @@ export class IpcService {
                 window.api.ipc.once( 'gina:get:configuration', ( e, ginaConfig: GinaConfiguration ) => {
                     this.ngZone.run( () => {
 
+                        if ( ginaConfig == null || typeof ginaConfig !== 'object' ) {
+                            observer.next( null );
+                            observer.complete();
+                            return;
+                        }
+
                         // Because the source is XML, we need to process all arrays so that even if an array has a single element it's still an array.  I just don't want a bunch of "if property is array" statements in other areas of the code.
-                        if ( !( ginaConfig.BehaviorGroups.Behavior instanceof Array ) ) {
+                        // Any top-level element can be missing from the GINA file; a missing one is treated as empty.
+                        if ( ginaConfig.BehaviorGroups?.Behavior != null && !( ginaConfig.BehaviorGroups.Behavior instanceof Array ) ) {
                             ginaConfig.BehaviorGroups.Behavior = [ ginaConfig.BehaviorGroups.Behavior ];
                         }
 
-                        if ( !( ginaConfig.Settings.PhoneticTransforms.Transform instanceof Array ) && ginaConfig.Settings.PhoneticTransforms ) {
-                            ginaConfig.Settings.PhoneticTransforms.Transform = [ ginaConfig.Settings.PhoneticTransforms.Transform ];
+                        let transforms = ginaConfig.Settings?.PhoneticTransforms;
+                        if ( transforms?.Transform != null && !( transforms.Transform instanceof Array ) ) {
+                            transforms.Transform = [ transforms.Transform ];
+                        }
+
+                        if ( ginaConfig.TriggerGroups == null ) {
+                            ginaConfig.TriggerGroups = { TriggerGroup: [] } as GinaTriggerGroups;
                         }
 
                         this.processGinaTriggerGroup( ginaConfig.TriggerGroups );
+
+                        // Nothing usable in the file is reported the same way as no file.
+                        if ( ginaConfig.TriggerGroups.TriggerGroup.length === 0 && !( transforms?.Transform?.length > 0 ) ) {
+                            observer.next( null );
+                            observer.complete();
+                            return;
+                        }
 
                         this._ginaConfigCache = ginaConfig;
                         observer.next( ginaConfig );
@@ -2583,17 +2602,19 @@ export class IpcService {
 
     private processGinaTriggerGroup( groups: GinaTriggerGroups ): void {
 
-        if ( !( groups.TriggerGroup instanceof Array ) ) {
+        if ( groups.TriggerGroup == null ) {
+            groups.TriggerGroup = [];
+        } else if ( !( groups.TriggerGroup instanceof Array ) ) {
             groups.TriggerGroup = [ groups.TriggerGroup ];
         }
 
         groups.TriggerGroup.forEach( group => {
 
-            if ( group.Triggers != null && !( group.Triggers.Trigger instanceof Array ) ) {
+            if ( group.Triggers?.Trigger != null && !( group.Triggers.Trigger instanceof Array ) ) {
                 group.Triggers.Trigger = [ group.Triggers.Trigger ];
             }
 
-            group.Triggers?.Trigger.forEach( trigger => {
+            group.Triggers?.Trigger?.forEach( trigger => {
 
                 if ( trigger.TimerEarlyEnders?.EarlyEnder != null && !( trigger.TimerEarlyEnders.EarlyEnder instanceof Array ) ) {
                     trigger.TimerEarlyEnders.EarlyEnder = [ trigger.TimerEarlyEnders.EarlyEnder ];
