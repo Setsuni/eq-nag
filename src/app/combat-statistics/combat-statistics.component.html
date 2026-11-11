@@ -2,7 +2,7 @@
     <span>DPS meter</span>
     <span class="spacer"></span>
     <mat-slide-toggle [(ngModel)]="meterOn" name="meterOn" [disabled]="!settingsLoaded">Show the DPS meter</mat-slide-toggle>
-    <mat-form-field class="toolbar-field">
+    <mat-form-field class="toolbar-field" floatLabel="auto">
         <mat-label>Combat character</mat-label>
         <mat-select [(ngModel)]="combatCharacterId" name="combatCharacterId" >
             <mat-select-trigger>
