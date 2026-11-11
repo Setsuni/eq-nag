@@ -2429,10 +2429,11 @@ export class TriggersComponent implements OnInit {
             .showInputDialog(
                 'Enter a share code',
                 [ 'To install a quick share or package, paste the code below' ],
-                'Package code',
+                'Share code',
                 'Paste in the quick share or package code',
                 null,
-                false )
+                false,
+                'Install' )
             .subscribe( response => {
                 if ( response ) {
                     let handled = false;

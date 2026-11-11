@@ -289,7 +289,7 @@ export class DialogService {
      * @param noText The description of the action taken when the user declines the question.
      * @param onClose This function is executed after the user makes their decision and the decision is passed as the confirmed parameter.
      */
-    public showAskDialog( title: string, message: string | (string|ColoredString)[], yesText: string, noText: string, onClose: ( confirmed: boolean ) => void ): void {
+    public showAskDialog( title: string, message: string | (string|ColoredString)[], yesText: string, noText: string, onClose: ( confirmed: boolean ) => void, buttonTexts: { 'Yes'?: string, 'No'?: string } = null ): void {
         
         let dialogRef: MatDialogRef<ConfirmDialogComponent> = this.dialog.open( ConfirmDialogComponent, {
             width: '550px',
@@ -297,7 +297,8 @@ export class DialogService {
                 title: title ?? 'Confirm',
                 message: message,
                 yesMessage: yesText,
-                noMessage: noText
+                noMessage: noText,
+                buttonTexts: buttonTexts
             },
             panelClass: 'app-dialog',
         } );
@@ -648,7 +649,7 @@ export class DialogService {
      * @param label Placeholder/label for the input.
      * @param hint Any additional information related to the request and how to fulfill it.
      */
-    public showInputDialog( title: string, message: string | string[], label?: string, hint?: string, initialValue?: string, textArea?: boolean ): Observable<string> {
+    public showInputDialog( title: string, message: string | string[], label?: string, hint?: string, initialValue?: string, textArea?: boolean, acceptText?: string ): Observable<string> {
         let data: InputDialogModel = new InputDialogModel();
         
         data.title = title;
@@ -657,6 +658,7 @@ export class DialogService {
         data.hint = hint;
         data.initialValue = initialValue;
         data.useTextArea = textArea === true;
+        data.acceptText = acceptText;
 
         return this.dialog.open<InputDialogComponent, any, string>( InputDialogComponent, {
             width: data.useTextArea ? '80vw' : '450px',

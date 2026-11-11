@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>Send trigger(s) and folder(s)</h2>
+<h2 mat-dialog-title>Share triggers and folders</h2>
 
 <mat-dialog-content>
 
@@ -40,7 +40,7 @@
 <mat-dialog-actions>
 
     <!-- cdk-focus-start -->
-    <button mat-button [mat-dialog-close]="null" class="t-confirm-no" color="warn">Cancel</button>
-    <button mat-button (click)="createQuickShare()" class="t-confirm-yes" color="accent" [disabled]="creatingQuickShare || !canShare">{{shareButtonLabel}} <div *ngIf="creatingQuickShare" style="display: inline-block; margin-left: 10px;"><mat-spinner [diameter]="24" color="accent"></mat-spinner></div></button>
+    <button mat-stroked-button [mat-dialog-close]="null" class="t-confirm-no">Cancel</button>
+    <button mat-flat-button (click)="createQuickShare()" class="t-confirm-yes" color="primary" [disabled]="creatingQuickShare || !canShare">{{shareButtonLabel}} <div *ngIf="creatingQuickShare" style="display: inline-block; margin-left: 10px;"><mat-spinner [diameter]="24" color="accent"></mat-spinner></div></button>
 
 </mat-dialog-actions>

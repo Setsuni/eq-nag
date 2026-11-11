@@ -15,7 +15,7 @@
 
 <mat-dialog-actions>
 
-    <button mat-button (click)="cancel()" color="warn">Cancel</button>
-    <button mat-button (click)="accept()" [disabled]="!urlValid">Re-import</button>
+    <button mat-stroked-button (click)="cancel()">Cancel</button>
+    <button mat-flat-button color="primary" (click)="accept()" [disabled]="!urlValid">Re-import</button>
 
 </mat-dialog-actions>

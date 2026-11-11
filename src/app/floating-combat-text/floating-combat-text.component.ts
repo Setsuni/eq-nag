@@ -121,7 +121,7 @@ export class FloatingCombatTextComponent implements OnInit, DoCheck {
                 cssClass: 'color-orange',
             } );
 
-            this.dialogService.showQuestionDialog( `Floating Combat Text ${canMigrate ? 'Migration' : 'Initialization'}`, statements, questions, true, 'wide' );
+            this.dialogService.showQuestionDialog( `Floating combat text ${canMigrate ? 'migration' : 'initialization'}`, statements, questions, true, 'wide' );
 
         } );
 
@@ -237,10 +237,11 @@ export class FloatingCombatTextComponent implements OnInit, DoCheck {
             .showInputDialog(
                 'Enter a share code',
                 [ 'To install shared combat groups, paste the code below' ],
-                'Quick share code',
+                'Share code',
                 'Paste in the quick share code',
                 null,
-                false )
+                false,
+                'Install' )
             .subscribe( response => {
                 if ( response ) {
                     let handled = false;

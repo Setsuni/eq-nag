@@ -1,4 +1,4 @@
-<h2 mat-dialog-title>Raid Ability Tracker (Allakhazam)</h2>
+<h2 mat-dialog-title>Raid ability tracker (Allakhazam)</h2>
 
 <mat-dialog-content>
     
@@ -98,7 +98,7 @@
 
 <mat-dialog-actions>
 
-  <button mat-button mat-dialog-close class="t-confirm-no" color="warn">Cancel</button>
-        <button mat-button (click)="import()" class="t-confirm-yes" color="accent" [disabled]="!readyForImport">Import</button>
+  <button mat-stroked-button mat-dialog-close class="t-confirm-no">Cancel</button>
+        <button mat-flat-button (click)="import()" class="t-confirm-yes" color="primary" [disabled]="!readyForImport">Import</button>
 
 </mat-dialog-actions>
