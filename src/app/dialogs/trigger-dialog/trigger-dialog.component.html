@@ -130,7 +130,7 @@
 
         </form>
     </section>
-    <footer>
+    <footer class="editor-footer">
         <div class="footer-left">
             <span class="footer-note" *ngIf="missingCastTime">"{{ missingCastTime }}" needs a cast time before this can be saved.</span>
             <span class="footer-note" *ngIf="!missingCastTime && castTimeWarning">"{{ castTimeWarning }}" has no cast time, so it may not start. Add one (0 if the buff is instant).</span>

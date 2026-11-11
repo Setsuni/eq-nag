@@ -6,7 +6,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { IpcService } from 'src/app/ipc.service';
 import { DialogService } from '../dialog.service';
 import { ColorUtility } from 'src/app/utilities';
-import { TriggerModel, CapturePhrase, ActionTypes, TriggerAction, TriggerCondition, TriggerConditionTypes, OverlayWindowModel, OperatorTypes, ImportTypes, ExternalDataSources } from 'src/app/core.model';
+import { TriggerModel, TriggerFolder, CapturePhrase, ActionTypes, TriggerAction, TriggerCondition, TriggerConditionTypes, OverlayWindowModel, OperatorTypes, ImportTypes, ExternalDataSources } from 'src/app/core.model';
 import { Observable } from 'rxjs';
 import { CooldownExplanation } from 'src/app/editors/capture-phrases/capture-phrases.component';
 import { isAdvancedActionType } from 'src/app/editors/action-picker';
@@ -38,6 +38,7 @@ export class TriggerDialogComponent implements OnInit {
     public showOnlyWhen: boolean = false;
     public zones: string[] = [];
     private _baseline: string = null;
+    private _creating: boolean = false;
     private _docsUrl: string = 'https://guildantix.github.io/eq-nag/triggers/';
 
     /** The docs page for the section the player is working in. */
@@ -206,12 +207,32 @@ export class TriggerDialogComponent implements OnInit {
             } else {
                 this.initDisclosures();
                 this.captureBaseline();
+                if ( this.folderId?.length > 0 ) {
+                    this.ipcService.getTriggerFolders().subscribe( folders => {
+                        const names = this.folderNames( this.folderId, folders );
+                        this.fullName = names ? names.join( ' / ' ) : '';
+                    } );
+                }
             }
 
             // In a real app: dispatch action to load the details here.
         } );
         
         this.ipcService.getAppIsDev().subscribe( isDev => this.isDev = isDev );
+    }
+
+    /** The names of the folders from the top down to the given folder, or null when it is not found. */
+    private folderNames( folderId: string, folders: TriggerFolder[] ): string[] | null {
+        for ( const folder of folders ?? [] ) {
+            if ( folder.folderId === folderId ) {
+                return [ folder.name ];
+            }
+            const inner = this.folderNames( folderId, folder.children );
+            if ( inner ) {
+                return [ folder.name, ...inner ];
+            }
+        }
+        return null;
     }
 
     public closeModal(): void {
@@ -341,8 +362,15 @@ export class TriggerDialogComponent implements OnInit {
             } );
 
             if ( this.triggerId == null ) {
+                if ( this._creating ) {
+                    observer.next( false );
+                    observer.complete();
+                    return;
+                }
+                this._creating = true;
                 this.model.folderId = this.folderId?.length > 0 ? this.folderId : null;
                 this.ipcService.createNewTrigger( this.model ).subscribe( triggerId => {
+                    this._creating = false;
                     this.triggerId = triggerId;
                     this.model.triggerId = triggerId;
                     this._baseline = JSON.stringify( this.model );

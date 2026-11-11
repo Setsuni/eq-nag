@@ -2,6 +2,13 @@ mat-form-field {
     width: 100%;
 }
 
+.duration-label {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
 .look-toggle {
     display: flex;
     align-items: center;
