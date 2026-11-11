@@ -207,13 +207,13 @@ legend.full-width {
 
 .editor-page ::ng-deep fieldset {
     margin-bottom: 16px;
-    padding-top: 0 !important;
+    padding-top: 48px !important;
     background-color: transparent !important;
 
     legend {
-        position: static;
-        padding: 0 0 8px;
-        background-color: transparent;
+        top: 0;
+        padding: 0 0 8px !important;
+        background-color: transparent !important;
 
         > button {
             top: -4px;
