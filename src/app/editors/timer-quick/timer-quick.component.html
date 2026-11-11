@@ -50,7 +50,7 @@
         </div>
         <div class="group-options" *ngIf="warnActive">
             <div class="option-line">
-                <mat-checkbox [ngModel]="action.endingSoonChangeColor" (ngModelChange)="onWarnColorChange( $event )" name="cbxQuickWarnColor">Change the bar colour</mat-checkbox>
+                <mat-checkbox [ngModel]="action.endingSoonChangeColor" (ngModelChange)="onWarnColorChange( $event )" name="cbxQuickWarnColor">Change the bar color</mat-checkbox>
                 <app-color-picker *ngIf="action.endingSoonChangeColor" [(ngModel)]="action.endingSoonColor" name="acpQuickWarnColor" [inline]="true"></app-color-picker>
             </div>
             <div class="option-line">
