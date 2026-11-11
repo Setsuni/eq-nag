@@ -3,6 +3,7 @@ import { PageEvent } from '@angular/material/paginator';
 import { CharacterClassNames, DpsMeterSettings, PlayerInfo, ServerCombatModel, SettingsKeys } from 'src/app/core.model';
 import { DialogService } from 'src/app/dialogs/dialog.service';
 import { IpcService } from 'src/app/ipc.service';
+import { serverLabel } from 'src/app/utilities/string.utilities';
 
 interface IPlayerGridInfo {
     
@@ -126,6 +127,10 @@ export class CombatStatisticsComponent implements OnInit {
     }
 
     public updatedSettings: string[] = [];
+
+    public serverLabel( server: string ): string {
+        return serverLabel( server );
+    }
 
     public playerNames: Record<string, string[]> = {};
     public playerPageIndices: Record<string, number> = {};

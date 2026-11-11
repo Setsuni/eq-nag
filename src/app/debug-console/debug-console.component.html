@@ -24,7 +24,7 @@
 
         <span style="flex: 1 1 auto;"></span>
 
-        <mat-form-field class="filter-field">
+        <mat-form-field class="filter-field" floatLabel="never">
             <input matInput type="text" placeholder="Filter" aria-label="Filter" [ngModel]="searchText" (ngModelChange)="onSearchTextChanged($event)" name="searchText" />
             <mat-icon matPrefix style="opacity: 0.5;">search</mat-icon>
         </mat-form-field>

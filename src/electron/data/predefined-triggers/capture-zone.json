@@ -28,16 +28,6 @@
     "actions": [
         {
             "phrases": [
-                "PhraseEnterZoneX"
-            ],
-            "actionType": 0,
-            "overlayId": "hQqWbu1vumF9GRJv",
-            "displayText": "You have entered {1}.",
-            "duration": 5,
-            "actionId": "ActionTextEnterd"
-        },
-        {
-            "phrases": [
                 "PhraseLoadingPls",
                 "PhraseCharInZone"
             ],

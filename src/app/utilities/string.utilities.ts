@@ -7,6 +7,7 @@ const knownServerLabels: Record<string, string> = {
     'P1999GREEN': 'P1999Green',
     'P1999BLUE': 'P1999Blue',
     'P1999RED': 'P1999Red',
+    'P1999PVP': 'P1999PVP',
     'PROJECT1999': 'Project1999',
     'PQ.PROJ': 'pq.proj',
     'THJ': 'THJ',

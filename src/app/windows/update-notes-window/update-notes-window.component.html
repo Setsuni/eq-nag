@@ -1,9 +1,9 @@
 <div class="modal">
     <header>
         <mat-toolbar class="titlebar" color="default">
-            <span>Update Notes v{{versionNumber}}</span>
+            <span>Update notes<ng-container *ngIf="versionNumber"> · v{{versionNumber}}</ng-container></span>
             <span class="spacer"></span>
-            <button mat-icon-button aria-label="Close Update Notes" (click)="close()">
+            <button mat-icon-button aria-label="Close" (click)="close()">
                 <mat-icon>clear</mat-icon>
             </button>
         </mat-toolbar>
