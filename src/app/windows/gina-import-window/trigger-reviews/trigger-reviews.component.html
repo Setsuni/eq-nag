@@ -10,7 +10,7 @@
     <form #mappingForm="ngForm">
         <mat-card class="card action-card" style="margin: 20px; width: 550px;">
             <mat-card-header>
-                <mat-card-title>Restrict by Zone</mat-card-title>
+                <mat-card-title>Restrict by zone</mat-card-title>
                 <mat-card-subtitle>Restrict the execution of capture phrases by zone names.</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
@@ -41,13 +41,13 @@
         </mat-card>
         
         <div class="import-actions">
-            <button mat-stroked-button (click)="back()"><mat-icon style="transform-origin: center center; transform: rotate(180deg);">double_arrow</mat-icon>Back</button>
+            <button mat-stroked-button (click)="back()">Back</button>
             <span class="spacer" style="text-align: center;">
                 <div class="trigger-count">
                     <span class="label">Count:</span> <span class="count">{{triggers?.length}}</span>
                 </div>
             </span>
-            <button mat-button color="accent" (click)="importTriggers()">Import Triggers<mat-icon>double_arrow</mat-icon></button>
+            <button mat-flat-button color="primary" (click)="importTriggers()">Import triggers</button>
         </div>
     </form>
 </ng-template>
@@ -56,7 +56,7 @@
     <form #mappingForm="ngForm">
         <mat-card class="card action-card" style="margin: 20px; width: 550px;">
             <mat-card-header>
-                <mat-card-title>Map Gina Folders</mat-card-title>
+                <mat-card-title>Map GINA folders</mat-card-title>
                 <mat-card-subtitle>Map your GINA folders to their equivalent folder in Nag.</mat-card-subtitle>
             </mat-card-header>
             <mat-card-content>
@@ -92,13 +92,13 @@
         </mat-card>
         
         <div class="import-actions">
-            <button mat-stroked-button (click)="back()"><mat-icon style="transform-origin: center center; transform: rotate(180deg);">double_arrow</mat-icon>Back</button>
+            <button mat-stroked-button (click)="back()">Back</button>
             <span class="spacer" style="text-align: center;">
                 <div class="trigger-count">
                     <span class="label">Count:</span> <span class="count">{{triggers?.length}}</span>
                 </div>
             </span>
-            <button mat-button color="accent" (click)="updateGinaFolderMap()">Continue<mat-icon>double_arrow</mat-icon></button>
+            <button mat-flat-button color="primary" (click)="updateGinaFolderMap()">Continue</button>
         </div>
     </form>
 </ng-template>
@@ -107,7 +107,7 @@
 
     <mat-card class="card action-card" style="margin: 20px; width: 550px;">
         <mat-card-header>
-            <mat-card-title>Duplicate Triggers<button mat-button color="warn" (click)="resetDuplicates()" style="float: right;">Reset</button></mat-card-title>
+            <mat-card-title>Duplicate triggers<button mat-button color="warn" (click)="resetDuplicates()" style="float: right;">Reset</button></mat-card-title>
             <mat-card-subtitle>Check for trigger duplicates.</mat-card-subtitle>
         </mat-card-header>
         <mat-card-content>
@@ -176,7 +176,7 @@
                                             <span *ngIf="action.actionType == actionTypes.Countdown">Countdown</span>
                                         </div>
                                         <div class="field-line"><label>Timer Name</label><span>{{action.displayText}}</span></div>
-                                        <div class="field-line" *ngIf="action.repeatTimer"><label>Timer Repeats</label><span>Yes</span></div>
+                                        <div class="field-line" *ngIf="action.repeatTimer"><label>Timer repeats</label><span>Yes</span></div>
                                         <div class="field-line"><label>Timer Duration</label><span>{{getDurationLabel(action.duration)}}</span></div>
                                         <div class="field-line" *ngIf="action.restartBehavior === timerRestartBehaviors.RestartOnDuplicate"><label>Restart</label><span>Only if timer name matches.</span></div>
                                         <div class="field-line" *ngIf="action.restartBehavior === timerRestartBehaviors.RestartTimer"><label>Restart</label><span>Restart regardless of timer name.</span></div>
@@ -253,7 +253,7 @@
                                                 <span *ngIf="action.actionType == actionTypes.Countdown">Countdown</span>
                                             </div>
                                             <div class="field-line"><label>Timer Name</label><span>{{action.displayText}}</span></div>
-                                            <div class="field-line" *ngIf="action.repeatTimer"><label>Timer Repeats</label><span>Yes</span></div>
+                                            <div class="field-line" *ngIf="action.repeatTimer"><label>Timer repeats</label><span>Yes</span></div>
                                             <div class="field-line"><label>Timer Duration</label><span>{{getDurationLabel(action.duration)}}</span></div>
                                             <div class="field-line" *ngIf="action.restartBehavior === timerRestartBehaviors.RestartOnDuplicate"><label>Restart</label><span>Only if timer name matches.</span></div>
                                             <div class="field-line" *ngIf="action.restartBehavior === timerRestartBehaviors.RestartTimer"><label>Restart</label><span>Restart regardless of timer name.</span></div>
@@ -320,7 +320,7 @@
                     <span class="label">Count:</span> <span class="count">{{triggers?.length}}</span>
                 </div>
             </span>
-            <button mat-button color="accent" (click)="showFolderCheck()">Continue<mat-icon>double_arrow</mat-icon></button>
+            <button mat-flat-button color="primary" (click)="showFolderCheck()">Continue</button>
         </div>
 
 </ng-template>
@@ -357,7 +357,7 @@
     </ng-container>
 
     <ng-container matColumnDef="capturePhrases">
-        <th mat-header-cell *matHeaderCellDef style="padding-left: 15px;"> Capture Phrases </th>
+        <th mat-header-cell *matHeaderCellDef style="padding-left: 15px;"> Capture phrases </th>
         <td mat-cell *matCellDef="let triggerReviewModel; let i = index" style="padding-left: 15px;">
         
             <div *ngFor="let phrase of getInvalidCapturePhrases(triggerReviewModel.nagTrigger)">

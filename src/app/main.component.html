@@ -10,7 +10,7 @@
             <div class="progress-bar" *ngIf="transmitPercent !== null"><mat-progress-bar mode="determinate" [value]="transmitPercent * 100" color="accent" class="color-green"></mat-progress-bar><div><mat-icon class="material-icons-outlined">wifi</mat-icon> {{transmitLabel}}</div></div>
         </div>
 
-        <button mat-icon-button class="connected-button" aria-label="Run Setup Wizard" *ngIf="connected" (click)="disconnectChatRoom()" matTooltip="Turn off log sync" matTooltipPosition="below">
+        <button mat-icon-button class="connected-button" aria-label="Turn off log sync" *ngIf="connected" (click)="disconnectChatRoom()" matTooltip="Turn off log sync" matTooltipPosition="below">
             <mat-icon class="material-icons-outlined no-hover" style="opacity: 0.95; ">public</mat-icon>
             <mat-icon class="material-icons-outlined hover" style="opacity: 0.95; ">public_off</mat-icon>
         </button>

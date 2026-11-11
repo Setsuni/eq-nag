@@ -733,8 +733,12 @@ export class GinaImportWindowComponent implements OnInit {
                     this.skipDuplicateTriggerCheck = true;
                     if ( matches?.length > 0 ) {
                         this.duplicateTriggers = matches;
-                        this.scrollingElement.nativeElement.scrollTop = 0;
-                        this.nTriggerTabs.selectedIndex = 3;
+                        if ( this.scrollingElement?.nativeElement ) {
+                            this.scrollingElement.nativeElement.scrollTop = 0;
+                        }
+                        if ( this.nTriggerTabs ) {
+                            this.nTriggerTabs.selectedIndex = 3;
+                        }
                     } else {
                         this.importTrigger();
                     }

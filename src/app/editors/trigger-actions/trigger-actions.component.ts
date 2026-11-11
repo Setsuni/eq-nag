@@ -128,7 +128,7 @@ export class TriggerActionsComponent implements OnInit {
         this.actions.push( action );
         this._open.add( action );
         this.actionsChange.emit( this.actions );
-        window.setTimeout( () => this.content?.nativeElement.querySelector( '.action-card:last-of-type' )?.scrollIntoView( { block: 'nearest' } ) );
+        window.setTimeout( () => this.content?.nativeElement?.querySelector( '.action-card:last-of-type' )?.scrollIntoView( { block: 'nearest' } ) );
     }
 
     /**

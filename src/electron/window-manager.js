@@ -28,6 +28,13 @@ let rendererOnTopId = null;
  * @type {NodeJS.Timeout}
  */
 let rendererCursorId = null;
+
+/** Set once the app is quitting, so guarded windows close without asking. */
+let appQuitting = false;
+app.on( 'before-quit', () => appQuitting = true );
+
+/** Windows whose renderer has already decided they may close. */
+const approvedToClose = new WeakSet();
 const rendererCursorPollMs = 33;
 // Resend an unchanged position this often, so an overlay that appears or
 // disappears under a still cursor is still picked up.
@@ -294,6 +301,7 @@ class WindowManager {
             } );
 
             require( "@electron/remote/main" ).enable( triggerWindow.webContents );
+            this.guardTriggerEditorClose( triggerWindow, mainWindowRef.reference );
 
             let url = `file://${this.#dirname}/dist/index.html#/trigger/new`;
             if ( arg ) {
@@ -324,6 +332,7 @@ class WindowManager {
             } );
 
             require( "@electron/remote/main" ).enable( triggerWindow.webContents );
+            this.guardTriggerEditorClose( triggerWindow, mainWindowRef.reference );
 
             triggerWindow.loadURL( `file://${this.#dirname}/dist/index.html#/trigger/${arg}` );
             triggerWindow.once( "ready-to-show", () => {
@@ -348,7 +357,10 @@ class WindowManager {
         
         ipcMain.on( 'window:child:close', ( event, arg ) => {
             let bwin = BrowserWindow.fromWebContents( event.sender );
-            bwin?.close();
+            if ( bwin ) {
+                approvedToClose.add( bwin );
+                bwin.close();
+            }
         } );
         
         ipcMain.on( 'window:death-recap',
@@ -1731,6 +1743,36 @@ class WindowManager {
 
 
 
+
+    /**
+     * Makes a native close of a trigger editor window (Alt+F4, the taskbar) ask the editor first, so it can warn about
+     * unsaved changes. The window closes without asking when the app quits, its main window closes, or its page is
+     * not loaded or not responding.
+     *
+     * @param {BrowserWindow} win The trigger editor window.
+     * @param {BrowserWindow} parent The main window.
+     */
+    guardTriggerEditorClose( win, parent ) {
+        let unresponsive = false;
+        const approve = () => approvedToClose.add( win );
+
+        parent?.once( 'close', approve );
+        win.on( 'session-end', approve );
+        win.on( 'unresponsive', () => unresponsive = true );
+        win.on( 'responsive', () => unresponsive = false );
+        win.on( 'close', ( event ) => {
+            if ( appQuitting || approvedToClose.has( win ) || unresponsive || win.webContents.isCrashed() || win.webContents.isLoading() ) {
+                return;
+            }
+            event.preventDefault();
+            win.webContents.send( 'window:close-request' );
+        } );
+        win.once( 'closed', () => {
+            if ( parent && !parent.isDestroyed() ) {
+                parent.removeListener( 'close', approve );
+            }
+        } );
+    }
 
     /**
      * Attaches event handlers to the given browser window that disables the 

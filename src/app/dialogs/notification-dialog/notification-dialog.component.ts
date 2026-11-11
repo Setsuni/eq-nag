@@ -1,4 +1,4 @@
-import { Component, Inject, OnInit } from '@angular/core';
+import { Component, Inject } from '@angular/core';
 import { MatDialog, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { ColoredString, CustomButton } from '../dialog.model';
 import { NotificationDialogModel, NotificationTypes } from './notification-dialog.model';
@@ -8,7 +8,7 @@ import { NotificationDialogModel, NotificationTypes } from './notification-dialo
     templateUrl: 'notification-dialog.component.html',
     styleUrls: [ 'notification-dialog.component.scss', '../dialog.styles.scss' ],
 } )
-export class NotificationDialogComponent implements OnInit {
+export class NotificationDialogComponent {
 
     public model: string;
     public messages: ( string | ColoredString )[] = [];
@@ -26,16 +26,6 @@ export class NotificationDialogComponent implements OnInit {
             this.messages.push( data.message );
         }
 
-    }
-
-    ngOnInit() {
-        if ( this.data.notificationType === NotificationTypes.Error ) {
-            this.dialogRef.addPanelClass( 'red-warn-glow' );
-        } else if ( this.data.notificationType === NotificationTypes.Information ) {
-            this.dialogRef.addPanelClass( 'blue-glow' );
-        }else if ( this.data.notificationType === NotificationTypes.Warning ) {
-            this.dialogRef.addPanelClass( 'yellow-glow' );
-        }
     }
 
 

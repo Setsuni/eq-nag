@@ -38,6 +38,7 @@ export class TriggerDialogComponent implements OnInit {
     public showOnlyWhen: boolean = false;
     public zones: string[] = [];
     private _baseline: string = null;
+    private _confirmingClose: boolean = false;
     private _creating: boolean = false;
     private _docsUrl: string = 'https://guildantix.github.io/eq-nag/triggers/';
 
@@ -192,6 +193,8 @@ export class TriggerDialogComponent implements OnInit {
     ngOnInit() {
         this.model = new TriggerModel();
 
+        this.ipcService.onWindowCloseRequest().subscribe( () => this.requestClose() );
+
         this.route.params.subscribe( params => {
             
             this.triggerId = params[ 'id' ];
@@ -272,6 +275,10 @@ export class TriggerDialogComponent implements OnInit {
             this.closeModal();
             return;
         }
+        if ( this._confirmingClose ) {
+            return;
+        }
+        this._confirmingClose = true;
         this.dialogService
             .showConfirmationDialog(
                 'Close without saving?',
@@ -280,6 +287,7 @@ export class TriggerDialogComponent implements OnInit {
                 null, 'normal', null,
                 { Yes: 'Discard', No: 'Keep editing' } )
             .subscribe( discard => {
+                this._confirmingClose = false;
                 if ( discard ) {
                     this.closeModal();
                 }

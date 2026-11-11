@@ -250,7 +250,7 @@
                                     <mat-tab label="Suggestions" *ngIf="showCapturePhraseSuggestion || showMissingOverlays || showDuplicateTriggers">
                                         <ng-template matTabContent>
                                             <div style="padding: 25px;" *ngIf="showDuplicateTriggers" class="fade-out-green-background">
-                                                <h3>Duplicate Triggers</h3>
+                                                <h3>Duplicate triggers</h3>
                                                 <div style="margin-bottom: 25px;">There may be duplicate triggers, please review the list.  You can click on the edit button to view the details of any trigger.</div>
                                                 <div *ngFor="let trigger of duplicateTriggers" class="div-list-item">
                                                     <button mat-button color="accent" aria-label="Edit this trigger" (click)="showEditTriggerDialog(trigger.triggerId)">Edit</button>
@@ -260,7 +260,7 @@
                                                 <div class="small-text">This list is using a best-guess method to query existing triggers.  There may be triggers found that don't have anything to do with the one you're importing.  You can click on <span class="color-green">Import</span> again to ignore any possible duplicates and perform the import.</div>
                                             </div>
                                             <div style="padding: 25px;" *ngIf="showCapturePhraseSuggestion">
-                                                <h3>Capture Phrases</h3>
+                                                <h3>Capture phrases</h3>
                                                 <div>It is recommended to use full line regular expressions.</div>
                                                 <!-- <div>For example, it is better to use</div> -->
                                                 <p class="code-block">
