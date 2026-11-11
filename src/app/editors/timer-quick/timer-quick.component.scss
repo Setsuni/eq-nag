@@ -1,0 +1,66 @@
+mat-form-field {
+    font-size: 12px;
+}
+
+.timer-quick {
+    padding: 4px 0 8px;
+
+    .full {
+        width: 100%;
+    }
+
+    .quick-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0 16px;
+        align-items: flex-end;
+    }
+
+    .grow {
+        flex: 1 1 200px;
+    }
+
+    .cast-time {
+        flex: 0 1 220px;
+    }
+
+    .duration-field {
+        margin-bottom: 14px;
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-size: 12px;
+            opacity: 0.75;
+        }
+    }
+
+    .quick-group {
+        margin: 6px 0 10px;
+        padding: 8px 12px;
+        border-left: 3px solid #ffffff1f;
+    }
+
+    .group-line {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+    }
+
+    .group-title {
+        font-size: 14px;
+    }
+
+    .group-options {
+        padding-left: 4px;
+    }
+
+    .option-line {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+        min-height: 40px;
+    }
+}

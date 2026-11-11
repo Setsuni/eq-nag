@@ -102,15 +102,15 @@ export function ActionTypeLabels(actionType: ActionTypes): string {
         actionType === ActionTypes.Speak ? 'Speak' :
         actionType === ActionTypes.Timer ? 'Timer' :
         actionType === ActionTypes.Countdown ? 'Countdown' :
-        actionType === ActionTypes.StoreVariable ? 'Store Variable' :
-        actionType === ActionTypes.DotTimer ? 'DoT Timer' :
-        actionType === ActionTypes.ClearVariable ? 'Clear Variable' :
+        actionType === ActionTypes.StoreVariable ? 'Remember a value' :
+        actionType === ActionTypes.DotTimer ? 'Timer until DoT ends' :
+        actionType === ActionTypes.ClearVariable ? 'Forget a value' :
         actionType === ActionTypes.Counter ? 'Counter' :
-        actionType === ActionTypes.Clipboard ? 'Clipboard' :
-        actionType === ActionTypes.BeneficialTimer ? 'Beneficial Timer' :
-        actionType === ActionTypes.DisplayDeathRecap ? 'Display Death Recap' :
-        actionType === ActionTypes.ScreenGlow ? 'Screen Glow' :
-        actionType === ActionTypes.ClearAll ? 'Clear All' :
+        actionType === ActionTypes.Clipboard ? 'Copy to clipboard' :
+        actionType === ActionTypes.BeneficialTimer ? 'Timer until buff ends' :
+        actionType === ActionTypes.DisplayDeathRecap ? 'Death recap' :
+        actionType === ActionTypes.ScreenGlow ? 'Screen glow' :
+        actionType === ActionTypes.ClearAll ? 'Clear everything' :
         actionType === ActionTypes.Stopwatch ? 'Stopwatch' :
         actionType === ActionTypes.List ? 'List' :
         'Unset Action';
@@ -370,6 +370,25 @@ export class TriggerHotkey {
     public lines: string[] = [];
     public simpleCommand: boolean = false;
     public quickAction: boolean = false;
+}
+
+/** The outcome of testing an unsaved trigger against one log line. */
+export interface TriggerTestResult {
+    requestId: string;
+    ok: boolean;
+    error?: 'timeout' | 'noCharacter' | 'failed';
+    /** False when a rule under "Only when" would stop the trigger right now. */
+    conditionsPassed: boolean;
+    matches: { phraseId: string, phrase: string }[];
+    fired: boolean;
+    /** True when the trigger needs its phrases in order, which one line cannot complete. */
+    sequential?: boolean;
+    /** Phrases whose pattern cannot be compiled. */
+    patternErrors?: { phraseId: string, message: string }[];
+    /** Stored values used by a phrase that have no value right now. */
+    missingValues?: string[];
+    /** Actions that change stored values, counters, lists or timers, which a test does not run. */
+    skippedActions?: number;
 }
 
 export class TriggerModel {

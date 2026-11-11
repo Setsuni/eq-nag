@@ -7,7 +7,7 @@
                 <span class="second">{{fullNameSuffix}}</span>
             </span>
             <span class="spacer"></span>
-            <a mat-icon-button class="help-link" [href]="helpUrl" target="_blank" rel="noopener" aria-label="Open the help page for this tab" matTooltip="Help for this tab">
+            <a mat-icon-button class="help-link" [href]="helpUrl" target="_blank" rel="noopener" aria-label="Open the help page for triggers" matTooltip="Help for triggers">
                 <mat-icon>help_outline</mat-icon>
             </a>
             <button mat-icon-button aria-label="Exit application" (click)="requestClose()">
@@ -16,81 +16,126 @@
         </mat-toolbar>
     </header>
     <section class="show-scrollbar">
-        <form #triggerForm="ngForm">
-            <mat-tab-group class="modal-menu" animationDuration="0ms" (selectedIndexChange)="onChangeTabs($event)" [selectedIndex]="tabIndex">
-                <mat-tab label="When">
-                    <div class="tab-content">
-                        
-                        <fieldset class="margin-t-20">
-                            <legend><span class="title">General</span>
-                                <span class="trigger-id" *ngIf="isDev">{{ model.triggerId }}</span>
-                                <span class="spacer"></span>
-                                <mat-checkbox [(ngModel)]="model.predefined" name="cbxPredefined" *ngIf="isDev">Predefined</mat-checkbox>
-                                <mat-checkbox [(ngModel)]="model.onlyExecuteInDev" name="cbxOnlyShowInDev" *ngIf="isDev && model.predefined">Only execute in dev</mat-checkbox>
-                            </legend>
-                            
-                            <mat-form-field floatLabel="always">
-                                <mat-label>Trigger name</mat-label>
-                                <input matInput name="txtTriggerName" type="text" [(ngModel)]="model.name" required />
-                            </mat-form-field>
-        
-                            <mat-form-field floatLabel="always">
-                                <mat-label>Comments</mat-label>
-                                <textarea matInput name="txtComments" [(ngModel)]="model.comments" rows="5"></textarea>
-                            </mat-form-field>
-                        </fieldset>
-                        
-                        <app-conditions [(conditions)]="model.conditions"></app-conditions>
-                        
-                        <app-capture-phrases [(capturePhrases)]="model.capturePhrases" (capturePhraseAdded)="onCapturePhraseAdded($event)" [(captureMethod)]="model.captureMethod" [(useCooldown)]="model.useCooldown" [(cooldownDuration)]="model.cooldownDuration"></app-capture-phrases>
-    
-                        <fieldset *ngIf="model.captureMethod === 'Sequential'">
-                            <legend class="full-width"><span class="title">Sequential Rules</span><span class="spacer"></span></legend>
-                            
-                            <mat-form-field>
-                                <mat-label>Restart behavior</mat-label>
-                                <mat-select [(ngModel)]="model.sequentialRestartBehavior" name="ddlSequentialRestartBehavior">
-                                    <mat-option value="none">None</mat-option>
-                                    <mat-option value="exactFirstMatch">Restart on Phrase #1</mat-option>
-                                    <mat-option value="afterFirstMatch">Restart on any Phrase after #1</mat-option>
-                                    <!-- <mat-option value="lastMatch">Restart on only the last phrase</mat-option> -->
-                                </mat-select>
-                                <mat-hint *ngIf="model.sequentialRestartBehavior === 'none'">Always begin a new sequence.</mat-hint>
-                                <mat-hint *ngIf="model.sequentialRestartBehavior === 'exactFirstMatch'">Restart the sequence when phrase #1 matches exactly.</mat-hint>
-                                <mat-hint *ngIf="model.sequentialRestartBehavior === 'afterFirstMatch'">Restart the sequence when any phrase after the first matches exactly.</mat-hint>
-                            </mat-form-field>
+        <form #triggerForm="ngForm" class="editor-page">
 
-                        </fieldset>
+            <mat-form-field floatLabel="always" class="name-field">
+                <mat-label>Trigger name</mat-label>
+                <input matInput name="txtTriggerName" type="text" [(ngModel)]="model.name" placeholder="What is this trigger for?" required />
+            </mat-form-field>
 
-                        <app-trigger-hotkeys [(hotkeys)]="model.hotkeys"></app-trigger-hotkeys>
+            <div class="step" (focusin)="helpPage = 'capture-phrases'" (click)="helpPage = 'capture-phrases'">
+                <h3><span class="step-number">1</span>When this appears in the log</h3>
+                <app-capture-phrases [simple]="true" [(capturePhrases)]="model.capturePhrases" (capturePhraseAdded)="onCapturePhraseAdded($event)" [(captureMethod)]="model.captureMethod"></app-capture-phrases>
+            </div>
 
+            <div class="step">
+                <h3>Test with a log line</h3>
+                <app-trigger-test [trigger]="model"></app-trigger-test>
+            </div>
+
+            <div class="step" (focusin)="helpPage = 'actions'" (click)="helpPage = 'actions'">
+                <h3><span class="step-number">2</span>Then</h3>
+                <app-trigger-actions [(actions)]="model.actions" [isDev]="isDev" [predefined]="model.predefined" [capturePhrases]="model.capturePhrases" [showAdvanced]="showAdvanced"></app-trigger-actions>
+            </div>
+
+            <div class="disclosure" (focusin)="helpPage = 'conditions'" (click)="helpPage = 'conditions'">
+                <button type="button" class="disclosure-toggle" (click)="showOnlyWhen = !showOnlyWhen" [attr.aria-expanded]="showOnlyWhen">
+                    <mat-icon>{{ showOnlyWhen ? 'expand_more' : 'chevron_right' }}</mat-icon>Only when&hellip;
+                    <span class="disclosure-note" *ngIf="!showOnlyWhen && usesOnlyWhen">in use</span>
+                </button>
+                <div class="disclosure-body" *ngIf="showOnlyWhen">
+                    <div class="zone-row" *ngIf="zoneMode === 'simple'">
+                        <mat-form-field floatLabel="always" class="zone-field">
+                            <mat-label>Only in zone</mat-label>
+                            <input matInput [ngModel]="zoneValue" (ngModelChange)="setZone( $event )" name="txtOnlyZone" list="zoneNames" placeholder="Any zone" autocomplete="off" />
+                            <mat-hint>Part of the name is enough. Separate several zones with |</mat-hint>
+                        </mat-form-field>
+                        <datalist id="zoneNames"><option *ngFor="let zone of zones" [value]="zone"></option></datalist>
                     </div>
-                </mat-tab>
-                <mat-tab label="Then">
-                    <ng-template matTabContent>
-                        <div class="tab-content">
-
-                            <app-trigger-actions [(actions)]="model.actions" [isDev]="isDev" [predefined]="model.predefined" [capturePhrases]="model.capturePhrases"></app-trigger-actions>
-                            
-                        </div>
+                    <div class="zone-row zone-complex" *ngIf="zoneMode === 'complex'">
+                        <span class="zone-label">Only in zone</span>
+                        <span class="zone-text">{{ complexZoneText }}</span>
+                        <button mat-button type="button" color="accent" *ngIf="!showAdvanced" (click)="setShowAdvanced( true )">Edit in Advanced</button>
+                        <span class="zone-text" *ngIf="showAdvanced">Edit it in the conditions below.</span>
+                    </div>
+                    <div class="cooldown-row">
+                        <mat-checkbox [(ngModel)]="model.useCooldown" name="cbxUseCooldown">Wait between alerts</mat-checkbox>
+                        <sup class="help-sup"
+                            matTooltip="After this trigger fires, wait this long before it can fire again."
+                            matTooltipPosition="above"
+                            (click)="explainCooldowns()">&nbsp;&nbsp;?</sup>
+                        <app-duration [(ngModel)]="model.cooldownDuration" name="durCooldown" style="display: inline-block;"></app-duration>
+                    </div>
+                    <ng-container *ngIf="showAdvanced; else advancedHint">
+                        <app-trigger-classes [(classLevels)]="model.classLevels" style="display: block;"></app-trigger-classes>
+                        <app-conditions [(conditions)]="model.conditions"></app-conditions>
+                    </ng-container>
+                    <ng-template #advancedHint>
+                        <p class="disclosure-hint">Rules for character class, stored values and counters are in Advanced.</p>
                     </ng-template>
-                </mat-tab>
-                <mat-tab label="Character classes">
-                    <ng-template matTabContent>
-                        <div class="tab-content">
+                </div>
+            </div>
 
-                            <app-trigger-classes [(classLevels)]="model.classLevels" style="margin-top: 20px; display: block;"></app-trigger-classes>
+            <div class="disclosure" (focusin)="helpPage = 'conditions'" (click)="helpPage = 'conditions'">
+                <button type="button" class="disclosure-toggle" (click)="setShowAdvanced( !showAdvanced )" [attr.aria-expanded]="showAdvanced">
+                    <mat-icon>{{ showAdvanced ? 'expand_more' : 'chevron_right' }}</mat-icon>Advanced
+                    <span class="disclosure-note" *ngIf="!showAdvanced && usesAdvanced">in use</span>
+                </button>
+                <div class="disclosure-body" *ngIf="showAdvanced">
 
-                        </div>
-                    </ng-template>
-                </mat-tab>
-            </mat-tab-group>
+                    <p class="disclosure-hint">Also shows the advanced action types and the class and stored-value rules.</p>
+
+                    <div class="advanced-row" *ngIf="isDev">
+                        <span class="trigger-id">{{ model.triggerId }}</span>
+                        <span class="spacer"></span>
+                        <mat-checkbox [(ngModel)]="model.predefined" name="cbxPredefined">Predefined</mat-checkbox>
+                        <mat-checkbox [(ngModel)]="model.onlyExecuteInDev" name="cbxOnlyShowInDev" *ngIf="model.predefined">Only execute in dev</mat-checkbox>
+                    </div>
+
+                    <mat-form-field style="width: 240px;" floatLabel="always">
+                        <mat-label>When there are several phrases</mat-label>
+                        <mat-select [ngModel]="model.captureMethod === 'Sequential' ? 'Sequential' : 'Any match'" name="ddlCaptureMethod" (ngModelChange)="model.captureMethod = $event">
+                            <mat-option value="Any match" matTooltip="Run this trigger if any phrase matches a single log entry" matTooltipPosition="right">Any one of them</mat-option>
+                            <mat-option value="Sequential" matTooltip="Run this trigger if all phrases match in order across several log entries" matTooltipPosition="right">All of them, in order</mat-option>
+                        </mat-select>
+                    </mat-form-field>
+
+                    <fieldset *ngIf="model.captureMethod === 'Sequential'">
+                        <legend class="full-width"><span class="title">Sequential Rules</span><span class="spacer"></span></legend>
+
+                        <mat-form-field>
+                            <mat-label>Restart behavior</mat-label>
+                            <mat-select [(ngModel)]="model.sequentialRestartBehavior" name="ddlSequentialRestartBehavior">
+                                <mat-option value="none">None</mat-option>
+                                <mat-option value="exactFirstMatch">Restart on Phrase #1</mat-option>
+                                <mat-option value="afterFirstMatch">Restart on any Phrase after #1</mat-option>
+                                <!-- <mat-option value="lastMatch">Restart on only the last phrase</mat-option> -->
+                            </mat-select>
+                            <mat-hint *ngIf="model.sequentialRestartBehavior === 'none'">Always begin a new sequence.</mat-hint>
+                            <mat-hint *ngIf="model.sequentialRestartBehavior === 'exactFirstMatch'">Restart the sequence when phrase #1 matches exactly.</mat-hint>
+                            <mat-hint *ngIf="model.sequentialRestartBehavior === 'afterFirstMatch'">Restart the sequence when any phrase after the first matches exactly.</mat-hint>
+                        </mat-form-field>
+
+                    </fieldset>
+
+                    <app-trigger-hotkeys [(hotkeys)]="model.hotkeys"></app-trigger-hotkeys>
+
+                    <mat-form-field floatLabel="always">
+                        <mat-label>Comments</mat-label>
+                        <textarea matInput name="txtComments" [(ngModel)]="model.comments" rows="3"></textarea>
+                    </mat-form-field>
+
+                </div>
+            </div>
+
         </form>
     </section>
     <footer>
-        <button mat-flat-button color="primary" [disabled]="triggerForm.invalid" (click)="saveAndClose()">Save</button>
-        <button mat-button [disabled]="triggerForm.invalid" (click)="applyChanges()">Save and keep open</button>
+        <button mat-flat-button color="primary" [disabled]="triggerForm.invalid || missingCastTime" (click)="saveAndClose()">Save</button>
+        <button mat-button [disabled]="triggerForm.invalid || missingCastTime" (click)="applyChanges()">Save and keep open</button>
         <button mat-button (click)="requestClose()">Cancel</button>
+        <span class="footer-note" *ngIf="missingCastTime">"{{ missingCastTime }}" needs a cast time before this can be saved.</span>
+        <span class="footer-note" *ngIf="!missingCastTime && castTimeWarning">"{{ castTimeWarning }}" has no cast time, so it may not start. Add one (0 if the buff is instant).</span>
         <button mat-button color="default" (click)="reimportFromAllakhazam()" *ngIf="showReimportFromAlla">Re-import from {{serviceName}}</button>
     
         <ng-container *ngIf="isDev">

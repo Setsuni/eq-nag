@@ -1,0 +1,38 @@
+<div class="test-panel">
+    <mat-form-field floatLabel="always" class="line-field">
+        <mat-label>Log line</mat-label>
+        <input matInput [(ngModel)]="line" [ngModelOptions]="{ standalone: true }" (keydown.enter)="test( false )" placeholder="Paste a line from your log file" spellcheck="false" autocomplete="off" />
+    </mat-form-field>
+    <div class="test-buttons">
+        <button mat-stroked-button type="button" (click)="test( false )" [disabled]="running || !( line?.trim().length > 0 )">Test</button>
+        <button mat-stroked-button type="button" color="accent" (click)="test( true )" [disabled]="running || !( line?.trim().length > 0 )" matTooltip="Run the actions now, as if the line had just appeared in your log">Fire it now</button>
+    </div>
+    <div class="test-result" *ngIf="running">Checking&hellip;</div>
+    <div class="test-result" *ngIf="!running && result" aria-live="polite">
+        <ng-container *ngIf="!result.ok">
+            <mat-icon class="bad">error_outline</mat-icon><span>{{ errorText }}</span>
+        </ng-container>
+        <ng-container *ngIf="result.ok && result.patternErrors?.length > 0">
+            <mat-icon class="bad">error_outline</mat-icon><span>This pattern has an error: {{ patternErrorText }}</span>
+        </ng-container>
+        <ng-container *ngIf="result.ok && !( result.patternErrors?.length > 0 ) && result.matches.length === 0">
+            <mat-icon class="bad">close</mat-icon>
+            <span>
+                No match. This line doesn't match any of your phrases.
+                <span class="warn" *ngIf="result.missingValues?.length > 0"> A phrase uses the stored value {{ result.missingValues.join( ', ' ) }}, which has no value right now, so it can't match yet.</span>
+            </span>
+        </ng-container>
+        <ng-container *ngIf="result.ok && result.matches.length > 0">
+            <mat-icon class="good">check</mat-icon>
+            <span>
+                Matches {{ trigger.capturePhrases.length > 1 ? 'phrase ' + matchedNumber : 'your phrase' }}.
+                <ng-container *ngIf="actionLines.length > 0">It would: {{ actionLines.join( '; ' ) }}.</ng-container>
+                <ng-container *ngIf="actionLines.length === 0">No action is set for it yet.</ng-container>
+                <ng-container *ngIf="fired"> Sent to your overlays.</ng-container>
+                <span class="warn" *ngIf="result.sequential"> This trigger needs its phrases in order, so testing one line can't complete it.</span>
+                <span class="warn" *ngIf="result.skippedActions > 0"> {{ result.skippedActions }} action{{ result.skippedActions === 1 ? '' : 's' }} that change stored values, counters, lists or timers {{ result.skippedActions === 1 ? 'was' : 'were' }} not run.</span>
+                <span class="warn" *ngIf="!result.conditionsPassed"> A rule under Only when&hellip; would stop it right now; this test ignores that.</span>
+            </span>
+        </ng-container>
+    </div>
+</div>

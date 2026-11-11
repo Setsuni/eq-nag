@@ -1,3 +1,67 @@
+<div class="simple-phrases" *ngIf="simple; else classicPhrases">
+
+    <p class="phrase-hint" *ngIf="capturePhrases?.length > 1">{{ captureMethod === 'Sequential' ? 'These phrases must appear in this order.' : 'Any one of these phrases starts the trigger.' }}</p>
+
+    <div class="phrase-row" *ngFor="let element of capturePhrases; let i = index">
+        <div class="phrase-head">
+            <span class="phrase-number" *ngIf="capturePhrases.length > 1">{{ i + 1 }}</span>
+            <mat-button-toggle-group class="mode-toggle" [ngModel]="element.useRegEx ? 'pattern' : 'text'" (ngModelChange)="onRegexChange( i, $event === 'pattern' )" name="tglPhraseMode_{{i}}" aria-label="How to match this phrase">
+                <mat-button-toggle value="text">Plain text</mat-button-toggle>
+                <mat-button-toggle value="pattern">Pattern</mat-button-toggle>
+            </mat-button-toggle-group>
+            <mat-checkbox *ngIf="element.useRegEx" [ngModel]="element.ignoreCase" (ngModelChange)="toggleIgnoreCase( element )" name="cbxIgnoreCase_{{i}}" matTooltip="Treat capital and small letters as the same">Ignore case</mat-checkbox>
+            <span class="spacer"></span>
+            <ng-container *ngIf="capturePhrases.length > 1">
+                <button mat-icon-button type="button" aria-label="Move this phrase up" (click)="movePhraseUp( i )" [disabled]="i === 0"><mat-icon>keyboard_arrow_up</mat-icon></button>
+                <button mat-icon-button type="button" aria-label="Move this phrase down" (click)="movePhraseDown( i )" [disabled]="i === capturePhrases.length - 1"><mat-icon>keyboard_arrow_down</mat-icon></button>
+            </ng-container>
+            <button mat-icon-button type="button" color="warn" aria-label="Delete this phrase" (click)="deleteCapturePhrase( i )"><mat-icon>clear</mat-icon></button>
+        </div>
+        <mat-form-field class="consolas" floatLabel="always">
+            <mat-label>{{ capturePhrases.length > 1 ? 'Phrase ' + ( i + 1 ) : 'Phrase' }}</mat-label>
+            <textarea matInput
+                name="txtaPhrase_{{i}}"
+                rows="1"
+                [(ngModel)]="element.phrase"
+                (keydown.enter)="$event.preventDefault()"
+                (ngModelChange)="onPhraseChange( i )"
+                (focus)="onPhraseFocus( i, $event )"
+                placeholder="Paste or type the log line you want to react to"
+                spellcheck="false"
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                cdkTextareaAutosize
+                cdkAutosizeMinRows="1"
+                cdkAutosizeMaxRows="4"></textarea>
+            <div class="regex-highlight-inline" *ngIf="overlayOpenIndex === i" [innerHTML]="highlightedPhrases[i]"></div>
+            <mat-hint style="display: flex; justify-content: space-between; align-items: center;">
+                <span>{{ element.useRegEx ? 'A pattern (regular expression). Snippets like {S1} work here.' : 'Matches anywhere in the line. Capital letters don\'t matter.' }}</span>
+                <span *ngIf="element.useRegEx"
+                    class="toggle-icon"
+                    (click)="toggleOverlay( i )"
+                    role="button"
+                    tabindex="0"
+                    aria-label="Toggle regex highlight overlay"
+                    [attr.aria-pressed]="overlayOpenIndex === i">
+                    Regex Visualizer
+                    <mat-icon>{{ overlayOpenIndex === i ? 'expand_less' : 'expand_more' }}</mat-icon>
+                </span>
+            </mat-hint>
+        </mat-form-field>
+    </div>
+
+    <div class="phrase-tools">
+        <button mat-button type="button" color="accent" (click)="addNewCapturePhrase()"><mat-icon>add</mat-icon>Add another phrase</button>
+    </div>
+    <div class="phrase-tools insert-row">
+        <span class="insert-label">Insert:</span>
+        <button mat-stroked-button type="button" class="chip" *ngFor="let snippet of snippets" (mousedown)="$event.preventDefault()" (click)="insertSnippet( snippet )" [disabled]="snippet.needsPattern && !activeIsPattern" [matTooltip]="snippet.needsPattern && !activeIsPattern ? 'Switch the phrase to Pattern to use this' : snippet.hint">{{ snippet.label }} <code>{{ snippet.code }}</code></button>
+    </div>
+
+</div>
+
+<ng-template #classicPhrases>
 <fieldset>
     <legend class="full-width"><span class="title">Phrases</span><span class="spacer"></span><button mat-button (click)="addNewCapturePhrase()" color="accent"><mat-icon>add</mat-icon>New</button></legend>
 
@@ -112,3 +176,4 @@
 
     </table>
 </fieldset>
+</ng-template>

@@ -1,0 +1,97 @@
+<div class="timer-quick">
+
+    <mat-form-field *ngIf="action.actionType === actionTypes.DotTimer" floatLabel="always" class="full">
+        <mat-label>Tick phrase</mat-label>
+        <mat-select [(ngModel)]="action.secondaryPhrases" name="ddlQuickDotTick" multiple>
+            <mat-option *ngFor="let phrase of capturePhrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
+        </mat-select>
+        <mat-hint>The phrase for the damage-over-time tick (not the first hit).</mat-hint>
+    </mat-form-field>
+
+    <div class="quick-row">
+        <mat-form-field *ngIf="action.actionType !== actionTypes.DotTimer" floatLabel="always" class="grow">
+            <mat-label>Timer name</mat-label>
+            <input matInput [(ngModel)]="action.displayText" name="txtQuickTimerName" />
+        </mat-form-field>
+        <mat-form-field floatLabel="always" class="grow">
+            <mat-label>Show on</mat-label>
+            <mat-select [(ngModel)]="action.overlayId" name="ddlQuickTimerOverlay">
+                <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
+            </mat-select>
+        </mat-form-field>
+    </div>
+
+    <div class="quick-row">
+        <div class="duration-field">
+            <label>Duration<ng-container *ngIf="action.actionType === actionTypes.DotTimer"> ({{Math.floor((action.duration > 0 ? action.duration : 0) / 6)}} ticks)</ng-container></label>
+            <app-duration [(ngModel)]="action.duration" name="durQuickDuration" style="display: inline-block;"></app-duration>
+        </div>
+        <mat-form-field *ngIf="action.actionType === actionTypes.BeneficialTimer" floatLabel="always" class="cast-time">
+            <mat-label>Cast time</mat-label>
+            <input matInput type="number" [(ngModel)]="action.castTime" name="txtQuickCastTime" required />
+            <mat-hint>In milliseconds (2.5 s is 2500)</mat-hint>
+        </mat-form-field>
+    </div>
+
+    <mat-form-field floatLabel="always" class="full">
+        <mat-label>If it fires again while running</mat-label>
+        <mat-select [(ngModel)]="action.restartBehavior" name="ddlQuickRestart">
+            <mat-option [value]="timerRestartBehaviors.StartNewTimer">Start another timer</mat-option>
+            <mat-option [value]="timerRestartBehaviors.RestartOnDuplicate">Restart it, if the name matches</mat-option>
+            <mat-option [value]="timerRestartBehaviors.RestartTimer">Restart it, whatever the name</mat-option>
+            <mat-option [value]="timerRestartBehaviors.DoNothing">Ignore it</mat-option>
+        </mat-select>
+    </mat-form-field>
+
+    <div class="quick-group">
+        <div class="group-line">
+            <mat-checkbox [ngModel]="action.ifEndingSoon" (ngModelChange)="onWarnChange( $event )" name="cbxQuickWarn">Warn me before it ends</mat-checkbox>
+            <app-duration *ngIf="action.ifEndingSoon" [(ngModel)]="action.endingDuration" name="durQuickWarn" style="display: inline-block;"></app-duration>
+        </div>
+        <div class="group-options" *ngIf="warnActive">
+            <div class="option-line">
+                <mat-checkbox [ngModel]="action.endingSoonChangeColor" (ngModelChange)="onWarnColorChange( $event )" name="cbxQuickWarnColor">Change the bar colour</mat-checkbox>
+                <app-color-picker *ngIf="action.endingSoonChangeColor" [(ngModel)]="action.endingSoonColor" name="acpQuickWarnColor" [inline]="true"></app-color-picker>
+            </div>
+            <div class="option-line">
+                <mat-checkbox [ngModel]="action.endingSoonDisplayText" (ngModelChange)="onWarnTextChange( $event )" name="cbxQuickWarnText">Show text</mat-checkbox>
+                <mat-form-field *ngIf="action.endingSoonDisplayText" class="grow" floatLabel="always">
+                    <mat-label>Text</mat-label>
+                    <input matInput [(ngModel)]="action.endingSoonText" name="txtQuickWarnText" />
+                </mat-form-field>
+            </div>
+            <div class="option-line">
+                <mat-checkbox [(ngModel)]="action.endingSoonSpeak" name="cbxQuickWarnSpeak">Speak</mat-checkbox>
+                <mat-form-field *ngIf="action.endingSoonSpeak" class="grow" floatLabel="always">
+                    <mat-label>Say</mat-label>
+                    <input matInput [(ngModel)]="action.endingSoonSpeakPhrase" name="txtQuickWarnSpeak" />
+                </mat-form-field>
+            </div>
+        </div>
+    </div>
+
+    <div class="quick-group">
+        <div class="group-line"><span class="group-title">When it ends</span></div>
+        <div class="group-options">
+            <div class="option-line">
+                <mat-checkbox [(ngModel)]="endedShowText" name="cbxQuickEndText">Show text</mat-checkbox>
+                <mat-form-field *ngIf="endedShowText" class="grow" floatLabel="always">
+                    <mat-label>Text</mat-label>
+                    <input matInput [(ngModel)]="action.endedText" name="txtQuickEndText" />
+                </mat-form-field>
+            </div>
+            <div class="option-line">
+                <mat-checkbox [(ngModel)]="endedSpeak" name="cbxQuickEndSpeak">Speak</mat-checkbox>
+                <mat-form-field *ngIf="endedSpeak" class="grow" floatLabel="always">
+                    <mat-label>Say</mat-label>
+                    <input matInput [(ngModel)]="action.endedSpeakPhrase" name="txtQuickEndSpeak" />
+                </mat-form-field>
+            </div>
+            <div class="option-line">
+                <mat-checkbox [ngModel]="action.remainAfterEnded" (ngModelChange)="onKeepBarChange( $event )" name="cbxQuickKeepBar">Keep the bar showing for</mat-checkbox>
+                <app-duration *ngIf="action.remainAfterEnded" [(ngModel)]="action.remainDuration" name="durQuickKeepBar" style="display: inline-block;"></app-duration>
+            </div>
+        </div>
+    </div>
+
+</div>

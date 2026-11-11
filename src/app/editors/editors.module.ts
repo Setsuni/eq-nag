@@ -31,6 +31,8 @@ import { GamePreviewComponent } from './game-preview/game-preview.component';
 import { TriggerActionListComponent } from './trigger-action-list/trigger-action-list.component';
 import { TriggerHotkeysComponent } from './trigger-hotkeys/trigger-hotkeys.component';
 import { PipesModule } from '../pipes/pipes.module';
+import { TriggerTestComponent } from './trigger-test/trigger-test.component';
+import { TimerQuickComponent } from './timer-quick/timer-quick.component';
 
 @NgModule({
     imports: [
@@ -66,6 +68,8 @@ import { PipesModule } from '../pipes/pipes.module';
         TriggerActionStopwatchComponent,
         GamePreviewComponent,
         TriggerHotkeysComponent,
+        TriggerTestComponent,
+        TimerQuickComponent,
     ],
     declarations: [
         ConditionsComponent,
@@ -89,6 +93,8 @@ import { PipesModule } from '../pipes/pipes.module';
         GamePreviewComponent,
         TriggerActionListComponent,
         TriggerHotkeysComponent,
+        TriggerTestComponent,
+        TimerQuickComponent,
     ],
     providers: [],
 })

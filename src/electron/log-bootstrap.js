@@ -374,6 +374,76 @@ class LogBootstrapper {
             combatWatcher.window?.webContents.send( 'log:simulate:file', data );
         } );
 
+        // Trigger editor "Test with a log line": the log watcher evaluates the unsaved trigger against one line.
+        const triggerTestReplies = {};
+        ipcMain.on( 'trigger:test:run',
+            /**
+             * Sends a trigger and a log line to a log watcher, starting one for the first character if none is running.
+             *
+             * @param {Electron.IpcMainEvent} event Electron event args.
+             * @param {{ requestId: string, trigger: any, line: string, fire: boolean }} data The test request.
+             */
+            function ( event, data ) {
+                const requestId = typeof data?.requestId === 'string' && data.requestId.length <= 64 ? data.requestId : null;
+                const pending = { watcher: null, done: false };
+                const reply = result => {
+                    if ( pending.done ) {
+                        return;
+                    }
+                    pending.done = true;
+                    delete triggerTestReplies[ requestId ];
+                    if ( !event.sender.isDestroyed() ) {
+                        event.sender.send( 'trigger:test:result', Object.assign( { requestId: requestId }, result ) );
+                    }
+                };
+
+                const valid = requestId !== null
+                    && data.trigger != null && typeof data.trigger === 'object' && !Array.isArray( data.trigger )
+                    && typeof data.line === 'string' && data.line.length <= 2000
+                    && typeof data.fire === 'boolean';
+                if ( !valid ) {
+                    reply( { ok: false, error: 'failed' } );
+                    return;
+                }
+
+                triggerTestReplies[ requestId ] = Object.assign( pending, { reply: reply } );
+                setTimeout( () => reply( { ok: false, error: 'timeout' } ), 15000 );
+
+                // A watcher that is still loading has no listener yet, so wait for it.
+                const send = watcherWindow => {
+                    pending.watcher = watcherWindow.webContents;
+                    if ( watcherWindow.webContents.isLoading() ) {
+                        watcherWindow.webContents.once( 'dom-ready', () => !watcherWindow.isDestroyed() && watcherWindow.webContents.send( 'trigger:test:run', data ) );
+                    } else {
+                        watcherWindow.webContents.send( 'trigger:test:run', data );
+                    }
+                };
+
+                const watcherKey = Object.keys( logWatchers ).find( key => logWatchers[ key ].window != null );
+                if ( watcherKey ) {
+                    send( logWatchers[ watcherKey ].window );
+                    return;
+                }
+
+                const _chr = characterDatabase.getAll()[ 0 ];
+                if ( !_chr || !logWatchers[ _chr.characterId ] ) {
+                    reply( { ok: false, error: 'noCharacter' } );
+                    return;
+                }
+
+                let _stats = FsUtilities.statOrNullSync( _chr.logFile );
+                logWatchers[ _chr.characterId ].window = startLogWatcherWindow( _chr.logFile, isDev, sendTick, _chr, logWatchers[ _chr.characterId ].logSize > ( _stats?.size ?? 0 ) ? 0 : logWatchers[ _chr.characterId ].logSize );
+                mainWindowRef.reference.webContents.send( 'log:character:activated', _chr.characterId );
+                send( logWatchers[ _chr.characterId ].window );
+            } );
+
+        ipcMain.on( 'trigger:test:result', function ( event, result ) {
+            const pending = triggerTestReplies[ result?.requestId ];
+            if ( pending && pending.watcher === event.sender ) {
+                pending.reply( result );
+            }
+        } );
+
         ipcMain.on( 'log:store:variable', function ( event, data ) {
             for ( let key in logWatchers ) {
                 if ( logWatchers.hasOwnProperty( key ) && logWatchers[ key ].window != null ) {

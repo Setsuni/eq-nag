@@ -1,0 +1,38 @@
+.test-panel {
+    .line-field {
+        width: 100%;
+        font-size: 12px;
+    }
+
+    .test-buttons {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .test-result {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 13px;
+
+        mat-icon {
+            flex: 0 0 auto;
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+        }
+
+        .good {
+            color: #4caf50;
+        }
+
+        .bad {
+            color: #ef5350;
+        }
+
+        .warn {
+            color: #ffb74d;
+        }
+    }
+}

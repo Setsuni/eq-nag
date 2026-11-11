@@ -1,50 +1,13 @@
+<app-timer-quick [action]="action" [timerOverlays]="timerOverlays" [alertOverlays]="alertOverlays" [capturePhrases]="capturePhrases"></app-timer-quick>
+<button type="button" class="timer-advanced-toggle" (click)="showAdvanced = !showAdvanced" [attr.aria-expanded]="showAdvanced">
+    <mat-icon>{{ showAdvanced ? 'expand_more' : 'chevron_right' }}</mat-icon>Advanced
+    <span class="advanced-note" *ngIf="!showAdvanced && usesAdvanced">in use</span>
+</button>
+<div *ngIf="showAdvanced">
 <mat-tab-group animationDuration="0ms" [selectedIndex]="0">
-    <mat-tab label="Timer">
+    <mat-tab label="Options">
 
         <div class="card-tab-content">
-
-            <div class="card-property">
-                <div class="full-width">
-                    <mat-form-field style="width: 100%;" floatLabel="always">
-                        <mat-label>Tick phrase</mat-label>
-                        <mat-select [(ngModel)]="action.secondaryPhrases" name="ddlActionSecondaryPhrases" multiple>
-                            <mat-option *ngFor="let phrase of capturePhrases" [value]="phrase.phraseId">{{phrase.phrase || '(empty phrase)'}}</mat-option>
-                        </mat-select>
-                        <mat-hint>Select the capture phrase for the dot's tick damage (not the initial damage).</mat-hint>
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <div class="card-property">
-                <div>
-                    <mat-form-field style="width: 100%;" floatLabel="always">
-                        <mat-label>Overlay window</mat-label>
-                        <mat-select [(ngModel)]="action.overlayId" name="ddlDotTimerOverlay">
-                            <mat-option *ngFor="let option of timerOverlays" [value]="option.overlayId">{{option.name}}</mat-option>
-                        </mat-select>
-                    </mat-form-field>
-                </div>
-            </div>
-
-            <div class="card-property">
-                <div class="content-middle">Timer duration ({{Math.floor((action.duration > 0 ? action.duration : 0) / 6)}} ticks)</div>
-                <div class="content-right"><app-duration [(ngModel)]="action.duration" name="durActionDuration" style="display: inline-block;" ></app-duration></div>
-            </div>
-
-            <div class="card-property">
-                <div class="content-middle">When triggered again, how do you want the timer to behave?</div>
-                <div>
-                    <mat-form-field style="width: 100%;" floatLabel="always">
-                        <mat-label>Restart behavior</mat-label>
-                        <mat-select [(ngModel)]="action.restartBehavior" name="rdoRestartBehavior_{{action.actionId}}">
-                            <mat-option [value]="timerRestartBehaviors.StartNewTimer">Always start new timer</mat-option>
-                            <mat-option [value]="timerRestartBehaviors.RestartOnDuplicate">Restart only if the name matches</mat-option>
-                            <mat-option [value]="timerRestartBehaviors.RestartTimer">Restart timer regardless of the name</mat-option>
-                            <mat-option [value]="timerRestartBehaviors.DoNothing">Do nothing and ignore trigger</mat-option>
-                        </mat-select>
-                    </mat-form-field>
-                </div>
-            </div>
 
             <div class="card-property">
                 <div class="content-middle"><mat-checkbox [(ngModel)]="action.showDuration" name="cbxShowTimeRemaining">Show the time remaining</mat-checkbox></div>
@@ -303,5 +266,6 @@
         </div>
     </mat-tab>
 </mat-tab-group>
+</div>
 <input type="file" #iconFileSelector style="display:none;" accept="image/png, image/jpeg, image/gif, image/webp, image/svg+xml, .png, .jpg, .jpeg, .gif, .webp, .svg" (change)="iconFileSelected($event)" />
 <input type="file" #audioFileSelector style="display:none;" accept="audio/mpeg, audio/ogg, audio/mp4, audio/x-m4a, audio/opus, audio/webm, audio/aac, .mp3, .ogg, .m4a, .opus, .webm, .aac" (change)="onAudioFileSelected($event)" />

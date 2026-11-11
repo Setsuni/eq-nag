@@ -33,6 +33,20 @@ const rendererCursorPollMs = 33;
 // disappears under a still cursor is still picked up.
 const rendererCursorResendMs = 500;
 
+/**
+ * Bounds for the trigger editor window: its usual 732x870, capped to the work area of the display the main window
+ * is on and centred in it, so Save and Cancel are never below the bottom of the screen.
+ *
+ * @param {Electron.BrowserWindow|null} reference The window the editor opens from.
+ */
+function triggerEditorBounds( reference ) {
+    const display = reference && !reference.isDestroyed() ? screen.getDisplayMatching( reference.getBounds() ) : screen.getPrimaryDisplay();
+    const area = display.workArea;
+    const width = Math.min( 732, area.width );
+    const height = Math.min( 870, area.height );
+    return { width: width, height: height, x: Math.round( area.x + ( area.width - width ) / 2 ), y: Math.round( area.y + ( area.height - height ) / 2 ) };
+}
+
 class WindowManager {
 
     /** @type {BrowserWindow} */
@@ -268,8 +282,7 @@ class WindowManager {
                 parent: mainWindowRef.reference,
                 modal: false,
                 show: false,
-                width: 732,
-                height: 870,
+                ...triggerEditorBounds( mainWindowRef.reference ),
                 frame: false,
                 webPreferences: {
                     nodeIntegration: false,
@@ -299,8 +312,7 @@ class WindowManager {
                 parent: mainWindowRef.reference,
                 modal: false,
                 show: false,
-                width: 732,
-                height: 870,
+                ...triggerEditorBounds( mainWindowRef.reference ),
                 frame: false,
                 webPreferences: {
                     nodeIntegration: false,
@@ -328,8 +340,8 @@ class WindowManager {
                 bwin.setSize( size.width, size.height );
                 bwin.setPosition( ( screen.getPrimaryDisplay().workAreaSize.width / 2 ) - ( size.width / 2 ), ( screen.getPrimaryDisplay().workAreaSize.height / 2 ) - ( size.height / 2 ) );
             } else {
-                bwin.setSize( 732, 870 );
-                bwin.setPosition( ( screen.getPrimaryDisplay().workAreaSize.width / 2 ) - ( 732 / 2 ), ( screen.getPrimaryDisplay().workAreaSize.height / 2 ) - ( 870 / 2 ) );
+                const bounds = triggerEditorBounds( mainWindowRef.reference );
+                bwin.setBounds( bounds );
             }
 
         } );

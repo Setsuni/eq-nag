@@ -3,7 +3,7 @@ import * as Electron from 'electron';
 import { UpdateInfo } from 'electron-updater';
 import { Observable, Observer, ReplaySubject, Subject } from 'rxjs';
 import { map, catchError } from 'rxjs/operators';
-import { DataTickModel, DkpEntryModel, TriggerModel, OverlayWindowModel, ActionTypes, FocusEffectSettings, CharacterModel, BasicError, TriggerFolder, FileModel, Tag, AuthorModel, PackageFileModel, TriggerPackageMetaModel, TriggerPackageVersion, FctStylesModel, OverlayBoundsChangedEventArgs, DialogEventArgs, QuickShareMetaModel, LogFileLocation, IpcMessage, DeathRecapPreferences, QuickShareAuthorListTypes, Progress, QuitFailureData, DuplicateTriggerAction, ScrapedSpell, ScrapedClickEffect, TriggerParseHistoryModel, SimulationProgress, FctCombatGroup, CombatTypes, StylePropertiesModel, CombatAnimations, TriggersProfileModel, ConsoleMessageModel, LogTypes, ServerCombatModel, ProgressModel, ServerConsoleMessage, ChatRoomLinkReceivedEventArgs, RenderTokenModel, TokenChangeModel, ShareFilePayload, ShareFileReadResult, ShareFileSaveResult } from './core.model';
+import { DataTickModel, DkpEntryModel, TriggerModel, OverlayWindowModel, ActionTypes, FocusEffectSettings, CharacterModel, BasicError, TriggerFolder, FileModel, Tag, AuthorModel, PackageFileModel, TriggerPackageMetaModel, TriggerPackageVersion, FctStylesModel, OverlayBoundsChangedEventArgs, DialogEventArgs, QuickShareMetaModel, LogFileLocation, IpcMessage, DeathRecapPreferences, QuickShareAuthorListTypes, Progress, QuitFailureData, DuplicateTriggerAction, ScrapedSpell, ScrapedClickEffect, TriggerParseHistoryModel, SimulationProgress, FctCombatGroup, CombatTypes, StylePropertiesModel, CombatAnimations, TriggersProfileModel, ConsoleMessageModel, LogTypes, ServerCombatModel, ProgressModel, ServerConsoleMessage, ChatRoomLinkReceivedEventArgs, RenderTokenModel, TokenChangeModel, ShareFilePayload, ShareFileReadResult, ShareFileSaveResult, TriggerTestResult } from './core.model';
 import { GinaConfiguration, GinaTriggerGroups } from './gina.model';
 import { ColorUtility } from './utilities';
 import { nagId } from './core/nag-id.util';
@@ -83,6 +83,8 @@ export class IpcService {
     private _onQuitFalure: Observer<QuitFailureData>[] = [];
     private _onBackupProgress: Observer<Progress>[] = [];
     private _simProgress: Record<string, Observer<SimulationProgress>[]> = {};
+    private _testObservers: Record<string, Observer<TriggerTestResult>> = {};
+    private _listeningForTestResults: boolean = false;
     private _successfulParseHistoryObservers: Observer<{ successful: TriggerParseHistoryModel[], exceptions: TriggerParseHistoryModel[] }>[] = [];
     private _consoleSuccessObservers: Observer<ConsoleMessageModel>[] = [];
     private _consoleErrorObservers: Observer<ConsoleMessageModel>[] = [];
@@ -1399,6 +1401,44 @@ export class IpcService {
         } );
 
         return obs;
+    }
+
+    /**
+     * Tests a trigger that may not be saved against one log line.
+     *
+     * @param trigger The trigger as it is in the editor.
+     * @param line The log line, with or without its timestamp.
+     * @param fire True to also run the actions of the phrases that matched.
+     */
+    public testTrigger( trigger: TriggerModel, line: string, fire: boolean ): Observable<TriggerTestResult> {
+        let obs: Observable<TriggerTestResult> = new Observable<TriggerTestResult>( ( observer: Observer<TriggerTestResult> ) => {
+
+            const requestId = nagId();
+            this._testObservers[ requestId ] = observer;
+            this.listenForTestResults();
+            window.api.ipc.send( 'trigger:test:run', { requestId: requestId, trigger: JSON.parse( JSON.stringify( trigger ) ), line: line, fire: fire } );
+
+        } );
+
+        return obs;
+    }
+
+    /** Hands each test result to the request it answers; one listener serves every request. */
+    private listenForTestResults(): void {
+        if ( this._listeningForTestResults ) {
+            return;
+        }
+        this._listeningForTestResults = true;
+        window.api.ipc.on( 'trigger:test:result', ( e, result: TriggerTestResult ) => {
+            this.ngZone.run( () => {
+                const observer = this._testObservers[ result?.requestId ];
+                if ( observer ) {
+                    delete this._testObservers[ result.requestId ];
+                    observer.next( result );
+                    observer.complete();
+                }
+            } );
+        } );
     }
 
     public getTrigger( triggerId: string ): Observable<TriggerModel> {
