@@ -79,10 +79,27 @@ export class TriggerDialogComponent implements OnInit {
         return zoneConditions.length === 1 && this.isSimpleZoneCondition( zoneConditions[ 0 ] ) ? 'simple' : 'complex';
     }
 
-    /** The name of the first beneficial timer that has no cast time yet, which the timer cannot work without. */
+    /** Beneficial timers that were already saved without a cast time when the editor opened.  They can still be saved. */
+    private _storedWithoutCastTime: Set<TriggerAction> = new Set<TriggerAction>();
+
+    private hasNoCastTime( action: TriggerAction ): boolean {
+        return action.actionType === ActionTypes.BeneficialTimer && ( action.castTime == null || ( action.castTime as any ) === '' );
+    }
+
+    private timerName( action: TriggerAction ): string {
+        return action.displayText || 'A timer until buff ends';
+    }
+
+    /** The first beneficial timer added or cleared in this session that has no cast time, which blocks Save. */
     public get missingCastTime(): string | null {
-        const action = this.model.actions?.find( a => a.actionType === ActionTypes.BeneficialTimer && ( a.castTime == null || ( a.castTime as any ) === '' ) );
-        return action ? ( action.displayText || 'A timer until buff ends' ) : null;
+        const action = this.model.actions?.find( a => this.hasNoCastTime( a ) && !this._storedWithoutCastTime.has( a ) );
+        return action ? this.timerName( action ) : null;
+    }
+
+    /** The first beneficial timer that was saved without a cast time and still has none; Save stays possible. */
+    public get castTimeWarning(): string | null {
+        const action = this.model.actions?.find( a => this.hasNoCastTime( a ) && this._storedWithoutCastTime.has( a ) );
+        return action ? this.timerName( action ) : null;
     }
 
     public get zoneValue(): string {
@@ -203,6 +220,7 @@ export class TriggerDialogComponent implements OnInit {
 
     /** Opens Advanced when the player left it open last time, or when this trigger needs it. */
     private initDisclosures(): void {
+        this._storedWithoutCastTime = new Set( ( this.model.actions ?? [] ).filter( a => this.hasNoCastTime( a ) ) );
         this.showAdvanced = localStorage.getItem( advancedStorageKey ) === 'true' || this.usesAdvanced;
         this.showOnlyWhen = this.usesOnlyWhen || ( this.showAdvanced && ( this.model.conditions?.length > 0 || this.model.classLevels?.some( c => c.class?.trim().length > 0 ) ) );
         this.ipcService.getEverquestZones().subscribe( zones => this.zones = zones ?? [] );

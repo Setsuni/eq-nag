@@ -134,7 +134,8 @@
         <button mat-flat-button color="primary" [disabled]="triggerForm.invalid || missingCastTime" (click)="saveAndClose()">Save</button>
         <button mat-button [disabled]="triggerForm.invalid || missingCastTime" (click)="applyChanges()">Save and keep open</button>
         <button mat-button (click)="requestClose()">Cancel</button>
-        <span class="footer-note" *ngIf="missingCastTime">"{{ missingCastTime }}" needs a cast time.</span>
+        <span class="footer-note" *ngIf="missingCastTime">"{{ missingCastTime }}" needs a cast time before this can be saved.</span>
+        <span class="footer-note" *ngIf="!missingCastTime && castTimeWarning">"{{ castTimeWarning }}" has no cast time, so it may not start. Add one (0 if the buff is instant).</span>
         <button mat-button color="default" (click)="reimportFromAllakhazam()" *ngIf="showReimportFromAlla">Re-import from {{serviceName}}</button>
     
         <ng-container *ngIf="isDev">
