@@ -96,11 +96,11 @@ export class OverlayMapComponent implements OnInit {
      * @param box The box to measure.
      */
     public left( box: MapBox ): number {
-        return ( box.display.bounds.x + box.x + this.dragOffsetFor( box ).x - this.space.x ) / this.space.width * 100;
+        return ( this.shownX( box ) + this.dragOffsetFor( box ).x - this.space.x ) / this.space.width * 100;
     }
 
     public top( box: MapBox ): number {
-        return ( box.display.bounds.y + box.y + this.dragOffsetFor( box ).y - this.space.y ) / this.space.height * 100;
+        return ( this.shownY( box ) + this.dragOffsetFor( box ).y - this.space.y ) / this.space.height * 100;
     }
 
     public width( box: MapBox ): number {
@@ -118,7 +118,7 @@ export class OverlayMapComponent implements OnInit {
         ( event.currentTarget as HTMLElement ).setPointerCapture( event.pointerId );
         this.dragId = box.overlay.overlayId;
         this.dragOffset = { x: 0, y: 0 };
-        this.dragStart = { pointerX: event.clientX, pointerY: event.clientY, boxX: box.display.bounds.x + box.x, boxY: box.display.bounds.y + box.y, moved: false };
+        this.dragStart = { pointerX: event.clientX, pointerY: event.clientY, boxX: this.shownX( box ), boxY: this.shownY( box ), moved: false };
         this.overlaySelected.emit( box.overlay.overlayId );
         event.preventDefault();
     }
@@ -160,7 +160,7 @@ export class OverlayMapComponent implements OnInit {
         }
         event.preventDefault();
         this.overlaySelected.emit( box.overlay.overlayId );
-        this.moveBox( box, box.display.bounds.x + box.x + move[ 0 ], box.display.bounds.y + box.y + move[ 1 ] );
+        this.moveBox( box, this.shownX( box ) + move[ 0 ], this.shownY( box ) + move[ 1 ] );
     }
 
     public onPointerCancel(): void {
@@ -207,6 +207,19 @@ export class OverlayMapComponent implements OnInit {
         box.overlay.x = Math.round( x );
         box.overlay.y = Math.round( y );
         this.overlayMoved.emit( { overlayId: box.overlay.overlayId, displayId: target.id, x: x, y: y } );
+    }
+
+    /**
+     * Where a box is drawn on the combined screen space, kept inside its monitor.
+     *
+     * @param box The box to place.
+     */
+    private shownX( box: MapBox ): number {
+        return box.display.bounds.x + Math.min( Math.max( 0, box.x ), Math.max( 0, box.display.bounds.width - box.width ) );
+    }
+
+    private shownY( box: MapBox ): number {
+        return box.display.bounds.y + Math.min( Math.max( 0, box.y ), Math.max( 0, box.display.bounds.height - box.height ) );
     }
 
     private dragOffsetFor( box: MapBox ): { x: number, y: number } {
