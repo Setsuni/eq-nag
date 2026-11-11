@@ -36,19 +36,14 @@
         </ng-template>
         <ng-template [ngIf]="panel === 'modelReview'">
 
-            <p></p>
+            <h3 class="details-title">Character details</h3>
 
-            <fieldset class="trigger-property-group">
-                <legend>Character Information</legend>
-                
-                <div class="field-list">
-                    <div class="field-line"><label>Character Name</label><span>{{model.name}}</span></div>
-                    <div class="field-line"><label>Service</label><span *ngIf="model.p99">P1999</span><span *ngIf="model.daybreak">Daybreak</span><span *ngIf="model.takp">TAKP</span><span *ngIf="model.thj">THJ</span></div>
-                    <div class="field-line"><label>Server</label><span style="text-transform: capitalize;">{{model.server}}</span></div>
-                    <div class="field-line"><label>Log file</label><span>{{model.logFile}}</span></div>
-                </div>
-
-            </fieldset>
+            <div class="details">
+                <div class="detail-row"><span class="detail-label">Character name</span><span class="detail-value">{{model.name}}</span></div>
+                <div class="detail-row"><span class="detail-label">Service</span><span class="detail-value"><ng-container *ngIf="model.p99">P1999</ng-container><ng-container *ngIf="model.daybreak">Daybreak</ng-container><ng-container *ngIf="model.takp">TAKP</ng-container><ng-container *ngIf="model.thj">THJ</ng-container></span></div>
+                <div class="detail-row"><span class="detail-label">Server</span><span class="detail-value" style="text-transform: capitalize;">{{model.server}}</span></div>
+                <div class="detail-row"><span class="detail-label">Log file</span><span class="detail-value">{{model.logFile}}</span></div>
+            </div>
 
         </ng-template>
         <ng-template [ngIf]="panel === 'manualInput'">

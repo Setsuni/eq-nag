@@ -28,3 +28,25 @@ mat-option {
 p mat-form-field:nth-of-type( odd ) {
     margin-right: 16px;
 }
+
+.details-title {
+    margin: 0 0 12px;
+    font: 500 16px/24px Roboto, "Helvetica Neue", sans-serif;
+}
+
+.detail-row {
+    margin-bottom: 12px;
+
+    .detail-label {
+        display: block;
+        margin-bottom: 2px;
+        font-size: 13px;
+        color: rgba(255, 255, 255, .7);
+    }
+
+    .detail-value {
+        display: block;
+        font-size: 14px;
+        word-break: break-all;
+    }
+}
