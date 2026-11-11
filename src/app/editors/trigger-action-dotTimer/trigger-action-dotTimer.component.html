@@ -1,6 +1,6 @@
 <app-timer-quick [action]="action" [timerOverlays]="timerOverlays" [alertOverlays]="alertOverlays" [capturePhrases]="capturePhrases"></app-timer-quick>
 <button type="button" class="timer-advanced-toggle" (click)="showAdvanced = !showAdvanced" [attr.aria-expanded]="showAdvanced">
-    <mat-icon>{{ showAdvanced ? 'expand_more' : 'chevron_right' }}</mat-icon>Advanced
+    <mat-icon>{{ showAdvanced ? 'expand_more' : 'chevron_right' }}</mat-icon>More timer options
     <span class="advanced-note" *ngIf="!showAdvanced && usesAdvanced">in use</span>
 </button>
 <div *ngIf="showAdvanced">

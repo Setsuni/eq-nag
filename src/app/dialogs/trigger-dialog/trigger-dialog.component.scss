@@ -200,6 +200,22 @@ legend.full-width {
     }
 }
 
+.editor-page ::ng-deep fieldset legend {
+    span.title {
+        font-size: 15px;
+        font-weight: 500;
+    }
+
+    small {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 12px;
+    }
+}
+
+.comments-field {
+    width: 100%;
+}
+
 .zone-row {
     margin-bottom: 10px;
 
