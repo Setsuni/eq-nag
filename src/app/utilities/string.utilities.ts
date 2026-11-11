@@ -17,8 +17,8 @@ const knownServerLabels: Record<string, string> = {
  * Returns a server name for display: known servers get their usual spelling, a name in one case gets a capital first letter, and a mixed-case name is kept.
  */
 export function serverLabel( server: string ): string {
-    if ( !server ) {
-        return '';
+    if ( !server || server === 'null' || server === 'undefined' ) {
+        return 'Unknown server';
     }
 
     const known = knownServerLabels[ server.toUpperCase() ];

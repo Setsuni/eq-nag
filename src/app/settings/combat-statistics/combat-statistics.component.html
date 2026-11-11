@@ -34,7 +34,7 @@
 <div *ngIf="showCombatDatabase">
 
     <mat-tab-group>
-        <mat-tab label="{{db.server ? serverLabel( db.server ) : 'Unknown server'}}" *ngFor="let db of combatDatabases">
+        <mat-tab label="{{serverLabel( db.server )}}" *ngFor="let db of combatDatabases">
             <div class="server-tab-container">
                 
                 <div class="server-search">
