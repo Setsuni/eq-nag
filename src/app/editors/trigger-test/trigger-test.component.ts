@@ -49,6 +49,14 @@ export class TriggerTestComponent {
         return this.trigger.capturePhrases.findIndex( p => p.phraseId === id ) + 1;
     }
 
+    /** The phrase numbers, as the player sees them, of the phrases whose pattern has an error. */
+    public get patternErrorText(): string {
+        return this.result?.patternErrors?.map( e => {
+            const index = this.trigger.capturePhrases.findIndex( p => p.phraseId === e.phraseId );
+            return ( this.trigger.capturePhrases.length > 1 ? `Phrase ${index + 1}: ` : '' ) + e.message;
+        } ).join( '; ' ) ?? '';
+    }
+
     public get errorText(): string {
         return this.result?.error === 'noCharacter' ? 'Add a character first, so Nag has a log reader to test with.'
             : this.result?.error === 'timeout' ? 'Nag did not get an answer from the log reader. Try again in a moment.'

@@ -76,6 +76,8 @@ export class IpcService {
     private _onQuitFalure: Observer<QuitFailureData>[] = [];
     private _onBackupProgress: Observer<Progress>[] = [];
     private _simProgress: Record<string, Observer<SimulationProgress>[]> = {};
+    private _testObservers: Record<string, Observer<TriggerTestResult>> = {};
+    private _listeningForTestResults: boolean = false;
     private _successfulParseHistoryObservers: Observer<{ successful: TriggerParseHistoryModel[], exceptions: TriggerParseHistoryModel[] }>[] = [];
     private _consoleSuccessObservers: Observer<ConsoleMessageModel>[] = [];
     private _consoleErrorObservers: Observer<ConsoleMessageModel>[] = [];
@@ -1359,17 +1361,31 @@ export class IpcService {
         let obs: Observable<TriggerTestResult> = new Observable<TriggerTestResult>( ( observer: Observer<TriggerTestResult> ) => {
 
             const requestId = nagId();
-            window.api.ipc.once( 'trigger:test:result', ( e, result: TriggerTestResult ) => {
-                this.ngZone.run( () => {
-                    observer.next( result );
-                    observer.complete();
-                } );
-            } );
+            this._testObservers[ requestId ] = observer;
+            this.listenForTestResults();
             window.api.ipc.send( 'trigger:test:run', { requestId: requestId, trigger: JSON.parse( JSON.stringify( trigger ) ), line: line, fire: fire } );
 
         } );
 
         return obs;
+    }
+
+    /** Hands each test result to the request it answers; one listener serves every request. */
+    private listenForTestResults(): void {
+        if ( this._listeningForTestResults ) {
+            return;
+        }
+        this._listeningForTestResults = true;
+        window.api.ipc.on( 'trigger:test:result', ( e, result: TriggerTestResult ) => {
+            this.ngZone.run( () => {
+                const observer = this._testObservers[ result?.requestId ];
+                if ( observer ) {
+                    delete this._testObservers[ result.requestId ];
+                    observer.next( result );
+                    observer.complete();
+                }
+            } );
+        } );
     }
 
     public getTrigger( triggerId: string ): Observable<TriggerModel> {

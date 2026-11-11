@@ -381,6 +381,14 @@ export interface TriggerTestResult {
     conditionsPassed: boolean;
     matches: { phraseId: string, phrase: string }[];
     fired: boolean;
+    /** True when the trigger needs its phrases in order, which one line cannot complete. */
+    sequential?: boolean;
+    /** Phrases whose pattern cannot be compiled. */
+    patternErrors?: { phraseId: string, message: string }[];
+    /** Stored values used by a phrase that have no value right now. */
+    missingValues?: string[];
+    /** Actions that change stored values, counters, lists or timers, which a test does not run. */
+    skippedActions?: number;
 }
 
 export class TriggerModel {

@@ -362,18 +362,44 @@ class LogBootstrapper {
              * @param {{ requestId: string, trigger: any, line: string, fire: boolean }} data The test request.
              */
             function ( event, data ) {
+                const requestId = typeof data?.requestId === 'string' && data.requestId.length <= 64 ? data.requestId : null;
+                const pending = { watcher: null, done: false };
                 const reply = result => {
-                    delete triggerTestReplies[ data.requestId ];
+                    if ( pending.done ) {
+                        return;
+                    }
+                    pending.done = true;
+                    delete triggerTestReplies[ requestId ];
                     if ( !event.sender.isDestroyed() ) {
-                        event.sender.send( 'trigger:test:result', Object.assign( { requestId: data.requestId }, result ) );
+                        event.sender.send( 'trigger:test:result', Object.assign( { requestId: requestId }, result ) );
                     }
                 };
-                triggerTestReplies[ data.requestId ] = reply;
-                setTimeout( () => triggerTestReplies[ data.requestId ] && reply( { ok: false, error: 'timeout' } ), 8000 );
+
+                const valid = requestId !== null
+                    && data.trigger != null && typeof data.trigger === 'object' && !Array.isArray( data.trigger )
+                    && typeof data.line === 'string' && data.line.length <= 2000
+                    && typeof data.fire === 'boolean';
+                if ( !valid ) {
+                    reply( { ok: false, error: 'failed' } );
+                    return;
+                }
+
+                triggerTestReplies[ requestId ] = Object.assign( pending, { reply: reply } );
+                setTimeout( () => reply( { ok: false, error: 'timeout' } ), 15000 );
+
+                // A watcher that is still loading has no listener yet, so wait for it.
+                const send = watcherWindow => {
+                    pending.watcher = watcherWindow.webContents;
+                    if ( watcherWindow.webContents.isLoading() ) {
+                        watcherWindow.webContents.once( 'dom-ready', () => !watcherWindow.isDestroyed() && watcherWindow.webContents.send( 'trigger:test:run', data ) );
+                    } else {
+                        watcherWindow.webContents.send( 'trigger:test:run', data );
+                    }
+                };
 
                 const watcherKey = Object.keys( logWatchers ).find( key => logWatchers[ key ].window != null );
                 if ( watcherKey ) {
-                    logWatchers[ watcherKey ].window.webContents.send( 'trigger:test:run', data );
+                    send( logWatchers[ watcherKey ].window );
                     return;
                 }
 
@@ -386,13 +412,14 @@ class LogBootstrapper {
                 let _stats = FsUtilities.statOrNullSync( _chr.logFile );
                 logWatchers[ _chr.characterId ].window = startLogWatcherWindow( _chr.logFile, isDev, sendTick, _chr, logWatchers[ _chr.characterId ].logSize > ( _stats?.size ?? 0 ) ? 0 : logWatchers[ _chr.characterId ].logSize );
                 mainWindowRef.reference.webContents.send( 'log:character:activated', _chr.characterId );
-                logWatchers[ _chr.characterId ].window.webContents.once( 'dom-ready', () => {
-                    logWatchers[ _chr.characterId ].window.webContents.send( 'trigger:test:run', data );
-                } );
+                send( logWatchers[ _chr.characterId ].window );
             } );
 
         ipcMain.on( 'trigger:test:result', function ( event, result ) {
-            triggerTestReplies[ result?.requestId ]?.( result );
+            const pending = triggerTestReplies[ result?.requestId ];
+            if ( pending && pending.watcher === event.sender ) {
+                pending.reply( result );
+            }
         } );
 
         ipcMain.on( 'log:store:variable', function ( event, data ) {

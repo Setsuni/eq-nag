@@ -41,7 +41,7 @@ export class TriggerDialogComponent implements OnInit {
     private _docsUrl: string = 'https://guildantix.github.io/eq-nag/triggers/';
 
     /** The docs page for the section the player is working in. */
-    public helpPage: string = 'capture-phrases/';
+    public helpPage: string = 'capture-phrases';
     public get helpUrl(): string {
         return this._docsUrl + this.helpPage;
     }
@@ -76,7 +76,13 @@ export class TriggerDialogComponent implements OnInit {
         if ( zoneConditions.length === 0 ) {
             return 'simple';
         }
-        return zoneConditions.length === 1 && this.model.conditions.length === 1 && this.isSimpleZoneCondition( zoneConditions[ 0 ] ) ? 'simple' : 'complex';
+        return zoneConditions.length === 1 && this.isSimpleZoneCondition( zoneConditions[ 0 ] ) ? 'simple' : 'complex';
+    }
+
+    /** The name of the first beneficial timer that has no cast time yet, which the timer cannot work without. */
+    public get missingCastTime(): string | null {
+        const action = this.model.actions?.find( a => a.actionType === ActionTypes.BeneficialTimer && ( a.castTime == null || ( a.castTime as any ) === '' ) );
+        return action ? ( action.displayText || 'A timer until buff ends' ) : null;
     }
 
     public get zoneValue(): string {
@@ -256,6 +262,13 @@ export class TriggerDialogComponent implements OnInit {
     public save(): Observable<boolean> {
 
         return new Observable( observer => {
+
+            if ( this.missingCastTime ) {
+                this.dialogService.showErrorDialog( 'Cast time needed', `"${this.missingCastTime}" needs a cast time before it can be saved.` );
+                observer.next( false );
+                observer.complete();
+                return;
+            }
 
             let listActionCount = this.model.actions?.filter( x => x.actionType === ActionTypes.List ).length ?? 0;
 

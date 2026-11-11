@@ -21,6 +21,8 @@ interface PhraseSnippet {
     hint: string;
     needsPattern: boolean;
     select?: string;
+    /** Letter of a numbered group, so a second insert becomes {S2} rather than repeating {S1}. */
+    group?: string;
 }
 
 
@@ -263,8 +265,8 @@ export class CapturePhrasesComponent implements OnInit {
 
     /** The snippets that can be inserted into a phrase. */
     public snippets: PhraseSnippet[] = [
-        { label: 'Player name', code: '{S1}', hint: 'Matches a player or any word, and remembers it', needsPattern: true },
-        { label: 'Number', code: '{N1}', hint: 'Matches a number, and remembers it', needsPattern: true },
+        { label: 'Player name', code: '{S1}', hint: 'Matches a player or any word, and remembers it', needsPattern: true, group: 'S' },
+        { label: 'Number', code: '{N1}', hint: 'Matches a number, and remembers it', needsPattern: true, group: 'N' },
         { label: 'Your name', code: '{C}', hint: 'Matches the name of the character you are watching', needsPattern: true },
         { label: 'Stored value', code: '${Name}', hint: 'Uses a value kept by another trigger', needsPattern: false, select: 'Name' },
     ];
@@ -674,9 +676,14 @@ export class CapturePhrasesComponent implements OnInit {
         }
         const start = el.selectionStart ?? el.value.length;
         const end = el.selectionEnd ?? start;
-        el.setRangeText( snippet.code, start, end, 'end' );
+        let code = snippet.code;
+        if ( snippet.group ) {
+            const used = [ ...el.value.matchAll( new RegExp( `\\{${snippet.group}(\\d+)\\}`, 'gi' ) ) ].map( m => +m[ 1 ] );
+            code = `{${snippet.group}${used.length > 0 ? Math.max( ...used ) + 1 : 1}}`;
+        }
+        el.setRangeText( code, start, end, 'end' );
         if ( snippet.select ) {
-            const selectFrom = start + snippet.code.indexOf( snippet.select );
+            const selectFrom = start + code.indexOf( snippet.select );
             el.setSelectionRange( selectFrom, selectFrom + snippet.select.length );
         }
         el.dispatchEvent( new Event( 'input', { bubbles: true } ) );

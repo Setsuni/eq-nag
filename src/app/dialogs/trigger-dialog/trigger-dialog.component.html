@@ -23,7 +23,7 @@
                 <input matInput name="txtTriggerName" type="text" [(ngModel)]="model.name" placeholder="What is this trigger for?" required />
             </mat-form-field>
 
-            <div class="step" (focusin)="helpPage = 'capture-phrases/'" (click)="helpPage = 'capture-phrases/'">
+            <div class="step" (focusin)="helpPage = 'capture-phrases'" (click)="helpPage = 'capture-phrases'">
                 <h3><span class="step-number">1</span>When this appears in the log</h3>
                 <app-capture-phrases [simple]="true" [(capturePhrases)]="model.capturePhrases" (capturePhraseAdded)="onCapturePhraseAdded($event)" [(captureMethod)]="model.captureMethod"></app-capture-phrases>
             </div>
@@ -33,12 +33,12 @@
                 <app-trigger-test [trigger]="model"></app-trigger-test>
             </div>
 
-            <div class="step" (focusin)="helpPage = 'actions/'" (click)="helpPage = 'actions/'">
+            <div class="step" (focusin)="helpPage = 'actions'" (click)="helpPage = 'actions'">
                 <h3><span class="step-number">2</span>Then</h3>
                 <app-trigger-actions [(actions)]="model.actions" [isDev]="isDev" [predefined]="model.predefined" [capturePhrases]="model.capturePhrases" [showAdvanced]="showAdvanced"></app-trigger-actions>
             </div>
 
-            <div class="disclosure" (focusin)="helpPage = 'conditions/'" (click)="helpPage = 'conditions/'">
+            <div class="disclosure" (focusin)="helpPage = 'conditions'" (click)="helpPage = 'conditions'">
                 <button type="button" class="disclosure-toggle" (click)="showOnlyWhen = !showOnlyWhen" [attr.aria-expanded]="showOnlyWhen">
                     <mat-icon>{{ showOnlyWhen ? 'expand_more' : 'chevron_right' }}</mat-icon>Only when&hellip;
                     <span class="disclosure-note" *ngIf="!showOnlyWhen && usesOnlyWhen">in use</span>
@@ -76,7 +76,7 @@
                 </div>
             </div>
 
-            <div class="disclosure" (focusin)="helpPage = 'conditions/'" (click)="helpPage = 'conditions/'">
+            <div class="disclosure" (focusin)="helpPage = 'conditions'" (click)="helpPage = 'conditions'">
                 <button type="button" class="disclosure-toggle" (click)="setShowAdvanced( !showAdvanced )" [attr.aria-expanded]="showAdvanced">
                     <mat-icon>{{ showAdvanced ? 'expand_more' : 'chevron_right' }}</mat-icon>Advanced
                     <span class="disclosure-note" *ngIf="!showAdvanced && usesAdvanced">in use</span>
@@ -131,9 +131,10 @@
         </form>
     </section>
     <footer>
-        <button mat-flat-button color="primary" [disabled]="triggerForm.invalid" (click)="saveAndClose()">Save</button>
-        <button mat-button [disabled]="triggerForm.invalid" (click)="applyChanges()">Save and keep open</button>
+        <button mat-flat-button color="primary" [disabled]="triggerForm.invalid || missingCastTime" (click)="saveAndClose()">Save</button>
+        <button mat-button [disabled]="triggerForm.invalid || missingCastTime" (click)="applyChanges()">Save and keep open</button>
         <button mat-button (click)="requestClose()">Cancel</button>
+        <span class="footer-note" *ngIf="missingCastTime">"{{ missingCastTime }}" needs a cast time.</span>
         <button mat-button color="default" (click)="reimportFromAllakhazam()" *ngIf="showReimportFromAlla">Re-import from {{serviceName}}</button>
     
         <ng-container *ngIf="isDev">

@@ -53,7 +53,8 @@
 
     <div class="phrase-tools">
         <button mat-button type="button" color="accent" (click)="addNewCapturePhrase()"><mat-icon>add</mat-icon>Add another phrase</button>
-        <span class="spacer"></span>
+    </div>
+    <div class="phrase-tools insert-row">
         <span class="insert-label">Insert:</span>
         <button mat-stroked-button type="button" class="chip" *ngFor="let snippet of snippets" (mousedown)="$event.preventDefault()" (click)="insertSnippet( snippet )" [disabled]="snippet.needsPattern && !activeIsPattern" [matTooltip]="snippet.needsPattern && !activeIsPattern ? 'Switch the phrase to Pattern to use this' : snippet.hint">{{ snippet.label }} <code>{{ snippet.code }}</code></button>
     </div>

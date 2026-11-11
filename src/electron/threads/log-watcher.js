@@ -1953,13 +1953,42 @@ function generateTriggerFns() {
  * @param {{ requestId: string, trigger: any, line: string, fire: boolean }} request The test request.
  */
 function runTriggerTest( request ) {
-    const result = { requestId: request.requestId, ok: true, conditionsPassed: true, matches: [], fired: false };
+    const result = { requestId: request.requestId, ok: true, conditionsPassed: true, matches: [], fired: false, sequential: false, patternErrors: [], missingValues: [], skippedActions: 0 };
+    // Actions that change stored values, counters, lists or running timers are not run by a test.
+    const skippedTypes = [ ActionTypes.ClearAll, ActionTypes.StoreVariable, ActionTypes.ClearVariable, ActionTypes.Counter, ActionTypes.List ];
 
     try {
         const trigger = JSON.parse( JSON.stringify( request.trigger ) );
         trigger.triggerId = `test:${trigger.triggerId ?? 'new'}`;
         trigger.enabled = true;
         trigger.onlyExecuteInDev = false;
+        trigger.capturePhrases = Array.isArray( trigger.capturePhrases ) ? trigger.capturePhrases : [];
+        trigger.actions = Array.isArray( trigger.actions ) ? trigger.actions : [];
+        result.sequential = trigger.captureMethod === 'Sequential';
+
+        // Report patterns that cannot be compiled, and stored values that are used but empty.
+        trigger.capturePhrases.forEach( phrase => {
+            if ( !( phrase.phrase?.length > 0 ) ) {
+                return;
+            }
+            if ( phrase.useRegEx ) {
+                try {
+                    let rgx = StringUtilities.parseNConditionalCodesToRegex( phrase.phrase, characterName )?.value ?? phrase.phrase;
+                    rgx = StringUtilities.parseShortCodesToRegex( rgx, characterName );
+                    new RegExp( rgx );
+                } catch ( error ) {
+                    result.patternErrors.push( { phraseId: phrase.phraseId, message: String( error?.message ?? error ) } );
+                }
+            }
+            for ( const m of phrase.phrase.matchAll( /\$\{([^}]+)\}/g ) ) {
+                if ( !( storedVariables[ m[ 1 ] ]?.length > 0 ) && !result.missingValues.includes( m[ 1 ] ) ) {
+                    result.missingValues.push( m[ 1 ] );
+                }
+            }
+        } );
+        if ( result.patternErrors.length > 0 ) {
+            return result;
+        }
 
         // Generate the parse functions for this trigger alone, leaving the live trigger list as it was.
         const liveTriggers = triggers;
@@ -1978,8 +2007,12 @@ function runTriggerTest( request ) {
         trigger._parse( log, ( res, deltaTime ) => {
             result.matches.push( { phraseId: res.phraseId, phrase: trigger.capturePhrases.find( p => p.phraseId === res.phraseId )?.phrase ?? '' } );
             if ( request.fire ) {
-                trigger.actions?.forEach( action => {
+                trigger.actions.forEach( action => {
                     if ( ( isDev || !action.onlyExecuteInDev ) && ( action.actionType === ActionTypes.List || action.phrases?.indexOf( res.phraseId ) > -1 ) ) {
+                        if ( skippedTypes.includes( action.actionType ) ) {
+                            result.skippedActions++;
+                            return;
+                        }
                         executeTriggerAction( trigger, action, timestamp, res, deltaTime, false );
                         result.fired = true;
                     }
