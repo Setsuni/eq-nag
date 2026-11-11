@@ -7,7 +7,7 @@
             <ng-template [ngIf]="character.p99">P1999&nbsp;</ng-template>
             <ng-template [ngIf]="character.takp">TAKP&nbsp;</ng-template>
             <ng-template [ngIf]="character.thj"></ng-template>
-            {{character.server}}
+            {{serverLabel( character.server )}}
             <button class="status-chip dps"
                 [ngClass]="{'active': isCombatCharacter(character)}"
                 [matTooltip]="getCombatTooltipMessage(character)"
@@ -47,8 +47,8 @@
                                 </span>
                             </div>
                             <div class="log-file-actions">
-                                <button mat-button (click)="openLogFolder(character)" [disabled]="!info.path"><mat-icon class="material-icons-outlined">folder_open</mat-icon> Open folder</button>
-                                <button mat-button color="accent" (click)="showFileSelector(character.characterId)"><mat-icon class="material-icons-outlined">edit</mat-icon> Change</button>
+                                <button mat-stroked-button (click)="openLogFolder(character)" [disabled]="!info.path"><mat-icon class="material-icons-outlined">folder_open</mat-icon> Open folder</button>
+                                <button mat-stroked-button (click)="showFileSelector(character.characterId)"><mat-icon class="material-icons-outlined">edit</mat-icon> Change</button>
                             </div>
                         </div>
                     </mat-card-content>
@@ -87,7 +87,7 @@
                         </div>
                         <div class="n-layout n-row">
                             <div>
-                                <mat-checkbox [(ngModel)]="character.disableFct" name="disableFct_{{i}}" (ngModelChange)="updateCharacter(character)">Disable Floating Combat Text</mat-checkbox>
+                                <mat-checkbox [(ngModel)]="character.disableFct" name="disableFct_{{i}}" (ngModelChange)="updateCharacter(character)">Turn off floating combat text for this character</mat-checkbox>
                             </div>
                         </div>
 
@@ -98,7 +98,7 @@
                 <mat-card>
 
                     <mat-card-header class="collapsible-header" (click)="focusOpen[character.characterId] = !focusOpen[character.characterId]">
-                        <mat-card-title>Focus Effects</mat-card-title>
+                        <mat-card-title>Focus effects</mat-card-title>
                         <span class="collapsible-summary">{{getFocusSummary(character)}}</span>
                         <mat-icon>{{focusOpen[character.characterId] ? 'expand_less' : 'expand_more'}}</mat-icon>
                     </mat-card-header>
@@ -106,7 +106,7 @@
                     <mat-card-content *ngIf="focusOpen[character.characterId]">
                         <table>
                             <tr>
-                                <td class="character-focus-label"><mat-slide-toggle [(ngModel)]="character.hasExtendedDotFocus" (change)="updateCharacter(character)" name="hasExtendedDotFocus_{{i}}"> Extended DOT Focus?</mat-slide-toggle></td>
+                                <td class="character-focus-label"><mat-slide-toggle [(ngModel)]="character.hasExtendedDotFocus" (change)="updateCharacter(character)" name="hasExtendedDotFocus_{{i}}"> Extended DoT focus</mat-slide-toggle></td>
                                 <td class="character-focus-values"><span *ngIf="character.hasExtendedDotFocus">
     
                                 <mat-form-field style="width: 104px; margin-left: 15px;">
@@ -124,7 +124,7 @@
                             </span></td>
                             </tr>
                             <tr>
-                                <td class="character-focus-label"><mat-slide-toggle [(ngModel)]="character.hasExtendedBeneficialFocus" (change)="updateCharacter(character)" name="hasExtendedBeneficialFocus_{{i}}"> Extended Beneficial Focus?</mat-slide-toggle></td>
+                                <td class="character-focus-label"><mat-slide-toggle [(ngModel)]="character.hasExtendedBeneficialFocus" (change)="updateCharacter(character)" name="hasExtendedBeneficialFocus_{{i}}"> Extended beneficial focus</mat-slide-toggle></td>
                                 <td class="character-focus-values">
                                     <span *ngIf="character.hasExtendedBeneficialFocus">
     
@@ -152,7 +152,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td class="character-focus-label"><mat-slide-toggle [(ngModel)]="character.hasBeneficialCastingSpeedFocus" (change)="updateCharacter(character)" name="hasBeneficialCastingSpeedFocus{{i}}"> Beneficial Spell Haste Focus?</mat-slide-toggle></td>
+                                <td class="character-focus-label"><mat-slide-toggle [(ngModel)]="character.hasBeneficialCastingSpeedFocus" (change)="updateCharacter(character)" name="hasBeneficialCastingSpeedFocus{{i}}"> Beneficial spell haste focus</mat-slide-toggle></td>
                                 <td class="character-focus-values"><span *ngIf="character.hasBeneficialCastingSpeedFocus">
     
                                 <mat-form-field style="width: 104px; margin-left: 15px;">
@@ -192,17 +192,14 @@
         <mat-tab label="Triggers">
             <div class="character-tab-content">
                 <mat-card>
-                    <mat-card-header>
-                        <mat-card-title></mat-card-title>
-                    </mat-card-header>
                     <mat-card-content>
                         <div class="character-triggers">
                             <div class="triggers-list" style="flex: 0 0 0;">
-                                <h2>Profile</h2>
+                                <h2>Trigger profile</h2>
                                 <div>
+                                    <div class="field-label">Profile to load</div>
                                     <mat-form-field style="width: 100%;">
-                                        <mat-label>Trigger profile</mat-label>
-                                        <mat-select [(ngModel)]="character.triggerProfile" name="ddlTriggerProfile_{{i}}" (selectionChange)="onTriggerProfileChanged(character)" profileId="profileId" #profileId="ngModel">
+                                        <mat-select aria-label="Profile to load" placeholder="None" [(ngModel)]="character.triggerProfile" name="ddlTriggerProfile_{{i}}" (selectionChange)="onTriggerProfileChanged(character)" profileId="profileId" #profileId="ngModel">
                                             <mat-select-trigger>
                                                 {{getProfileName(profileId.value)}}
                                             </mat-select-trigger>
@@ -220,26 +217,26 @@
                                             matTooltipPosition="right"
                                             matTooltipClass="tooltip-large">&nbsp;&nbsp;?</sup>
                                         </div>
-                                    <div>
-                                        <button mat-button class="color-green" (click)="addTriggerProfile(character)"><mat-icon>add</mat-icon> Create New Profile</button>
+                                    <div class="profile-actions">
+                                        <button mat-button class="color-green" (click)="addTriggerProfile(character)"><mat-icon>add</mat-icon> New profile</button>
 
                                         <button mat-button class="color-orange" 
                                             *ngIf="character.triggerProfile" 
                                             matTooltipPosition="right" 
                                             matTooltip="Reset this character's triggers and reapply the selected profile."
-                                            (click)="reapplyTriggerProfile(character, character.triggerProfile)"><mat-icon>refresh</mat-icon> Reapply Profile</button>
+                                            (click)="reapplyTriggerProfile(character, character.triggerProfile)"><mat-icon>refresh</mat-icon> Reapply profile</button>
 
                                         <button mat-button class="color-light" 
                                             *ngIf="character.triggerProfile" 
                                             matTooltipPosition="right" 
                                             matTooltip="Update the selected profile and propagate changes to all other characters using the same profile."
-                                            (click)="updateTriggerProfile(character, character.triggerProfile)"><mat-icon class="material-icons-outlined">save</mat-icon> Update "{{getProfileName(character.triggerProfile)}}" Profile</button>
+                                            (click)="updateTriggerProfile(character, character.triggerProfile)"><mat-icon class="material-icons-outlined">save</mat-icon> Update "{{getProfileName(character.triggerProfile)}}" profile</button>
 
                                     </div>
                                 </div>
                             </div>
                             <div class="triggers-list">
-                                <h2>Character Triggers</h2>
+                                <h2>Triggers for this character</h2>
                                 <div class="tree-container" *ngIf="characterData[character.characterId] != undefined">
                                     <mat-tree [dataSource]="characterData[character.characterId].dataSource" [treeControl]="characterData[character.characterId].treeControl" #tree>
                 

@@ -1,11 +1,11 @@
 <p>Finds triggers that can never fire and zone conditions that may stop matching in instances. Under Advanced it also lists triggers that cost the most time. Nothing changes until you click a fix.</p>
 
 <div class="health-actions">
-    <button mat-flat-button color="accent" (click)="check()" [disabled]="busy"><mat-icon>play_arrow</mat-icon> Check now</button>
+    <button mat-flat-button color="primary" (click)="check()" [disabled]="busy"><mat-icon>play_arrow</mat-icon> Check now</button>
     <button mat-button class="color-green" (click)="fixSafe()" [disabled]="busy || !report?.summary.bulkFixes">Fix {{report?.summary.bulkFixes || 0}} safe {{report?.summary.bulkFixes === 1 ? 'item' : 'items'}}</button>
     <button mat-button (click)="copyReport()" [disabled]="!report">Copy report</button>
     <span class="spacer"></span>
-    <mat-slide-toggle [(ngModel)]="advanced" name="healthAdvanced">Advanced</mat-slide-toggle>
+    <mat-slide-toggle [ngModel]="advanced" (ngModelChange)="onAdvancedChange( $event )" name="healthAdvanced">Advanced</mat-slide-toggle>
 </div>
 
 <div class="health-tabs" *ngIf="advanced">

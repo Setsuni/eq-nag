@@ -5,18 +5,41 @@ div.tab-content {
     right: 0;
     bottom: var(--nag-console-height, 24px);
     top: 176px;
-    padding: 20px 1em 20px 1em !important;
+    padding: 16px !important;
 
     > fieldset:not(:first-of-type) {
-        margin-top: 50px;
+        margin-top: 32px;
     }
     fieldset {
-        width: calc(100% - 2em);
+        width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+        box-sizing: border-box;
         display: inline-block;
+        padding: 0 16px 16px;
+
+        legend {
+            position: static;
+            float: left;
+            width: 100%;
+            padding: 16px 0 8px;
+            margin: 0;
+            background: none;
+
+            + * {
+                clear: both;
+            }
+
+            span.title {
+                font-size: 16px;
+                font-weight: 500;
+            }
+        }
 
         p {
-            font-weight: 300;
-            color: #eeeeee;
+            font-size: 14px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.7);
         }
         .card-property {
             margin-left: -12px;
@@ -42,6 +65,42 @@ div.tab-content {
 
 .spacer {
     flex: 1 1 auto;
+}
+
+button + button {
+    margin-left: 8px;
+}
+
+.dev-note {
+    margin: 0 0 16px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+h2.state-title,
+h3.state-title {
+    margin: 8px 0 12px;
+    text-shadow: none;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+h3.sub-header {
+    margin: 16px 0 8px;
+    font-size: 16px;
+    font-weight: 500;
+    text-align: left;
+    padding: 0;
+    opacity: 1;
+    text-shadow: none;
+
+    &::before {
+        content: none;
+    }
+}
+
+.server-trust-content > div h3.sub-header {
+    margin-top: 0;
 }
 
 .server-console {

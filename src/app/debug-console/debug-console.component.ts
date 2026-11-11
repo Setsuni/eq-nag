@@ -43,6 +43,8 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
     public characterId: string = null;
     // public parseType: 'successful' | 'failed' = 'successful';
     public searchText: string = null;
+    /** Errors and trigger exceptions in the console list since the last clear. */
+    public problemCount: number = 0;
     /** The search text applied to the filter after the typing delay. */
     public appliedSearchText: string = null;
     /** The timeout id of the pending search text update. */
@@ -370,9 +372,13 @@ export class DebugConsoleComponent implements OnInit, OnDestroy, DoCheck {
 
     
     /**
-     * Scrolls to the bottom of the console when the list is updated.
+     * Scrolls to the bottom of the console when the list is updated, and keeps the problem count.
      */
-    public onListUpdated( scrollBottom: boolean ): void {
+    public onListUpdated( scrollBottom: boolean, problemCount: number ): void {
+        if ( problemCount !== this.problemCount ) {
+            // The list can report while this view is being checked, so apply the count afterwards.
+            Promise.resolve().then( () => this.problemCount = problemCount );
+        }
         if ( scrollBottom ) {
             if ( !this.scrolling && this.container?.nativeElement ) {
                 this.container.nativeElement.scrollTop = this.container.nativeElement.scrollHeight;

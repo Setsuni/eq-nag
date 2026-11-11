@@ -3,8 +3,10 @@
 </mat-toolbar>
 <div class="tab-content no-scroller">
 
+    <p class="dev-note">Log Sync is still in development and may change.</p>
+
     <fieldset>
-        <legend><span class="title">Log Synchronization</span></legend>
+        <legend><span class="title">Log synchronization</span></legend>
         <div class="fieldset-section">
             <h3 class="sub-header full-width header-glow">Server</h3>
             <div class="section-text-content">
@@ -12,18 +14,18 @@
                     <div style="display: flex; flex-flow: row nowrap; justify-content: space-between;">
                         <div>
                             <ng-template [ngIf]="!connected">
-                                <h2 style="font-weight: 100; margin-top: 0.55em;">You are not connected to a server.</h2>
-                                <button mat-button class="color-blue" (click)="createChatRoom()"><mat-icon class="material-icons-outlined">public</mat-icon> Start a server</button>
-                                <button mat-button class="color-green" (click)="joinChatRoom()"><mat-icon class="material-icons-outlined">travel_explore</mat-icon> Join a server</button>
+                                <h2 class="state-title">You are not connected to a server</h2>
+                                <button mat-flat-button color="primary" (click)="createChatRoom()"><mat-icon class="material-icons-outlined">public</mat-icon> Start a server</button>
+                                <button mat-stroked-button (click)="joinChatRoom()"><mat-icon class="material-icons-outlined">travel_explore</mat-icon> Join a server</button>
                             </ng-template>
                             <ng-template [ngIf]="connected">
-                                <h2 style="font-weight: 100; margin-top: 0.55em;">Connected to server.</h2>
-                                <button mat-button class="color-red" (click)="disconnect()"><mat-icon class="material-icons-outlined">public_off</mat-icon> Disconnect from server</button>
-                                <button mat-button class="color-blue" (click)="copyServerLink()" *ngIf="chatRoomId != undefined"><mat-icon class="material-icons-outlined">content_copy</mat-icon> Copy server link</button>
+                                <h2 class="state-title">Connected to server</h2>
+                                <button mat-stroked-button (click)="disconnect()"><mat-icon class="material-icons-outlined">public_off</mat-icon> Disconnect from server</button>
+                                <button mat-stroked-button (click)="copyServerLink()" *ngIf="chatRoomId != undefined"><mat-icon class="material-icons-outlined">content_copy</mat-icon> Copy server link</button>
                             </ng-template>
                         </div>
                         <div style="width: 50%;">
-                            <h3 style="font-weight: 100;">Combat Log Sync</h3>
+                            <h3 class="state-title">Combat log sync</h3>
                             <p>When syncing your combat log, during an encounter you will send and receive overall combat statistics with the group.  This will include, per player, the total damage done, time engaged, dps, heals, and hps.</p>
                             <p>At the end of an encounter, you will sync with the group by transmitting and receiving the combat logs for the encounter.</p>
                             <!-- <p>Once an encounter is over, you can then export the combat statistics into a spreadsheet.  You can choose to include shared combat logs at that time.</p> -->
@@ -31,7 +33,7 @@
                     </div>
                 </div>
                 <div *ngIf="connected">
-                    <h2 style="font-weight: 100;">Connected Peers</h2>
+                    <h2 class="state-title">Connected peers</h2>
                     <p *ngIf="connectedPeers.length === 0">You are the only peer connected. Invite some friends!</p>
                     <div *ngIf="connectedPeers.length > 0" class="connected-peers" [style.maxHeight]="peerHeight + 'px'">
                         <p *ngFor="let peer of connectedPeers">
@@ -43,9 +45,9 @@
         </div>
         
         <div class="fieldset-section">
-            <h3 class="sub-header full-width header-glow">Server Console</h3>
-            <button mat-button (click)="clearConsole()">Clear</button>
-            <button mat-button (click)="scrollToBottom()">Bottom</button>
+            <h3 class="sub-header full-width header-glow">Server console</h3>
+            <button mat-stroked-button (click)="clearConsole()">Clear</button>
+            <button mat-stroked-button (click)="scrollToBottom()">Bottom</button>
             <div>
                 <div class="server-console">
                     <div class="server-console-lines show-scrollbar" #consoleElement>
@@ -62,7 +64,7 @@
     </fieldset>
 
     <fieldset>
-        <legend><span class="title">Server Trust</span>
+        <legend><span class="title">Server trust</span>
             <sup class="help-sup"
                 matTooltip="Click here for more help."
                 matTooltipPosition="above"
@@ -80,7 +82,7 @@
 
         <div class="server-trust-content">
             <div>
-                <h3 class="sub-header full-width header-glow">Trusted Players</h3>
+                <h3 class="sub-header full-width header-glow">Trusted players</h3>
                 <mat-form-field style="width: 100%;">
                     <mat-label>Trusted characters</mat-label>
                     <textarea matInput [(ngModel)]="trustedPlayers" name="trustedPlayers" rows="5" spellcheck="false" ></textarea>
@@ -90,7 +92,7 @@
             </div>
 
             <div>
-                <h3 class="sub-header full-width header-glow">Blocked Players</h3>
+                <h3 class="sub-header full-width header-glow">Blocked players</h3>
                 <mat-form-field style="width: 100%;">
                     <mat-label>Blocked characters</mat-label>
                     <textarea matInput [(ngModel)]="blockedPlayers" name="blockedPlayers" rows="5" spellcheck="false" ></textarea>

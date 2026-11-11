@@ -5,23 +5,26 @@
 <div class="tab-content">
 <div class="rolls">
 
+    <div class="empty-state" *ngIf="contests.length === 0; else rollsBody">
+        <h2>No rolls yet</h2>
+        <p>When someone uses /random, the contest shows up here and on the roll panel. Use Overlays › Arrange overlays to move the roll panel.</p>
+        <p *ngIf="settings?.enabled === false">Roll tracker is off. Turn it on in <strong>Settings › Roll tracker</strong>.</p>
+        <button mat-stroked-button type="button" [disabled]="settings?.enabled === false || testRunning" title="Plays a made-up contest (1–15) so you can place the roll panel" (click)="testOverlay()">Test overlay</button>
+    </div>
+
+    <ng-template #rollsBody>
     <section class="contests" aria-label="Contests">
         <div class="contests-head">
-            <h2 class="section-label">CONTESTS</h2>
+            <h2 class="section-label">Contests</h2>
             <button type="button" class="link-button" *ngIf="contests.length > 0" (click)="clearContests()">Clear all</button>
         </div>
 
         <div class="contest-list nag-scrollbar">
-            <p class="empty" *ngIf="contests.length === 0">
-                No rolls yet. When someone uses /random, the contest shows up here and on the roll panel.
-                Use Overlays › Arrange Overlays to move the roll panel.
-            </p>
-
             <div class="contest-item" *ngFor="let contest of contests">
                 <button type="button" class="contest" [class.selected]="contest === selected" (click)="selectContest( contest )">
                     <span class="contest-head">
                         <span class="contest-range">{{ contest.min }}–{{ contest.max }}</span>
-                        <span class="contest-status open" *ngIf="contest.closedAt == null">OPEN · {{ countdown( contest ) }}</span>
+                        <span class="contest-status open" *ngIf="contest.closedAt == null">Open · {{ countdown( contest ) }}</span>
                         <span class="contest-status" *ngIf="contest.closedAt != null">{{ contest.closedAt | localeTime:'short' }}</span>
                     </span>
                     <span class="contest-info">
@@ -81,19 +84,20 @@
         </div>
 
         <div class="result">
-            <h2 class="section-label">COPIED TEXT (PASTE INTO CHAT)</h2>
+            <h2 class="section-label">Copied text (paste into chat)</h2>
             <div class="result-text">{{ contest.resultText }}</div>
         </div>
 
-        <p class="settings-note">Roll tracker settings are in <strong>Settings › Roll Tracker</strong>.</p>
+        <p class="settings-note">Roll tracker settings are in <strong>Settings › Roll tracker</strong>.</p>
     </section>
 
     <ng-template #noContest>
         <section class="detail" aria-label="Roll tracker">
-            <p class="settings-note" *ngIf="settings?.enabled === false">Roll Tracker is off. Turn it on in <strong>Settings › Roll Tracker</strong>.</p>
+            <p class="settings-note" *ngIf="settings?.enabled === false">Roll tracker is off. Turn it on in <strong>Settings › Roll tracker</strong>.</p>
             <button mat-stroked-button type="button" [disabled]="settings?.enabled === false || testRunning" title="Plays a made-up contest (1–15) so you can place the roll panel" (click)="testOverlay()">Test overlay</button>
-            <p class="settings-note" *ngIf="settings?.enabled !== false">Roll tracker settings are in <strong>Settings › Roll Tracker</strong>.</p>
+            <p class="settings-note" *ngIf="settings?.enabled !== false">Roll tracker settings are in <strong>Settings › Roll tracker</strong>.</p>
         </section>
+    </ng-template>
     </ng-template>
 
 </div>

@@ -46,7 +46,7 @@
                 <button mat-button (click)="testFn()" *ngIf="false">Test</button>
             </mat-toolbar>
 
-            <div class="tab-content">
+            <div class="tab-content characters-content">
                 <app-characters-list #characterList></app-characters-list>
             </div>
 
@@ -66,7 +66,7 @@
                 <mat-tab label="DPS meter">
                     <app-combat-statistics></app-combat-statistics>
                 </mat-tab>
-                <mat-tab label="Floating Combat Text">
+                <mat-tab label="Floating combat text">
                     <app-floating-combat-text></app-floating-combat-text>
                 </mat-tab>
             </mat-tab-group>
@@ -76,7 +76,7 @@
         </mat-tab>
         <mat-tab label="Settings">
 
-            <app-settings [characterList]="characterList" #settingsPanel></app-settings>
+            <app-settings [characterList]="characterList" (openCombat)="openCombatTab()" #settingsPanel></app-settings>
 
         </mat-tab>
         <mat-tab>

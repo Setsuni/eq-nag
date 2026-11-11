@@ -3,6 +3,11 @@ $color-blue: #69b2f0;
 $color-orange: #f0c669;
 $color-red: #f06969;
 
+:host {
+    display: block;
+    font-size: 14px;
+}
+
 .health-actions {
     display: flex;
     align-items: center;
@@ -59,7 +64,7 @@ $color-red: #f06969;
             font-size: 11px;
             padding: 1px 7px;
             border-radius: 3px;
-            border: 1px solid rgba(105, 178, 240, 0.6);
+            background: rgba(105, 178, 240, 0.18);
             color: $color-blue;
         }
     }
@@ -82,18 +87,21 @@ $color-red: #f06969;
         font-size: 11px;
         padding: 1px 8px;
         border-radius: 3px;
-        border: 1px solid;
         &.never {
             color: $color-red;
+            background: rgba(240, 105, 105, 0.18);
         }
         &.may {
             color: $color-orange;
+            background: rgba(240, 198, 105, 0.18);
         }
         &.cost {
             color: $color-blue;
+            background: rgba(105, 178, 240, 0.18);
         }
         &.info {
             color: #bdbdbd;
+            background: rgba(255, 255, 255, 0.12);
         }
     }
     .severity-note {

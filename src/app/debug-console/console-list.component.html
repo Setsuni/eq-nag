@@ -1,4 +1,4 @@
-<ng-template ngFor let-item [ngForOf]="history" [ngForTrackBy]="trackByFn">
+<ng-template ngFor let-item [ngForOf]="countOnly ? [] : history" [ngForTrackBy]="trackByFn">
 
     <div [ngSwitch]="getLogType(item)">
         <ng-template [ngSwitchCase]="'progress'">

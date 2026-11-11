@@ -472,6 +472,12 @@ export class PrepareQuickShareDialogComponent implements OnInit {
                         panelClass: 'app-dialog',
                     } ).afterClosed().subscribe( authorName => {
 
+                        if ( !authorName ) {
+                            this.creatingQuickShare = false;
+                            observer.complete();
+                            return;
+                        }
+
                         this.settingsService
                             .createAuthor( authorName.name, authorName.discord )
                             .subscribe( newAuthor => {

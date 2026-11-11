@@ -6,7 +6,7 @@ div.tab-content {
     bottom: var(--nag-console-height, 24px);
     top: 176px;
     top: 226px;
-    padding: 20px 1em 20px 1em !important;
+    padding: 16px !important;
 
     > fieldset:not(:first-of-type) {
         margin-top: 50px;
@@ -14,9 +14,28 @@ div.tab-content {
     fieldset {
         width: calc(100% - 2em);
         display: inline-block;
+        padding: 0 16px 16px;
+
+        legend {
+            position: static;
+            float: left;
+            width: 100%;
+            padding: 16px 0 8px;
+            margin: 0;
+            background: none;
+
+            + * {
+                clear: both;
+            }
+
+            span.title {
+                font-size: 16px;
+                font-weight: 500;
+            }
+        }
 
         p {
-            font-weight: 300;
+            font-weight: 400;
             color: #eeeeee;
         }
         .card-property {
@@ -38,6 +57,11 @@ div.tab-content {
             color: #eeeeee;
         }
 
+        .mat-slide-toggle-content {
+            font-size: 14px;
+            font-weight: 400;
+        }
+
     }
 }
 
@@ -49,7 +73,7 @@ div.tab-content {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin: 0 1em 16px;
+    margin: 0 0 16px;
     padding: 6px 8px 6px 16px;
     border-left: 3px solid #69f0ae;
     background-color: #2b2b2b;
@@ -62,13 +86,13 @@ div.tab-content {
 .dps-layout {
     display: flex;
     flex-flow: row wrap;
-    gap: 0 24px;
+    gap: 16px 24px;
     align-items: flex-start;
 
     > fieldset {
         flex: 1 1 360px;
         width: auto !important;
-        margin-top: 0 !important;
+        margin: 0 !important;
     }
 
     mat-checkbox {
@@ -127,12 +151,15 @@ div.tab-content {
     .meter-value small {
         display: inline;
         margin-left: 8px;
-        opacity: 0.6;
+        font-size: 12px;
+        font-weight: 400;
+        color: rgba(255, 255, 255, 0.7);
     }
 }
 
 .preview-note {
     margin: 10px 0 0;
     font-size: 12px;
-    opacity: 0.6;
+    opacity: 0.7;
+    font-weight: 400;
 }

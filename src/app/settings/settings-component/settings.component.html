@@ -65,21 +65,21 @@
     <section class="pane" [class.pane-hidden]="section !== 'characters'">
         <h2 class="pane-title">Characters &amp; log
             <span class="spacer"></span>
-            <span class="custom-dot" *ngIf="!advancedOpen[ 'characters' ] && customised( 'characters' )" matTooltip="Some advanced settings are changed"></span>
-            <mat-slide-toggle [checked]="advancedOpen[ 'characters' ]" (change)="toggleAdvanced( 'characters' )">Advanced</mat-slide-toggle>
+            <span class="custom-dot" *ngIf="!advancedOpen && customised( 'characters' )" matTooltip="Some advanced settings are changed"></span>
+            <mat-slide-toggle [checked]="advancedOpen" (change)="toggleAdvanced()">Advanced</mat-slide-toggle>
         </h2>
         <p class="pane-note">Add and remove characters on the Characters tab.</p>
 
         <h3 class="group-title">Log file maintenance</h3>
         <div class="group">
             <div class="content-middle content-top">
-                <mat-checkbox [(ngModel)]="logMaintenanceRules.enableLogFileMaintenance" (change)="updateSetting(settingsKeys.logMaintenanceRules, logMaintenanceRules)">Enable Log File Maintenance.</mat-checkbox>
+                <mat-checkbox [(ngModel)]="logMaintenanceRules.enableLogFileMaintenance" (change)="updateSetting(settingsKeys.logMaintenanceRules, logMaintenanceRules)">Tidy up log files automatically</mat-checkbox>
             </div>
             <div class="content-left maintenance">
-                <p>How would you like to execute log file archiving?</p>
-                <mat-radio-group [(ngModel)]="logMaintenanceRules.maintenancePlan">
-                    <mat-radio-button [value]="logMaintenancePlanTypes.BySize">When a log file reaches a certain size.</mat-radio-button>
-                    <mat-radio-button [value]="logMaintenancePlanTypes.BySchedule">On a schedule.</mat-radio-button>
+                <p class="maintenance-question">When should Nag archive a log?</p>
+                <mat-radio-group [(ngModel)]="logMaintenanceRules.maintenancePlan" (change)="saveLogMaintenance()" [disabled]="!logMaintenanceRules.enableLogFileMaintenance">
+                    <mat-radio-button [value]="logMaintenancePlanTypes.BySize">When a log file reaches a certain size</mat-radio-button>
+                    <mat-radio-button [value]="logMaintenancePlanTypes.BySchedule">On a schedule</mat-radio-button>
                 </mat-radio-group>
                 <div *ngIf="logMaintenanceRules.maintenancePlan === logMaintenancePlanTypes.BySize">
                     <mat-form-field style="width: 100%;">
@@ -96,7 +96,7 @@
                 </div>
                 <div *ngIf="logMaintenanceRules.maintenancePlan === logMaintenancePlanTypes.BySchedule">
 
-                    <mat-button-toggle-group name="daysOfWeek" aria-label="Days of the week to perform log maintenance" multiple class="daysOfWeekToggleGroup" (change)="saveLogMaintenance()" [(ngModel)]="logDays">
+                    <mat-button-toggle-group name="daysOfWeek" aria-label="Days of the week to perform log maintenance" multiple class="daysOfWeekToggleGroup" (change)="saveLogMaintenance()" [(ngModel)]="logDays" [disabled]="!logMaintenanceRules.enableLogFileMaintenance">
                         <mat-button-toggle [value]="0">Sun</mat-button-toggle>
                         <mat-button-toggle [value]="1">Mon</mat-button-toggle>
                         <mat-button-toggle [value]="2">Tue</mat-button-toggle>
@@ -107,14 +107,14 @@
                     </mat-button-toggle-group>
 
                     <ng-template #timePickerCancel>
-                        <button mat-button color="default">Cancel</button>
+                        <button mat-stroked-button>Cancel</button>
                     </ng-template>
                     <ng-template #timePickerConfirm>
-                        <button mat-flat-button color="accent">OK</button>
+                        <button mat-flat-button color="primary">Set time</button>
                     </ng-template>
                     <mat-form-field class="archiveTimeOfDay">
                         <mat-label>Archive time of day</mat-label>
-                        <input matInput [ngxMatTimepicker]="picker" [(ngModel)]="logTime" (ngModelChange)="saveLogMaintenance()">
+                        <input matInput [ngxMatTimepicker]="picker" [(ngModel)]="logTime" (ngModelChange)="saveLogMaintenance()" [disabled]="!logMaintenanceRules.enableLogFileMaintenance">
                         <button mat-icon-button matSuffix >
                             <mat-icon matSuffix
                             (click)="picker.open()">
@@ -131,8 +131,8 @@
 
         </div>
 
-        <div class="advanced-block" *ngIf="advancedOpen[ 'characters' ]">
-            <h3 class="group-title danger"><span class="material-symbols-outlined">warning</span> Log file settings</h3>
+        <div class="advanced-block" *ngIf="advancedOpen">
+            <h3 class="group-title">Log file settings</h3>
             <div class="group">
                 <app-log-file></app-log-file>
             </div>
@@ -142,8 +142,8 @@
     <section class="pane" [class.pane-hidden]="section !== 'overlays'">
         <h2 class="pane-title">Overlays
             <span class="spacer"></span>
-            <span class="custom-dot" *ngIf="!advancedOpen[ 'overlays' ] && customised( 'overlays' )" matTooltip="Some advanced settings are changed"></span>
-            <mat-slide-toggle [checked]="advancedOpen[ 'overlays' ]" (change)="toggleAdvanced( 'overlays' )">Advanced</mat-slide-toggle>
+            <span class="custom-dot" *ngIf="!advancedOpen && customised( 'overlays' )" matTooltip="Some advanced settings are changed"></span>
+            <mat-slide-toggle [checked]="advancedOpen" (change)="toggleAdvanced()">Advanced</mat-slide-toggle>
         </h2>
         <p class="pane-note">Create, move and test overlays on the Overlays tab.</p>
 
@@ -172,11 +172,11 @@
             </mat-form-field>
         </div>
 
-        <div class="advanced-block" *ngIf="advancedOpen[ 'overlays' ]">
+        <div class="advanced-block" *ngIf="advancedOpen">
             <h3 class="group-title">Overlay positions</h3>
             <div class="group">
                 <div class="formless-hint full-width">
-                    <div class="formless-input"><mat-checkbox [(ngModel)]="enableCheckWindowPosition" (change)="updateSetting( this.settingsKeys.enableCheckWindowPosition, this.enableCheckWindowPosition, 500 )">Enable relative window positions.</mat-checkbox></div>
+                    <div class="formless-input"><mat-checkbox [(ngModel)]="enableCheckWindowPosition" (change)="updateSetting( this.settingsKeys.enableCheckWindowPosition, this.enableCheckWindowPosition, 500 )">Enable relative window positions</mat-checkbox></div>
                     <mat-hint>
                         If enabled, will maintain the relative position of an overlay.
                         <sup class="help-sup"
@@ -193,13 +193,13 @@
     <section class="pane" [class.pane-hidden]="section !== 'sound'">
         <h2 class="pane-title">Sound &amp; voice
             <span class="spacer"></span>
-            <span class="custom-dot" *ngIf="!advancedOpen[ 'sound' ] && customised( 'sound' )" matTooltip="Some advanced settings are changed"></span>
-            <mat-slide-toggle [checked]="advancedOpen[ 'sound' ]" (change)="toggleAdvanced( 'sound' )">Advanced</mat-slide-toggle>
+            <span class="custom-dot" *ngIf="!advancedOpen && customised( 'sound' )" matTooltip="Some advanced settings are changed"></span>
+            <mat-slide-toggle [checked]="advancedOpen" (change)="toggleAdvanced()">Advanced</mat-slide-toggle>
         </h2>
 
         <h3 class="group-title">Volume</h3>
         <div class="group narrow">
-            <div>Master Volume</div>
+            <div>Main volume</div>
             <mat-slider [(ngModel)]="masterVolume" thumbLabel tickInterval="1" min="1" max="100" style="width: 100%;" (change)="onChangeMasterVolume()" ></mat-slider>
         </div>
 
@@ -214,14 +214,14 @@
             <button mat-stroked-button (click)="speakPhrase(exampleSpeech, 1)"><mat-icon>play_circle_outline</mat-icon> Test voice</button>
         </div>
 
-        <div class="advanced-block" *ngIf="advancedOpen[ 'sound' ]">
+        <div class="advanced-block" *ngIf="advancedOpen">
             <h3 class="group-title">More volume and speed</h3>
             <div class="group narrow">
-                <div>Text to Speech Volume</div>
+                <div>Text to speech volume</div>
                 <mat-slider [(ngModel)]="speechVolume" thumbLabel tickInterval="1" min="1" max="100" style="width: 100%;" (change)="updateSetting( settingsKeys.speechVolume, speechVolume, 500 )"></mat-slider>
-                <div>Audio Volume</div>
+                <div>Audio volume</div>
                 <mat-slider [(ngModel)]="audioVolume" thumbLabel tickInterval="1" min="1" max="100" style="width: 100%;" (change)="updateSetting( settingsKeys.audioVolume, audioVolume, 500 )"></mat-slider>
-                <div style="margin-top: 15px;">Base Speaking Rate</div>
+                <div style="margin-top: 15px;">Base speaking rate</div>
                 <mat-slider [(ngModel)]="baseSpeakingRate" thumbLabel tickInterval="0.25" step="0.25" min="0.25" max="4" style="width: 100%;" (change)="updateSetting( settingsKeys.baseSpeakingRate, baseSpeakingRate, 500 )"></mat-slider>
             </div>
 
@@ -230,7 +230,7 @@
                 <div>
                     <button mat-button (click)="speakPhrase(exampleSpeech, 1)"><mat-icon>play_circle_outline</mat-icon> Normal</button>
                     <button mat-button (click)="speakPhrase(exampleSpeech, 1.75)"><mat-icon>play_circle_outline</mat-icon> Fast</button>
-                    <button mat-button (click)="speakPhrase(exampleSpeech, 2.25)"><mat-icon>play_circle_outline</mat-icon> Very Fast</button>
+                    <button mat-button (click)="speakPhrase(exampleSpeech, 2.25)"><mat-icon>play_circle_outline</mat-icon> Very fast</button>
                     <mat-form-field style="width: 100%">
                         <mat-label>Example speech</mat-label>
                         <input matInput type="text" [(ngModel)]="exampleSpeech" name="txtExampleSpeech" />
@@ -238,7 +238,7 @@
                 </div>
             </div>
 
-            <h3 class="group-title">Phonetic Transforms
+            <h3 class="group-title">Phonetic transforms
                 <span class="spacer"></span>
                 <button mat-button (click)="addPhoneticTransform(phoneticTransformsTable)" color="accent"><mat-icon>add</mat-icon>New</button>
             </h3>
@@ -293,7 +293,7 @@
 
                 </table>
 
-                <button mat-button *ngIf="phoneticTransformsModified" (click)="savePhoneticTransforms()" color="accent">Save Changes</button>
+                <button mat-button *ngIf="phoneticTransformsModified" (click)="savePhoneticTransforms()" color="accent">Save changes</button>
             </div>
         </div>
     </section>
@@ -302,22 +302,22 @@
         <h2 class="pane-title">Sharing
             <button mat-icon-button color="accent" (click)="showVerifiedUserInfo()" *ngIf="trustedAuthor"><mat-icon class="material-icons-outlined">verified_user</mat-icon></button>
             <span class="spacer"></span>
-            <span class="custom-dot" *ngIf="!advancedOpen[ 'sharing' ] && customised( 'sharing' )" matTooltip="Some advanced settings are changed"></span>
-            <mat-slide-toggle [checked]="advancedOpen[ 'sharing' ]" (change)="toggleAdvanced( 'sharing' )">Advanced</mat-slide-toggle>
+            <span class="custom-dot" *ngIf="!advancedOpen && customised( 'sharing' )" matTooltip="Some advanced settings are changed"></span>
+            <mat-slide-toggle [checked]="advancedOpen" (change)="toggleAdvanced()">Advanced</mat-slide-toggle>
         </h2>
 
         <div class="two-columns">
             <div>
-                <h3 class="group-title">Quickshare</h3>
+                <h3 class="group-title">Quick Share</h3>
                 <div class="group">
                     <div class="formless-hint full-width">
-                        <div class="formless-input"><mat-checkbox [(ngModel)]="enableQuickShareImports" (change)="onQuickShareImportsChange()">Enable importing QuickShare triggers.</mat-checkbox></div>
-                        <mat-hint>If enabled, will listen for and respond to quick share triggers in the log file.</mat-hint>
+                        <div class="formless-input"><mat-checkbox [(ngModel)]="enableQuickShareImports" (change)="onQuickShareImportsChange()">Import Quick Share triggers</mat-checkbox></div>
+                        <mat-hint>If enabled, will listen for and respond to Quick Share triggers in the log file.</mat-hint>
                     </div>
                 </div>
             </div>
             <div>
-                <h3 class="group-title">Author Info</h3>
+                <h3 class="group-title">Author details</h3>
                 <div class="group">
                     <div>
                         <mat-form-field style="width: 100%;">
@@ -336,24 +336,24 @@
                     </div>
 
                     <ng-template [ngIf]="author?.authorId != null" [ngIfElse]="noAuthorFile">
-                        <button mat-button (click)="updateAuthor()">Save Changes</button>
-                        <button mat-button *ngIf="!trustedAuthor" (click)="requestVerification()">Request Verification</button>
+                        <button mat-button (click)="updateAuthor()">Save changes</button>
+                        <button mat-button *ngIf="!trustedAuthor" (click)="requestVerification()">Request verification</button>
                     </ng-template>
                     <ng-template #noAuthorFile>
-                        <button mat-button color="accent" (click)="createAuthor()">Create</button>
+                        <button mat-button color="accent" (click)="createAuthor()">Save</button>
                     </ng-template>
                 </div>
             </div>
         </div>
 
-        <div class="advanced-block two-columns" *ngIf="advancedOpen[ 'sharing' ]">
+        <div class="advanced-block two-columns" *ngIf="advancedOpen">
             <div>
                 <h3 class="group-title">Who can send you triggers</h3>
                 <div class="group">
                     <mat-radio-group class="inline" [(ngModel)]="quickShareAuthorListType" name="rdoQuickShareAuthorListType" (change)="onQuickShareImportsChange()">
                         <mat-radio-button [value]="quickShareAuthorListTypes.Disabled">Disabled</mat-radio-button>
-                        <mat-radio-button [value]="quickShareAuthorListTypes.Whitelist">White List</mat-radio-button>
-                        <mat-radio-button [value]="quickShareAuthorListTypes.Blacklist">Black List</mat-radio-button>
+                        <mat-radio-button [value]="quickShareAuthorListTypes.Whitelist">Only these players</mat-radio-button>
+                        <mat-radio-button [value]="quickShareAuthorListTypes.Blacklist">Everyone except these players</mat-radio-button>
                     </mat-radio-group>
                     <mat-form-field style="width:100%;">
                         <mat-label>Characters list</mat-label>
@@ -362,15 +362,15 @@
                 </div>
             </div>
             <div>
-                <h3 class="group-title">Shared/Installed Trigger Permissions</h3>
+                <h3 class="group-title">Shared and installed trigger permissions</h3>
                 <div class="group">
                     <div class="formless-hint full-width" style="width: 100%;">
-                        <div class="formless-input"><mat-checkbox [(ngModel)]="sharedTriggerPermissions.disableSharedGlowEffects" (change)="updateSetting( this.settingsKeys.sharedTriggerPermissions, this.sharedTriggerPermissions, 500 )">Disable Screen Glow</mat-checkbox></div>
+                        <div class="formless-input"><mat-checkbox [(ngModel)]="sharedTriggerPermissions.disableSharedGlowEffects" (change)="updateSetting( this.settingsKeys.sharedTriggerPermissions, this.sharedTriggerPermissions, 500 )">Disable screen glow</mat-checkbox></div>
                         <mat-hint>If enabled, any triggers that were created by another author will not execute glow actions.</mat-hint>
                     </div>
                     <div *ngIf="sharedTriggerPermissions.disableSharedGlowEffects">
                         <div class="formless-hint full-width" style="margin-top: 5px; width: 100%;">
-                            <div class="formless-input"><mat-checkbox [(ngModel)]="sharedTriggerPermissions.disableAllGlowEffects" (change)="updateSetting( this.settingsKeys.sharedTriggerPermissions, this.sharedTriggerPermissions, 500 )">Disable All Screen Glow Actions</mat-checkbox></div>
+                            <div class="formless-input"><mat-checkbox [(ngModel)]="sharedTriggerPermissions.disableAllGlowEffects" (change)="updateSetting( this.settingsKeys.sharedTriggerPermissions, this.sharedTriggerPermissions, 500 )">Disable all screen glow actions</mat-checkbox></div>
                             <mat-hint>If enabled, any triggers created by others or yourself will not execute glow actions.</mat-hint>
                         </div>
                     </div>
@@ -382,13 +382,13 @@
     <section class="pane" [class.pane-hidden]="section !== 'rolls'">
         <h2 class="pane-title">Roll tracker
             <span class="spacer"></span>
-            <span class="custom-dot" *ngIf="!rollSettings?.advancedOpen && customised( 'rolls' )" matTooltip="Some advanced settings are changed"></span>
-            <mat-slide-toggle *ngIf="rollSettings" [checked]="rollSettings.advancedOpen" (change)="updateRollSettings( { advancedOpen: $event.checked } )">Advanced</mat-slide-toggle>
+            <span class="custom-dot" *ngIf="!advancedOpen && customised( 'rolls' )" matTooltip="Some advanced settings are changed"></span>
+            <mat-slide-toggle [checked]="advancedOpen" (change)="toggleAdvanced()">Advanced</mat-slide-toggle>
         </h2>
         <div class="roll-tracker" *ngIf="rollSettings as roll">
-            <div class="roll-columns" [class.collapsed]="!roll.advancedOpen">
+            <div class="roll-columns" [class.collapsed]="!advancedOpen">
                 <div class="roll-column">
-                    <h3 class="roll-heading">EVERYDAY</h3>
+                    <h3 class="roll-heading">Everyday</h3>
                     <mat-slide-toggle [checked]="roll.enabled" (change)="updateRollSettings( { enabled: $event.checked } )">Track /random rolls</mat-slide-toggle>
                     <mat-slide-toggle [checked]="roll.copyOnClose" (change)="updateRollSettings( { copyOnClose: $event.checked } )">Copy the result when a contest closes</mat-slide-toggle>
                     <mat-slide-toggle [checked]="roll.speakWinner" (change)="updateRollSettings( { speakWinner: $event.checked } )">Speak the winner</mat-slide-toggle>
@@ -399,9 +399,9 @@
                         <mat-hint>Added in front of the copied result.</mat-hint>
                     </mat-form-field>
                 </div>
-                <div class="roll-column advanced">
-                    <h3 class="roll-heading">ADVANCED</h3>
-                    <ng-container *ngIf="roll.advancedOpen">
+                <div class="roll-column advanced" *ngIf="advancedOpen">
+                    <h3 class="roll-heading">Advanced</h3>
+                    <ng-container>
                         <mat-form-field class="roll-field roll-field-number">
                             <mat-label>Close after (seconds)</mat-label>
                             <input matInput type="number" min="10" max="600" [value]="roll.closeAfterSeconds" (change)="saveRollNumber( $any( $event.target ), 'closeAfterSeconds', 10, 600 )">
@@ -463,14 +463,14 @@
     <section class="pane" [class.pane-hidden]="section !== 'death'">
         <h2 class="pane-title">Death recap
             <span class="spacer"></span>
-            <span class="custom-dot" *ngIf="!advancedOpen[ 'death' ] && customised( 'death' )" matTooltip="Some advanced settings are changed"></span>
-            <mat-slide-toggle [checked]="advancedOpen[ 'death' ]" (change)="toggleAdvanced( 'death' )">Advanced</mat-slide-toggle>
+            <span class="custom-dot" *ngIf="!advancedOpen && customised( 'death' )" matTooltip="Some advanced settings are changed"></span>
+            <mat-slide-toggle [checked]="advancedOpen" (change)="toggleAdvanced()">Advanced</mat-slide-toggle>
         </h2>
 
         <p>The death recap window can give you a "bird's eye view" of what happened leading up to a character's demise.</p>
-        <p>To enable the Death Recap window, select how you would like the window to be loaded.
+        <p>To enable the death recap window, select how you would like the window to be loaded.
         <br/>Loading with <span class="color-blue" style="font-weight: 400;">Hotkey</span> will create an EQ hotkey that when pressed, will display your last death.
-        <br/>Loading with <span class="color-blue" style="font-weight: 400;">Automatic</span> will automatically display the Death Recap window when you are slain.</p>
+        <br/>Loading with <span class="color-blue" style="font-weight: 400;">Automatic</span> will automatically display the death recap window when you are slain.</p>
 
         <mat-radio-group [(ngModel)]="deathRecapPreferences.engageMode" name="deathRecapEngageMode" (change)="onDeathRecapPrefsChange()">
             <mat-radio-button value="hotkey">
@@ -488,7 +488,7 @@
             <button type="button" style="margin-left: 10px; color: #69b2f0;" mat-button (click)="onCopyDeathRecapHotkeyCommand()">Copy</button>
         </ng-template>
 
-        <div class="advanced-block" *ngIf="advancedOpen[ 'death' ]">
+        <div class="advanced-block" *ngIf="advancedOpen">
             <h3 class="group-title">What the window shows</h3>
             <p>The <span class="color-orange-dark" style="font-weight: 400;">Damage Log</span> section will display what happened to your character, including damage taken and healing received.
             <br />The <span class="color-orange-dark" style="font-weight: 400;">Damage Sources</span> section will show a list of all NPC damage done to the raid, and all healing received by the raid.
@@ -499,7 +499,10 @@
     <section class="pane" [class.pane-hidden]="section !== 'combat'">
         <h2 class="pane-title">Combat</h2>
 
-        <combat-statistics [showMinimalInterface]="true"></combat-statistics>
+        <div class="group">
+            <p class="combat-note">DPS meter settings are on the Combat tab.</p>
+            <button mat-stroked-button type="button" (click)="showCombatTab()">Open Combat</button>
+        </div>
     </section>
 
     <section class="pane" [class.pane-hidden]="section !== 'advanced'">
@@ -511,11 +514,11 @@
                 <h3 class="group-title">Window</h3>
                 <div class="group">
                     <div class="formless-hint full-width">
-                        <div class="formless-input"><mat-checkbox [(ngModel)]="minimizeToTrayOnLoad" (change)="onMinimizeToTrayOnLoadChange()">Open minimized to tray.</mat-checkbox></div>
+                        <div class="formless-input"><mat-checkbox [(ngModel)]="minimizeToTrayOnLoad" (change)="onMinimizeToTrayOnLoadChange()">Open minimized to tray</mat-checkbox></div>
                         <mat-hint>If enabled, when the application runs it will be minimized to the application tray by default.</mat-hint>
                     </div>
                     <div class="formless-hint full-width">
-                        <div class="formless-input"><mat-checkbox [(ngModel)]="glowOnStartup" (change)="onGlowOnStartupChanged()">Glow on startup.</mat-checkbox></div>
+                        <div class="formless-input"><mat-checkbox [(ngModel)]="glowOnStartup" (change)="onGlowOnStartupChanged()">Glow on startup</mat-checkbox></div>
                         <mat-hint>If enabled, will glow the primary display when Nag starts up.</mat-hint>
                     </div>
                 </div>
@@ -524,15 +527,15 @@
                 <h3 class="group-title">Updates</h3>
                 <div class="group">
                     <div class="formless-hint full-width">
-                        <div class="formless-input"><mat-checkbox [(ngModel)]="allowPrerelease" (change)="updateSetting( this.settingsKeys.allowPrerelease, this.allowPrerelease, 500 )">Allow Pre-release.</mat-checkbox></div>
+                        <div class="formless-input"><mat-checkbox [(ngModel)]="allowPrerelease" (change)="updateSetting( this.settingsKeys.allowPrerelease, this.allowPrerelease, 500 )">Get pre-release updates</mat-checkbox></div>
                         <mat-hint>If enabled, will automatically update to the latest pre-release.</mat-hint>
                     </div>
                 </div>
             </div>
             <div>
-                <h3 class="group-title">Hidden dialogs</h3>
+                <h3 class="group-title">Hidden messages</h3>
                 <div class="group">
-                    <button mat-stroked-button (click)="resetHiddenModals()">Reset Hidden Modals</button>
+                    <button mat-stroked-button (click)="resetHiddenModals()">Show hidden messages again</button>
                 </div>
             </div>
         </div>
@@ -544,15 +547,15 @@
         <div #triggerHealthSection>
             <h3 class="group-title">Trigger health and performance</h3>
             <div class="group">
-                <app-trigger-health #triggerHealth></app-trigger-health>
+                <app-trigger-health #triggerHealth [advanced]="advancedOpen" (advancedChange)="setAdvanced( $event )"></app-trigger-health>
             </div>
         </div>
 
         <h3 class="group-title">Support files</h3>
         <div class="group">
-            <button mat-button (click)="downloadLogFile()" class="color-green">Download Log File</button>
-            <button mat-button (click)="downloadDataFiles()">Download Data Files</button>
-            <button mat-button (click)="showDataFolder()" class="color-orange">Show Data Folder</button>
+            <button mat-stroked-button (click)="downloadLogFile()">Download log file</button>
+            <button mat-stroked-button (click)="downloadDataFiles()">Download data files</button>
+            <button mat-stroked-button (click)="showDataFolder()">Show data folder</button>
         </div>
     </section>
 

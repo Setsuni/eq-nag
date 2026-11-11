@@ -1,4 +1,4 @@
-import { Component, NgZone, OnDestroy, OnInit } from '@angular/core';
+import { Component, EventEmitter, Input, NgZone, OnDestroy, OnInit, Output } from '@angular/core';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { IpcService } from '../ipc.service';
 import { PerfCharacter, PerfFinished, PerfReport, PerfRow, PerfState, TriggerPerfService } from './trigger-perf.service';
@@ -34,7 +34,8 @@ export class TriggerHealthComponent implements OnInit, OnDestroy {
 
     public report: HealthReport | null = null;
     public busy: boolean = false;
-    public advanced: boolean = false;
+    @Input() public advanced: boolean = false;
+    @Output() public advancedChange: EventEmitter<boolean> = new EventEmitter<boolean>();
     public defaultGroups: HealthGroup[] = [];
     public advancedGroups: HealthGroup[] = [];
 
@@ -70,6 +71,11 @@ export class TriggerHealthComponent implements OnInit, OnDestroy {
         private readonly perfService: TriggerPerfService,
         private readonly ngZone: NgZone,
     ) { }
+
+    public onAdvancedChange( value: boolean ): void {
+        this.advanced = value;
+        this.advancedChange.emit( value );
+    }
 
     /** True when the Performance tab is showing; it only exists under Advanced. */
     public get showPerf(): boolean {

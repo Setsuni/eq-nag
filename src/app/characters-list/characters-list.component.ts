@@ -4,6 +4,7 @@ import { CharacterModel, TriggerFolder, TriggerModel, TriggersProfileModel } fro
 import { DialogService } from '../dialogs/dialog.service';
 import { CharacterLogFileInfo, IpcService } from '../ipc.service';
 import * as _ from 'lodash-es';
+import { serverLabel } from 'src/app/utilities/string.utilities';
 import { FlatTreeControl } from '@angular/cdk/tree';
 import { MatTree, MatTreeFlatDataSource, MatTreeFlattener } from '@angular/material/tree';
 
@@ -40,6 +41,10 @@ interface CharacterTriggerData {
     styleUrls: [ 'characters-list.component.scss' ]
 } )
 export class CharactersListComponent implements OnInit {
+
+    public serverLabel( server: string ): string {
+        return serverLabel( server );
+    }
 
     private _transformer: ( node: CharacterTriggerTreeObject, level: number ) => CharacterTriggerTreeNode = ( node: CharacterTriggerTreeObject, level: number ) => {
         return {
@@ -470,7 +475,7 @@ export class CharactersListComponent implements OnInit {
 
         if ( profile ) {
             this.dialogService.showConfirmationDialog(
-                [ `Are you sure you want to reapply the "${profile}" profile?`, 'This will reset the character\'s enabled and disabled triggers and reapply from the profile.' ],
+                [ `Are you sure you want to reapply the "${profile.name}" profile?`, 'This will reset the character\'s enabled and disabled triggers and reapply from the profile.' ],
                 'Click "Yes" to reapply the profile to this character.',
                 'Click "No" to close this dialog without reapplying the profile.' )
                 .subscribe( confirmed => {
