@@ -9,6 +9,11 @@ div.tab-content {
     > fieldset:not(:first-child) {
         margin-top: 50px;
     }
+
+    &.characters-content {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
 }
 
 :host ::ng-deep .tab-dev-chip {

@@ -547,7 +547,7 @@
         <div #triggerHealthSection>
             <h3 class="group-title">Trigger health and performance</h3>
             <div class="group">
-                <app-trigger-health #triggerHealth></app-trigger-health>
+                <app-trigger-health #triggerHealth [advanced]="advancedOpen" (advancedChange)="setAdvanced( $event )"></app-trigger-health>
             </div>
         </div>
 

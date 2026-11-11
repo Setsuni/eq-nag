@@ -7,6 +7,10 @@ div.tab-content {
     top: 176px;
     top: 226px;
 
+    &.fct-content {
+        padding: 16px;
+    }
+
     > fieldset:not(:first-child) {
         margin-top: 50px;
     }
@@ -39,12 +43,18 @@ div.tab-content {
     font-weight: 400;
 }
 
+.header-glow {
+    text-shadow: none;
+}
+
 h2,
-h3 {
+h3,
+h4 {
     &.header-glow {
         margin-top: 0;
         font-size: 16px;
         font-weight: 500;
+        text-shadow: none;
     }
     &.sub-header {
         margin: 16px 0 8px;
@@ -188,30 +198,28 @@ app-style-properties {
     > div {
         display: flex;
         flex-flow: column nowrap;
-        margin: 0 10px;
-        padding: 10px;
+        margin: 0 8px;
+        padding: 8px;
         color: #d1d1d1;
 
         h4 {
-            margin-top: 5px;
-            font-weight: 300;
-            font-size: 19px;
-            margin-bottom: 10px;
+            margin: 16px 0 8px;
+            font-weight: 500;
+            font-size: 16px;
         }
     }
 }
 
 .card-tab-content {
-    padding: 0 25px;
+    padding: 0 16px;
     overflow: hidden;
     text-overflow: clip;
 
     div.style-header {
-        margin-left: -3px;
-        margin-right: -4px;
-        padding-left: 15px;
-        font-weight: 100;
-        font-size: 18px;
+        margin: 0;
+        padding-left: 0;
+        font-weight: 500;
+        font-size: 14px;
         padding-bottom: 5px;
         padding-top: 2px;
         /* background-color: #2a2a2a; */
@@ -226,15 +234,15 @@ app-style-properties {
             margin-top: 5px;
             display: inline-block;
             font-size: 14px;
-            font-weight: 300;
+            font-weight: 400;
         }
 
     }
     
     h4 {
-        font-weight: 300;
-        font-size: 19px;
-        margin-bottom: 10px;
+        font-weight: 500;
+        font-size: 16px;
+        margin: 16px 0 8px;
     }
 
     .group-options-container {
@@ -333,12 +341,12 @@ mat-expansion-panel {
     &.mat-expanded {
     
         span.title {
-            font-size: 24px;
-            font-weight: 100;
+            font-size: 16px;
+            font-weight: 500;
         }
         mat-expansion-panel-header {
             background-color: #00000038;
-            margin-bottom: 32px;
+            margin-bottom: 16px;
         }
     }
 }

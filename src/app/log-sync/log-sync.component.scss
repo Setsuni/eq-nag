@@ -67,6 +67,10 @@ div.tab-content {
     flex: 1 1 auto;
 }
 
+button + button {
+    margin-left: 8px;
+}
+
 .dev-note {
     margin: 0 0 16px;
     font-size: 12px;

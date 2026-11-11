@@ -10,7 +10,6 @@
 
 mat-accordion {
     display: block;
-    margin: 0 16px;
 }
 
 .example-headers-align .mat-form-field + .mat-form-field {
@@ -145,6 +144,8 @@ mat-panel-description {
     }
 
     .log-file-actions {
+        display: flex;
+        gap: 8px;
         margin-top: 16px;
     }
 }
@@ -283,6 +284,10 @@ table {
 .n-layout.n-row > div {
     margin: 0 0 8px;
     padding: 0;
+}
+
+.profile-actions {
+    margin-left: -16px;
 }
 
 .field-label {

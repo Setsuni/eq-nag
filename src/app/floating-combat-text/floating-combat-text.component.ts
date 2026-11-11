@@ -187,6 +187,11 @@ export class FloatingCombatTextComponent implements OnInit, DoCheck {
                         panelClass: 'app-dialog',
                     } ).afterClosed().subscribe( authorName => {
 
+                        if ( !authorName ) {
+                            observer.complete();
+                            return;
+                        }
+
                         this.settingsService
                             .createAuthor( authorName.name, authorName.discord )
                             .subscribe( newAuthor => {

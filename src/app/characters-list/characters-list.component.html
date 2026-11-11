@@ -7,7 +7,7 @@
             <ng-template [ngIf]="character.p99">P1999&nbsp;</ng-template>
             <ng-template [ngIf]="character.takp">TAKP&nbsp;</ng-template>
             <ng-template [ngIf]="character.thj"></ng-template>
-            {{character.server | titlecase}}
+            {{serverLabel( character.server )}}
             <button class="status-chip dps"
                 [ngClass]="{'active': isCombatCharacter(character)}"
                 [matTooltip]="getCombatTooltipMessage(character)"
@@ -217,7 +217,7 @@
                                             matTooltipPosition="right"
                                             matTooltipClass="tooltip-large">&nbsp;&nbsp;?</sup>
                                         </div>
-                                    <div>
+                                    <div class="profile-actions">
                                         <button mat-button class="color-green" (click)="addTriggerProfile(character)"><mat-icon>add</mat-icon> New profile</button>
 
                                         <button mat-button class="color-orange" 

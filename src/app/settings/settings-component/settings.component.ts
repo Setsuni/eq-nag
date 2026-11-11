@@ -106,6 +106,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     public rollDefaults: RollTrackerSettings | null = null;
     private fileReadDelays: FileReadDelays | null = null;
     private rollAdvancedChecked: boolean = false;
+    private hasStoredAdvanced: boolean = false;
 
     public get timerOverlays(): OverlayWindowModel[] {
         return this.overlays?.filter( m => m.overlayType === 'Timer' );
@@ -142,6 +143,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
         try {
             storedAdvanced = JSON.parse( localStorage.getItem( advancedStorageKey ) );
         } catch ( error ) { }
+        this.hasStoredAdvanced = storedAdvanced != null;
         this.advancedOpen = storedAdvanced != null && typeof storedAdvanced === 'object' ? Object.values( storedAdvanced ).some( open => open === true ) : storedAdvanced === true;
 
         this.healthService.summary$.subscribe( summary => this.healthSummary = summary );
@@ -171,10 +173,14 @@ export class SettingsComponent implements OnInit, OnDestroy {
             this.ngZone.run( () => {
                 this.rollSettings = state.settings;
                 this.rollDefaults = state.defaults;
-                if ( !this.advancedOpen && !this.rollAdvancedChecked && state.settings?.advancedOpen ) {
-                    this.advancedOpen = true;
+                if ( !this.rollAdvancedChecked ) {
+                    this.rollAdvancedChecked = true;
+                    if ( !this.hasStoredAdvanced ) {
+                        this.advancedOpen = state.settings?.advancedOpen === true;
+                    } else if ( ( state.settings?.advancedOpen === true ) !== this.advancedOpen ) {
+                        this.updateRollSettings( { advancedOpen: this.advancedOpen } );
+                    }
                 }
-                this.rollAdvancedChecked = true;
             } );
         } );
         window.api.ipc.send( 'rolls:get', null );
@@ -576,7 +582,15 @@ export class SettingsComponent implements OnInit, OnDestroy {
      * Shows or hides the Advanced part of every section; the choice is remembered.
      */
     toggleAdvanced(): void {
-        this.advancedOpen = !this.advancedOpen;
+        this.setAdvanced( !this.advancedOpen );
+    }
+
+    /**
+     * Sets the Advanced state of every section; the choice is remembered.
+     */
+    setAdvanced( open: boolean ): void {
+        this.advancedOpen = open;
+        this.hasStoredAdvanced = true;
         try {
             localStorage.setItem( advancedStorageKey, JSON.stringify( this.advancedOpen ) );
         } catch ( error ) { }

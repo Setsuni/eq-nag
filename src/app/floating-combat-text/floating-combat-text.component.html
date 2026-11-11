@@ -7,7 +7,7 @@
     <button mat-button (click)="installQuickShare()" title="Import settings from another player."><mat-icon class="material-icons-outlined">cloud_download</mat-icon> Import</button>
     <button mat-button color="accent" (click)="newCombatGroup()"><mat-icon class="material-icons-outlined">add</mat-icon> New group</button>
 </mat-toolbar>
-<div class="tab-content">
+<div class="tab-content fct-content">
     
     <div class="empty-state" *ngIf="combatGroupsLoaded && combatGroups.length === 0">
         <h2>No combat text groups yet</h2>
@@ -50,7 +50,7 @@
                     <mat-checkbox [(ngModel)]="group.combatTypes.otherHealingOnMyPet" name="otherHealingOnMyPet_{{i}}">Pets being healed</mat-checkbox>
                 </div>
                 
-                <div style="padding-left: 25px; min-width: 170px;">
+                <div style="padding-left: 16px; min-width: 170px;">
                     <h3 class="sub-header full-width header-glow">Modifiers</h3>
                     <mat-button-toggle-group name="combatModifiers" aria-label="Modifiers" class="vertical" style="float: right;" [(ngModel)]="group.combatModifiers" name="combatModifiers_{{i}}" multiple>
                         <mat-button-toggle value="normal">Normal</mat-button-toggle>
@@ -71,7 +71,7 @@
                     </mat-button-toggle-group>
                 </div>
     
-                <div style="flex: 1 1 auto; margin-left: 25px; max-width: calc(100% - 490px);">
+                <div style="flex: 1 1 auto; margin-left: 16px; max-width: calc(100% - 490px);">
                     <h3 class="sub-header full-width header-glow">Group settings</h3>
     
                     <mat-tab-group animationDuration="0ms" [selectedIndex]="group.editorTabIndex">
@@ -104,8 +104,8 @@
     
                                 <div class="style-header">
                                     <span (click)="group.editStylesType = 'value'" [ngClass]="{'inactive': group.editStylesType !== 'value', 'active': group.editStylesType === 'value'}">Value</span>
-                                    <span (click)="group.editStylesType = 'source'" [ngClass]="{'inactive': group.editStylesType !== 'source', 'active': group.editStylesType === 'source'}" style="padding-left: 25px;">Source</span>
-                                    <span (click)="group.editStylesType = 'animations'" [ngClass]="{'inactive': group.editStylesType !== 'animations', 'active': group.editStylesType === 'animations'}" style="padding-left: 25px;">Animations</span>
+                                    <span (click)="group.editStylesType = 'source'" [ngClass]="{'inactive': group.editStylesType !== 'source', 'active': group.editStylesType === 'source'}" style="padding-left: 16px;">Source</span>
+                                    <span (click)="group.editStylesType = 'animations'" [ngClass]="{'inactive': group.editStylesType !== 'animations', 'active': group.editStylesType === 'animations'}" style="padding-left: 16px;">Animations</span>
                                 </div>
     
                                 <app-style-properties label="" [ngClass]="{'hidden': group.editStylesType !== 'value', 'visible': group.editStylesType === 'value'}"
@@ -160,7 +160,7 @@
     
                                 <div class="group-options-container">
                                     <div>
-                                        <h4 class="header-glow" style="margin-left: -11px;">Hit data</h4>
+                                        <h4 class="header-glow">Hit data</h4>
                                         <mat-checkbox [(ngModel)]="group.accumulateHits" name="accumulateHits_{{i}}" (ngModelChange)="onAccumulateHitsChange(group)">Consolidate hits</mat-checkbox>
                                         <mat-checkbox [(ngModel)]="group.ignoreHits" name="ignoreHits_{{i}}" (ngModelChange)="onIgnoreHitsChange(group)">Ignore hits</mat-checkbox>
                                     </div>
