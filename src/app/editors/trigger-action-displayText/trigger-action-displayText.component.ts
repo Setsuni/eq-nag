@@ -24,6 +24,12 @@ export class TriggerActionDisplayTextComponent implements OnInit {
     public selectedOverlay: OverlayWindowModel = null;
     public fontWeightIndex: number = 0;
     public showColoredBackground: boolean = false;
+    public lookOpen: boolean = false;
+
+    public get lookInUse(): boolean {
+        const action = this.action;
+        return action.textUseCustomColor === true || action.textUseCustomSize === true || action.textUseCustomBorder === true || action.textUseCustomGlow === true || action.textUseCustomFont === true;
+    }
 
     public get fontSize(): string {
         if ( this.action.textUseCustomSize && this.action.textSize ) {
