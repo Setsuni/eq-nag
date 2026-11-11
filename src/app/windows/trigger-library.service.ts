@@ -236,7 +236,7 @@ export class TriggerLibraryService {
             // A client-side or network error occurred. Handle it accordingly.
             console.error( 'An error occurred:', error.error );
             
-            this.dialogService.showErrorDialog( 'Connection problem', [ error.error?.Message ?? 'Could not reach the Nag server. Check your connection and try again.' ] );
+            this.dialogService.showErrorDialog( 'Connection problem', [ error.error?.Message || 'Could not reach the Nag server. Check your connection and try again.' ] );
 
         } else {
             // The backend returned an unsuccessful response code.
@@ -245,7 +245,7 @@ export class TriggerLibraryService {
                 `Backend returned code ${error.status}, ` +
                 `body was:`, error.error );
             
-            this.dialogService.showErrorDialog( `[${error.status}] Error`, [ 'An error was thrown while attempting the request.', error.error.Message ] );
+            this.dialogService.showErrorDialog( `Request failed (${error.status})`, [ error.error?.Message || 'The Nag server could not complete the request. Try again later.' ] );
         }
 
         // Return an observable with a user-facing error message.

@@ -49,11 +49,15 @@
 
 <mat-dialog-actions>
 
+    <div style="display: flex; flex-direction: column; align-items: flex-start;">
+        <mat-checkbox [(ngModel)]="overwriteExistingTriggers" name="overwriteExistingTriggers">Overwrite existing triggers.</mat-checkbox>
+        <span style="display: flex; align-items: center;">
+            <mat-checkbox [(ngModel)]="stageNewTriggers" name="stageNewTriggers">Put new triggers in a separate folder</mat-checkbox>
+            <button mat-icon-button class="color-blue" (click)="showStagingFolderHelp()"><mat-icon>help_outline</mat-icon></button>
+        </span>
+    </div>
+    <span style="flex: 1 1 auto;"></span>
     <button mat-stroked-button [mat-dialog-close]="null" class="t-confirm-no">Cancel</button>
     <button mat-flat-button (click)="receiveSelectedTriggers()" class="t-confirm-yes" color="primary">Import</button>
-    <span style="flex: 1 1 auto;"></span>
-    <mat-checkbox style="font-size: 14px;" [(ngModel)]="overwriteExistingTriggers" name="overwriteExistingTriggers" style="margin-right: 15px;">Overwrite existing triggers.</mat-checkbox>
-    <mat-checkbox style="font-size: 14px;" [(ngModel)]="stageNewTriggers" name="stageNewTriggers">Put new triggers in a separate folder</mat-checkbox>
-    <button mat-icon-button class="color-blue" style="font-size: 14px;" (click)="showStagingFolderHelp()"><mat-icon>help_outline</mat-icon></button>
 
 </mat-dialog-actions>

@@ -312,7 +312,7 @@ export class QuickShareService {
                 width: '450px',
                 data: {
                     title: 'Connection problem',
-                    message: [ error.error?.Message ?? 'Could not reach the Nag server. Check your connection and try again.' ],
+                    message: [ error.error?.Message || 'Could not reach the Nag server. Check your connection and try again.' ],
                     notificationType: NotificationTypes.Error,
                 },
                 panelClass: 'app-dialog',
@@ -328,8 +328,8 @@ export class QuickShareService {
                 this.dialog.open( NotificationDialogComponent, {
                     width: '450px',
                     data: {
-                        title: `[${error.status}] Error`,
-                        message: [ 'An error was thrown while attempting the request.', error.error.Message ],
+                        title: `Request failed (${error.status})`,
+                        message: [ error.error?.Message || 'The Nag server could not complete the request. Try again later.' ],
                         notificationType: NotificationTypes.Error,
                     },
                     panelClass: 'app-dialog',

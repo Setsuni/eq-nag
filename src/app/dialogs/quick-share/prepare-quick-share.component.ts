@@ -608,8 +608,8 @@ export class PrepareQuickShareDialogComponent implements OnInit {
                 this.dialog.open( NotificationDialogComponent, {
                     width: '450px',
                     data: {
-                        title: `Error`,
-                        message: [ 'An error was thrown while attempting the request.', err instanceof HttpErrorResponse ? err.error?.Message ?? 'Unknown Error' : err ],
+                        title: `Could not share`,
+                        message: [ 'The request failed.', ( err instanceof HttpErrorResponse ? err.error?.Message : err ) || 'Check your connection and try again.' ],
                         notificationType: NotificationTypes.Error,
                     },
                     panelClass: 'app-dialog',

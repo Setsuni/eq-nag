@@ -508,7 +508,7 @@ export class GinaImportWindowComponent implements OnInit {
     }
 
     public alertMissingOverlays( overlayType: string ): void {
-        this.dialogService.showErrorDialog( `Missing Overlays`, `Could not find an overlay of type [${overlayType}].` );
+        this.dialogService.showErrorDialog( `Missing overlays`, `Could not find an overlay of type [${overlayType}].` );
     }
 
     /**
