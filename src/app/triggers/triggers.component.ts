@@ -227,13 +227,13 @@ export class TriggersComponent implements OnInit {
      * If the user has not selected a folder, the user will be presented with 
      * the folder select dialog.  After a selection has been made, or if a 
      * folder has already been selected, then the observable is resolved and 
-     * completed.
+     * completed with the folder id.  The folder list's own selection is left alone.
      * 
      * @param title The title of the dialog.
      * @param description The message to display to the user if the dialog is shown.
      */
-    private requireFolderSelect( title?: string, description?: string ): Observable<void> {
-        let obs = new Observable<void>( sub => {
+    private requireFolderSelect( title?: string, description?: string ): Observable<string> {
+        let obs = new Observable<string>( sub => {
             
             if ( !this.selectedFolderId && !( this.triggerFolders?.length > 0 ) ) {
                 this.dialogService.showConfirmationDialog( 'Triggers live in folders. Create a folder first.', null, null, null, 'narrow', null, { 'Yes': 'Create a folder', 'No': 'Cancel' }, 'No folders yet' ).subscribe( confirmed => {
@@ -248,15 +248,11 @@ export class TriggersComponent implements OnInit {
                         sub.complete();
                         return;
                     }
-                    if ( this.selectedFolderId !== folderId ) {
-                        this.expandParents( folderId );
-                        this.toggleSelectedFolder( folderId );
-                    }
-                    sub.next();
+                    sub.next( folderId );
                     sub.complete();
                 } );
             } else {
-                sub.next();
+                sub.next( this.selectedFolderId );
                 sub.complete();
             }
 
@@ -277,8 +273,8 @@ export class TriggersComponent implements OnInit {
      * Displays the new trigger dialog.
      */
     public showNewTriggerDialog(): void {
-        this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
-            this.ipcService.showNewTriggerDialog( this.selectedFolderId );
+        this.requireFolderSelect( 'Choose a folder', 'What folder would you like to put this trigger in?' ).subscribe( folderId => {
+            this.ipcService.showNewTriggerDialog( folderId );
         } );
     }
 
@@ -295,8 +291,8 @@ export class TriggersComponent implements OnInit {
      * Displays the new dot timer wizard dialog.
      */
     public showNewDotTimerDialog(): void {
-        this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
-            this.dialogService.showNewDotTimerDialog( this.selectedFolderId, ExternalDataSources.Allakhazam );
+        this.requireFolderSelect( 'Choose a folder', 'What folder would you like to put this trigger in?' ).subscribe( folderId => {
+            this.dialogService.showNewDotTimerDialog( folderId, ExternalDataSources.Allakhazam );
         } );
     }
 
@@ -313,8 +309,8 @@ export class TriggersComponent implements OnInit {
      * Displays the eq dot timer import for eq spell resources.
      */
     public showNewDotTimerEqsrDialog(): void {
-        this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
-            this.dialogService.showNewDotTimerDialog( this.selectedFolderId, ExternalDataSources.EqSpellResources );
+        this.requireFolderSelect( 'Choose a folder', 'What folder would you like to put this trigger in?' ).subscribe( folderId => {
+            this.dialogService.showNewDotTimerDialog( folderId, ExternalDataSources.EqSpellResources );
             // this.ipcService.scrapeEqSpellResourceSpell( 'https://spells.eqresource.com/spells.php?id=1447' ).subscribe( spell => console.log( '!!!!! RETURNED', spell ) );
         } );
     }
@@ -332,8 +328,8 @@ export class TriggersComponent implements OnInit {
      * Displays the new dot timer wizard dialog.
      */
     public showNewBuffTimerEqsrDialog(): void {
-        this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
-            this.dialogService.showNewBuffTimerDialog( this.selectedFolderId, ExternalDataSources.EqSpellResources );
+        this.requireFolderSelect( 'Choose a folder', 'What folder would you like to put this trigger in?' ).subscribe( folderId => {
+            this.dialogService.showNewBuffTimerDialog( folderId, ExternalDataSources.EqSpellResources );
         } );
     }
 
@@ -350,8 +346,8 @@ export class TriggersComponent implements OnInit {
      * Displays the new dot timer wizard dialog.
      */
     public showNewRaidAbilityDialog(): void {
-        this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
-            this.dialogService.showNewRaidAbilityDialog( this.selectedFolderId );
+        this.requireFolderSelect( 'Choose a folder', 'What folder would you like to put this trigger in?' ).subscribe( folderId => {
+            this.dialogService.showNewRaidAbilityDialog( folderId );
         } );
     }
 
@@ -368,8 +364,8 @@ export class TriggersComponent implements OnInit {
      * Displays the new dot timer wizard dialog.
      */
     public showNewBuffTimerDialog(): void {
-        this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
-            this.dialogService.showNewBuffTimerDialog( this.selectedFolderId, ExternalDataSources.Allakhazam );
+        this.requireFolderSelect( 'Choose a folder', 'What folder would you like to put this trigger in?' ).subscribe( folderId => {
+            this.dialogService.showNewBuffTimerDialog( folderId, ExternalDataSources.Allakhazam );
         } );
     }
 
