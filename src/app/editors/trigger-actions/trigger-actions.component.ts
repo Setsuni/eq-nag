@@ -1,5 +1,5 @@
 import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
-import { ActionTypeIcons, ActionTypeLabels, ActionTypes, CapturePhrase, OverlayWindowModel, TriggerAction } from 'src/app/core.model';
+import { ActionTypeIcons, ActionTypeLabels, ActionTypes, CapturePhrase, OverlayWindowModel, TimerRestartBehaviors, TriggerAction } from 'src/app/core.model';
 import { DialogService } from 'src/app/dialogs/dialog.service';
 import { IpcService } from 'src/app/ipc.service';
 import { ActionPickerGroup, ActionPickerGroups, actionTypeDescription, isAdvancedActionType, summarizeAction } from '../action-picker';
@@ -62,11 +62,16 @@ export class TriggerActionsComponent implements OnInit {
     }
     public scrollIndex: number = -1;
 
+    private defaultOverlayIds: { alert: string | null, detrimental: string | null, beneficial: string | null } = { alert: null, detrimental: null, beneficial: null };
+
     constructor( private dialogService: DialogService, private ipcService: IpcService ) { }
 
     ngOnInit() {
         
         this.ipcService.getOverlayWindows().subscribe( overlays => this.overlays = overlays );
+        this.ipcService.getAlertOverlayId().subscribe( id => this.defaultOverlayIds.alert = id ?? null );
+        this.ipcService.getDetrimentalOverlayId().subscribe( id => this.defaultOverlayIds.detrimental = id ?? null );
+        this.ipcService.getBeneficialOverlayId().subscribe( id => this.defaultOverlayIds.beneficial = id ?? null );
 
     }
 
@@ -118,11 +123,33 @@ export class TriggerActionsComponent implements OnInit {
         action.phrases = this.capturePhrases?.map( f => f.phraseId ) ?? [];
         if ( actionType != null ) {
             action.actionType = actionType;
+            this.applyDefaults( action );
         }
         this.actions.push( action );
         this._open.add( action );
         this.actionsChange.emit( this.actions );
         window.setTimeout( () => this.content?.nativeElement.querySelector( '.action-card:last-of-type' )?.scrollIntoView( { block: 'nearest' } ) );
+    }
+
+    /**
+     * Fills in the overlay and restart choice a new action of its type needs, from
+     * the player's default overlays.  Values already set are left alone.
+     */
+    private applyDefaults( action: TriggerAction ): void {
+        const pick = ( id: string | null, options: OverlayWindowModel[] ) => options.find( o => o.overlayId === id )?.overlayId ?? options[ 0 ]?.overlayId ?? null;
+        switch ( action.actionType ) {
+            case ActionTypes.DisplayText:
+                action.overlayId = action.overlayId ?? pick( this.defaultOverlayIds.alert, this.alertOverlays );
+                break;
+            case ActionTypes.Timer:
+            case ActionTypes.Countdown:
+            case ActionTypes.BeneficialTimer:
+                action.overlayId = action.overlayId ?? pick( action.actionType === ActionTypes.BeneficialTimer ? this.defaultOverlayIds.beneficial : this.defaultOverlayIds.detrimental, this.timerOverlays );
+                action.restartBehavior = action.restartBehavior ?? TimerRestartBehaviors.RestartTimer;
+                break;
+            default:
+                break;
+        }
     }
 
     /** Whether the action's full editor is showing.  Actions without a type always are. */
@@ -281,6 +308,7 @@ export class TriggerActionsComponent implements OnInit {
             return;
         }
         action.actionType = selectedType;
+        this.applyDefaults( action );
         this._open.add( action );
         this.actionsChange.emit( this.actions ); // Let the parent component react immediately.
     }
