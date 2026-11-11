@@ -415,11 +415,6 @@ table {
         font-size: 12px;
     }
     .mat-form-field-label {
-        .mat-placeholder-required.mat-form-field-required-marker {
-            top: 10px;
-            position: absolute;
-            left: 3px;
-        }
         overflow: unset !important;
     }
 }
@@ -665,11 +660,7 @@ div.formless-hint {
         width: calc(100% - 10px);
     }
 
-    padding: 0px 5px 25px 5px;
-    border: 2px solid #0000006b;
-    background-color: #0000002e;
-    
-    border-radius: 3px;
+    padding: 0 0 8px 0;
     display: inline-block;
     position: relative;
     text-align: left;
@@ -699,18 +690,15 @@ div.formless-hint {
     }
 
     > mat-hint {
-        
         color: rgba(255,255,255,.7);
-        background-color: #00000052 !important;
-
         display: block;
-        padding: 5px 5px 5px 5px;
+        padding: 0;
         font-weight: normal;
-        font-size: 10px;
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: 0;
+        font-size: 12px;
+    }
+
+    > .formless-input:has( > mat-checkbox ) + mat-hint {
+        padding-left: 26px;
     }
 }
 

@@ -172,6 +172,7 @@ a:focus-visible,
     .mat-form-field-label {
         font-size: 13px;
         width: 100%;
+        margin-left: -8px;
         transform: translateY( -1.85em ) !important;
     }
 }

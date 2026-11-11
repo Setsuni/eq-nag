@@ -311,8 +311,8 @@ export class QuickShareService {
             this.dialog.open( NotificationDialogComponent, {
                 width: '450px',
                 data: {
-                    title: 'Unknown Error',
-                    message: [ 'An error occurred:', error.error.Message ],
+                    title: 'Connection problem',
+                    message: [ error.error?.Message ?? 'Could not reach the Nag server. Check your connection and try again.' ],
                     notificationType: NotificationTypes.Error,
                 },
                 panelClass: 'app-dialog',

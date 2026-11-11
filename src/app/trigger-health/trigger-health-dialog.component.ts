@@ -33,8 +33,8 @@ export interface TriggerHealthDialogResult {
         <mat-dialog-actions>
             <mat-checkbox [(ngModel)]="dontShowAgain" name="dontShowAgain">Don't show again for this version</mat-checkbox>
             <span class="spacer"></span>
-            <button mat-button (click)="close( false )">Later</button>
-            <button mat-flat-button color="accent" (click)="close( true )">Review</button>
+            <button mat-stroked-button (click)="close( false )">Later</button>
+            <button mat-flat-button color="primary" (click)="close( true )">Review</button>
         </mat-dialog-actions>
     `,
     styleUrls: [ '../dialogs/dialog.styles.scss' ],
@@ -47,7 +47,7 @@ export interface TriggerHealthDialogResult {
         .stat.never .number { color: #f06969; }
         .stat.may .number { color: #f0c669; }
         .stat.fix .number { color: #69f0ae; }
-        .note { font-size: 13px; opacity: 0.8; }
+        .note { margin: 0; padding: 8px 12px; font-size: 13px; background: rgba(0, 0, 0, 0.18); border-radius: 4px; color: rgba(255, 255, 255, 0.7); }
         mat-dialog-actions { display: flex; align-items: center; gap: 8px; }
         mat-dialog-actions .spacer { flex: 1 1 auto; }
     ` ],
