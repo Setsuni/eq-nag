@@ -149,7 +149,7 @@ div.tab-content {
 }
 
 .group {
-    padding: 4px 0 0 12px;
+    padding: 4px 0 0;
 
     &.narrow {
         max-width: 460px;
@@ -170,7 +170,7 @@ div.tab-content {
     max-width: 560px;
 
     .maintenance-question {
-        margin: 0 0 8px;
+        margin: 16px 0 8px;
     }
 
     mat-radio-group {
@@ -411,4 +411,31 @@ div.tab-content {
     width: 125px; 
     margin-left: 15px;
     float: right;
+}
+
+.pane div.formless-hint {
+    display: block;
+    margin: 0 0 12px;
+    padding: 0;
+    background: none;
+    border: none;
+
+    > .formless-input {
+        height: auto;
+        min-height: 32px;
+    }
+
+    > mat-hint {
+        position: static;
+        padding: 0 0 0 32px;
+        font-size: 12px;
+        background: none !important;
+    }
+}
+
+.pane mat-radio-group.inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 24px;
+    margin-bottom: 8px;
 }

@@ -20,7 +20,7 @@
             <div class="character-list" *ngIf="characterOptions.length > 0">
                 <div class="character-row" *ngFor="let option of characterOptions">
                     <mat-checkbox [(ngModel)]="option.checked" [disabled]="option.added" [name]="option.logFile" color="accent">{{option.name}}</mat-checkbox>
-                    <span class="hint">{{option.added ? 'already added' : option.lastPlayed}}</span>
+                    <span class="hint">{{option.server ? ( option.server | titlecase ) + ' · ' : ''}}{{option.added ? 'already added' : option.lastPlayed}}</span>
                 </div>
             </div>
 
@@ -63,7 +63,7 @@
         <p class="hint">Press Test. A timer and a text appear on your overlays for {{testSeconds}} seconds.</p>
 
         <div class="row">
-            <button mat-flat-button color="accent" (click)="sendTest()"><mat-icon>play_arrow</mat-icon> Test</button>
+            <button mat-stroked-button (click)="sendTest()"><mat-icon>play_arrow</mat-icon> Test</button>
             <span class="result" *ngIf="testSent">Sent. Could you see both? <a class="link" tabindex="0" role="button" (click)="moveOverlaysAgain()" (keydown.enter)="moveOverlaysAgain()">No, move the overlays</a></span>
         </div>
     </ng-container>
@@ -92,15 +92,15 @@
 <mat-dialog-actions>
 
     <div>
-        <button mat-button *ngIf="step === 0" [mat-dialog-close]="null" class="muted">Skip setup</button>
-        <button mat-button *ngIf="step > 0" (click)="previous()" [disabled]="busy">Back</button>
-
         <span class="spacer"></span>
 
-        <button mat-button color="accent" *ngIf="step === 0" (click)="saveCharacters()" [disabled]="busy || scanning">Next</button>
-        <button mat-button color="accent" *ngIf="step === 1" (click)="overlaysLookGood()" [disabled]="busy">Looks good</button>
-        <button mat-button color="accent" *ngIf="step === 2" (click)="openExtrasStep()">Next</button>
-        <button mat-button color="accent" *ngIf="step === 3" (click)="complete()">Finish</button>
+        <button mat-stroked-button *ngIf="step === 0" [mat-dialog-close]="null" class="muted">Skip setup</button>
+        <button mat-stroked-button *ngIf="step > 0" (click)="previous()" [disabled]="busy">Back</button>
+
+        <button mat-flat-button color="primary" *ngIf="step === 0" (click)="saveCharacters()" [disabled]="busy || scanning">Next</button>
+        <button mat-flat-button color="primary" *ngIf="step === 1" (click)="overlaysLookGood()" [disabled]="busy">Looks good</button>
+        <button mat-flat-button color="primary" *ngIf="step === 2" (click)="openExtrasStep()">Next</button>
+        <button mat-flat-button color="primary" *ngIf="step === 3" (click)="complete()">Finish</button>
     </div>
 
 </mat-dialog-actions>

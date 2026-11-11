@@ -12,15 +12,23 @@ div.tab-content {
     }
     fieldset {
         width: 100%;
+        margin-left: 0;
+        margin-right: 0;
+        box-sizing: border-box;
         display: inline-block;
-        padding-top: 0;
+        padding: 0 16px 16px;
 
         legend {
             position: static;
-            width: auto;
-            padding: 0;
-            margin: 0 0 8px;
+            float: left;
+            width: 100%;
+            padding: 16px 0 8px;
+            margin: 0;
             background: none;
+
+            + * {
+                clear: both;
+            }
 
             span.title {
                 font-size: 16px;
@@ -68,6 +76,7 @@ div.tab-content {
 h2.state-title,
 h3.state-title {
     margin: 8px 0 12px;
+    text-shadow: none;
     font-size: 16px;
     font-weight: 500;
 }
@@ -79,6 +88,7 @@ h3.sub-header {
     text-align: left;
     padding: 0;
     opacity: 1;
+    text-shadow: none;
 
     &::before {
         content: none;

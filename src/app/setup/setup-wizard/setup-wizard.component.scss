@@ -1,7 +1,12 @@
+mat-dialog-content.setup-wizard {
+    min-height: 420px;
+}
+
 mat-dialog-actions {
     >div {
         display:flex;
         flex-direction: row;
+        gap: 8px;
         width: 100%;
 
         .spacer {

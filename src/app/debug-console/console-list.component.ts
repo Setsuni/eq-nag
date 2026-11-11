@@ -22,6 +22,8 @@ export class ConsoleListComponent implements OnInit, OnChanges, OnDestroy {
     @Input() public characterId: string = null;
     /** True shows the developer log; false shows only trigger matches and a few status messages. */
     @Input() public developer: boolean = false;
+    /** True keeps only the counts and renders no lines, for the collapsed console button. */
+    @Input() public countOnly: boolean = false;
     @Output() public onListUpdated: EventEmitter<{ scrollBottom: boolean }> = new EventEmitter<{ scrollBottom: boolean }>();
 
     private histories: { successful: TriggerParseHistoryModel[], exceptions: TriggerParseHistoryModel[] } = { successful: [], exceptions: [] };

@@ -17,6 +17,23 @@
         line-height: 26px;
         border-radius: 0px;
     }
+
+    .count-only {
+        display: none;
+    }
+
+    .problem-dot {
+        display: inline-block;
+        min-width: 16px;
+        margin-left: 6px;
+        padding: 0 4px;
+        font-size: 11px;
+        line-height: 16px;
+        text-align: center;
+        color: #ffffff;
+        background-color: #f44336;
+        border-radius: 8px;
+    }
 }
 
 :host::ng-deep ul {
@@ -69,7 +86,7 @@
     bottom: 0;
     left: 0;
     width: 100%;
-    height: 300px;
+    height: 200px;
     background-color: #101010;
     color: #c3c3c3;
     z-index: 2;
@@ -117,6 +134,47 @@
 
             }
 
+        }
+
+        .view-switch {
+            display: flex;
+            margin: 0 8px;
+
+            button.view-button {
+                height: 28px;
+                line-height: 26px;
+                border: 1px solid #ffffff3d;
+
+                &:first-child {
+                    border-radius: 4px 0 0 4px;
+                }
+                &:last-child {
+                    margin-left: -1px;
+                    border-radius: 0 4px 4px 0;
+                }
+                &.selected {
+                    font-weight: 500;
+                    color: #69f0ae;
+                    background-color: #69f0ae29;
+                    border-color: #69f0ae;
+                    z-index: 1;
+                }
+            }
+        }
+
+        button.icon-action {
+            width: 28px;
+            height: 28px;
+            padding: 0;
+            line-height: 28px;
+            border-radius: 50%;
+
+            mat-icon {
+                font-size: 18px;
+                width: 18px;
+                height: 18px;
+                line-height: 18px;
+            }
         }
 
         .console-title {

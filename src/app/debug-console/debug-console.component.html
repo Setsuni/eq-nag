@@ -1,11 +1,10 @@
 <div class="debug-console-container" *ngIf="show" nagResizeable location="top" resizeVisibility="hidden" resizeMax="80%" #container>
     <div class="console-toolbar">
-        <button mat-button class="view-button" [ngClass]="{'selected': !developer}" (click)="developer = false" matTooltip="Trigger matches and status messages">Activity</button>
-        <button mat-button class="view-button" [ngClass]="{'selected': developer}" (click)="developer = true" matTooltip="Everything the app logs, with a command prompt">Developer log</button>
-        <button mat-button (click)="clear()">Clear</button>
-        <button mat-button (click)="copyLog()" *ngIf="developer" matTooltip="Copy the whole developer log, ignoring the search and filters, to paste into a support request">Copy whole log</button>
-        <button mat-button (click)="show = false">Hide</button>
-        
+        <div class="view-switch" role="group" aria-label="Console view">
+            <button mat-button class="view-button" [ngClass]="{'selected': !developer}" (click)="developer = false" matTooltip="Trigger matches and status messages">Activity</button>
+            <button mat-button class="view-button" [ngClass]="{'selected': developer}" (click)="developer = true" matTooltip="Everything the app logs, with a command prompt">Developer log</button>
+        </div>
+
         <mat-form-field>
             <mat-label></mat-label>
             <mat-select [(ngModel)]="characterId" name="characterId" placeholder="Character" matTooltip="Filters trigger matches; app messages always show">
@@ -25,10 +24,14 @@
 
         <span style="flex: 1 1 auto;"></span>
 
-        <mat-form-field>
-            <input matInput type="text" [ngModel]="searchText" (ngModelChange)="onSearchTextChanged($event)" name="searchText" />
+        <mat-form-field class="filter-field">
+            <input matInput type="text" placeholder="Filter" aria-label="Filter" [ngModel]="searchText" (ngModelChange)="onSearchTextChanged($event)" name="searchText" />
             <mat-icon matPrefix style="opacity: 0.5;">search</mat-icon>
         </mat-form-field>
+
+        <button mat-icon-button class="icon-action" (click)="clear()" matTooltip="Clear" aria-label="Clear"><mat-icon>delete_sweep</mat-icon></button>
+        <button mat-icon-button class="icon-action" (click)="copyLog()" *ngIf="developer" matTooltip="Copy the whole developer log, ignoring the search and filters, to paste into a support request" aria-label="Copy whole log"><mat-icon>content_copy</mat-icon></button>
+        <button mat-icon-button class="icon-action" (click)="show = false" matTooltip="Hide" aria-label="Hide"><mat-icon>expand_more</mat-icon></button>
 
     </div>
 
@@ -36,6 +39,10 @@
 
     <div class="activity-empty" *ngIf="!developer && consoleList.history.length === 0">
         No trigger matches yet. When a trigger fires it shows up here. Problems and technical messages are in the Developer log.
+    </div>
+
+    <div class="activity-empty" *ngIf="developer && consoleList.history.length === 0">
+        Nothing logged yet.
     </div>
 
     <div class="console-bottom-buttons" *ngIf="showBottomTools">
@@ -48,5 +55,6 @@
     
 </div>
 <div class="debug-toggle" *ngIf="!show">
-    <button mat-button (click)="show = true"><mat-icon [inline]="true">notes</mat-icon> Activity</button>
+    <console-list #problemCounter class="count-only" [countOnly]="true"></console-list>
+    <button mat-button (click)="show = true"><mat-icon [inline]="true">notes</mat-icon> Activity<span class="problem-dot" *ngIf="problemCounter.problemCount > 0" [matTooltip]="problemCounter.problemCount + ( problemCounter.problemCount === 1 ? ' problem' : ' problems' )">{{problemCounter.problemCount}}</span></button>
 </div>
