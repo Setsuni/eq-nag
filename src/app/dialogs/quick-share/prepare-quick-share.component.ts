@@ -76,7 +76,7 @@ export class PrepareQuickShareDialogComponent implements OnInit {
     private _uploadedQuickShareId: string = null;
     public readonly shareCodeExample: string = '{NAG:quick-share/...}';
     public get shareButtonLabel(): string {
-        return this.shareToServer && this.saveAsFile ? 'Share and Save' : this.saveAsFile ? 'Save File...' : 'Copy to Clipboard';
+        return this.shareToServer && this.saveAsFile ? 'Share and Save' : this.saveAsFile ? 'Save file...' : 'Copy to clipboard';
     }
     public get canShare(): boolean {
         return this.shareToServer || this.saveAsFile;

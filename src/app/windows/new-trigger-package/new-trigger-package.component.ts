@@ -830,7 +830,8 @@ export class NewTriggerPackageComponent implements OnInit {
                             new ColoredString( '*t*tRaids \\ Classic \\ Naggy \\ Fire Breathe', '#e3e3e3' ),
                             'The "Fire Breathe" trigger will inherit conditions from Raids, Classic, and Naggy, but will not inherit conditions from Lady Vox or Planes of Power.'
                         ], 'wide' )
-                    }
+                    },
+                    { Yes: 'Include conditions', No: 'Publish without conditions', Cancel: 'Cancel' }
                 ).subscribe( confirmed => {
 
                     if ( confirmed === true ) {

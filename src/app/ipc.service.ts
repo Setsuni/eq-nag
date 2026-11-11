@@ -2552,6 +2552,12 @@ export class IpcService {
                 window.api.ipc.once( 'gina:get:configuration', ( e, ginaConfig: GinaConfiguration ) => {
                     this.ngZone.run( () => {
 
+                        if ( ginaConfig == null ) {
+                            observer.next( null );
+                            observer.complete();
+                            return;
+                        }
+
                         // Because the source is XML, we need to process all arrays so that even if an array has a single element it's still an array.  I just don't want a bunch of "if property is array" statements in other areas of the code.
                         if ( !( ginaConfig.BehaviorGroups.Behavior instanceof Array ) ) {
                             ginaConfig.BehaviorGroups.Behavior = [ ginaConfig.BehaviorGroups.Behavior ];

@@ -138,9 +138,25 @@ class GinaImporter {
  */
 function getGinaConfig( onLoaded ) {
     // TODO: This should be done in a thread, with a direct reference to the GINA importer window.
+    if ( !ginaDataPath ) {
+        // No GINA data folder was found.
+        onLoaded( null );
+        return;
+    }
+
     let ginaConfigPath = path.join( ginaDataPath, ginaConfigFileName );
     fs.readFile( ginaConfigPath, { encoding: 'utf8' }, ( err, data ) => {
-        parseStringPromise( data, { normalize: false, normalizeTags: false, explicitArray: false, ignoreAttrs: true } ).then( result => onLoaded( result ) );
+        if ( err || !data ) {
+            onLoaded( null );
+            return;
+        }
+
+        parseStringPromise( data, { normalize: false, normalizeTags: false, explicitArray: false, ignoreAttrs: true } )
+            .then( result => onLoaded( result ) )
+            .catch( error => {
+                log.error( 'Could not parse the GINA configuration.', error );
+                onLoaded( null );
+            } );
     } );
 }
 

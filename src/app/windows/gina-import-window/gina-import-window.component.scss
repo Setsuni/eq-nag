@@ -67,3 +67,12 @@ div.tab-content {
     position: absolute !important;
     left: 0 !important;
 }
+:host footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+
+    button {
+        margin: 0;
+    }
+}

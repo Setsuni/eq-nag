@@ -235,14 +235,15 @@ export class DialogService {
      * @param noText The description of the action taken when the user declines the question.
      * @param onClose This function is executed after the user makes their decision and the decision is passed as the confirmed parameter.
      */
-    public showConfirmDialog( message: string | (string|ColoredString)[], yesText: string, noText: string, onClose: ( confirmed: boolean ) => void ): void {
+    public showConfirmDialog( message: string | (string|ColoredString)[], yesText: string, noText: string, onClose: ( confirmed: boolean ) => void, buttonTexts: { 'Yes'?: string, 'No'?: string } = null ): void {
         
         let dialogRef: MatDialogRef<ConfirmDialogComponent> = this.dialog.open( ConfirmDialogComponent, {
             width: '550px',
             data: {
                 message: message,
                 yesMessage: yesText,
-                noMessage: noText
+                noMessage: noText,
+                buttonTexts: buttonTexts
             },
             panelClass: 'app-dialog',
         } );

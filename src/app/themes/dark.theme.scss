@@ -564,13 +564,14 @@ $bg-extreme-dark: #191919;
             .mat-form-field-label {
                 position: static;
                 width: auto;
+                margin-left: 0;
                 margin-right: 8px;
                 color: rgba($text, .7);
                 font-size: 13px;
                 transform: none !important;
             }
         }
-        margin: 0 8px;
+        margin: 0 8px 0 16px;
         padding: 0;
     }
 

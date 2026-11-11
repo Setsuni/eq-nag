@@ -15,6 +15,7 @@ export class ConfirmDialogComponent implements OnInit {
     public yesText: string = 'Confirm';
     public cancelText: string = 'Cancel';
     public destructive: boolean = false;
+    public showCancel: boolean = false;
 
     constructor(
         public dialogRef: MatDialogRef<ConfirmDialogComponent>,
@@ -53,12 +54,20 @@ export class ConfirmDialogComponent implements OnInit {
             this.yesText = verb.charAt( 0 ).toUpperCase() + verb.slice( 1 ).toLowerCase();
         }
 
+        // With a separate cancel button, the no button must not repeat its label.
+        this.showCancel = this.data.cancelMessage != null;
+        this.noText = this.showCancel ? 'No' : 'Cancel';
+
         if ( this.data.buttonTexts ) {
             let buttonTexts = this.data.buttonTexts as { 'Yes'?: string, 'No'?: string, 'Cancel'?: string };
 
             this.yesText = buttonTexts.Yes ?? this.yesText;
             this.noText = buttonTexts.No ?? this.noText;
             this.cancelText = buttonTexts.Cancel ?? this.cancelText;
+        }
+
+        if ( this.showCancel && this.cancelText === this.noText ) {
+            this.showCancel = false;
         }
 
         this.destructive = this.data.destructive ?? /^(delete|remove|uninstall)$/i.test( this.yesText );
@@ -70,7 +79,7 @@ export class ConfirmDialogComponent implements OnInit {
 
     /** Pulls the verb out of a caller's 'Click "Yes" to <verb> ...' description. */
     private static verbFrom( description: string | null ): string | null {
-        return /^Click ['"][^'"]+['"] to (\w+)/i.exec( description ?? '' )?.[ 1 ] ?? null;
+        return /^Click ['"][^'"]+['"] to ([a-z]+)(?=[\s.,]|$)/i.exec( description ?? '' )?.[ 1 ] ?? null;
     }
     
 }
