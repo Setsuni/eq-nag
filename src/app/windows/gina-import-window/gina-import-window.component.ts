@@ -70,6 +70,7 @@ export class GinaImportWindowComponent implements OnInit {
     public ginaConfig: GinaConfiguration = null;
 
     public loadingGinaConfig: boolean = true;
+    public loadFailed: boolean = false;
     public showImported: boolean = false;
     public importedTriggerNames: string[] = [];
     public importedPhoneticTransforms: string[] = [];
@@ -206,56 +207,75 @@ export class GinaImportWindowComponent implements OnInit {
             this.loadingGinaConfig = true;
         }
 
+        this.loadFailed = false;
+
         this.ipcService
             .getGinaConfiguration( refreshCache )
-            .subscribe( ginaConfig => {
-                if ( ginaConfig == null ) {
-                    this.loadingGinaConfig = false;
-                    this.dialogService.showWarningDialog( 'No GINA data found', 'Nag could not find GINA data on this computer. Install GINA and run it once, then try again.' );
-                } else {
-                    this.ginaConfig = ginaConfig;
-
-                    // Build the category to overlay map
-                    ginaConfig.Categories?.Category?.forEach( category => {
-                        this.categoryOverlayMap[ category.Name ] = { textOverlayName: category.TextOverlay, timerOverlayName: category.TimerOverlay };
-                    } );
-                    let transformsNode = new GinaTreeObject();
-                    let data: GinaTreeObject[] = [];
-                    transformsNode.name = 'Phonetic Transforms';
-                    transformsNode.ginaName = 'INTERNAL:Transforms Group';
-                    ginaConfig.Settings?.PhoneticTransforms?.Transform?.forEach( transform => {
-                        transformsNode.children.push( {
-                            name: transform.ActualWord,
-                            children: [],
-                            trigger: null,
-                            phoneticTransform: transform,
-                            ginaName: `${transform.ActualWord}`,
-                            imported: this.ignoredGinaObjects.indexOf( transform.ActualWord ) > -1 || this.importedPhoneticTransforms.indexOf( transform.ActualWord ) > -1,
-                            folders: [ 'Phonetic Transforms' ],
-                            selected: false,
-                            id: nagId(),
-                        } );
-                    } );
-
-                    if ( transformsNode.children.length > 0 ) {
-                        transformsNode.imported = !_.some( transformsNode.children, n => n.imported === false );
-                        data.push( transformsNode );
+            .subscribe( {
+                next: ginaConfig => {
+                    try {
+                        this.showGinaConfig( ginaConfig );
+                    } catch ( error ) {
+                        this.onGinaLoadFailed();
                     }
+                },
+                error: () => this.onGinaLoadFailed(),
+            } );
 
-                    data = data.concat( this.getGinaTriggerGroupNodes( ginaConfig.TriggerGroups?.TriggerGroup ?? [], 'GINA:', [] ) );
-                    
-                    this.trimGroups( data );
-                    this.dataSource.data = data;
-                    
-                    this.treeControl.dataNodes?.forEach( n => {
-                        if ( this.expandedNodes.indexOf( n.ginaName ) > -1 ) {
-                            this.treeControl.expand( n );
-                        }
-                    } );
-                    this.loadingGinaConfig = false;
+    }
 
+    private onGinaLoadFailed(): void {
+        this.loadingGinaConfig = false;
+        this.loadFailed = true;
+    }
+
+    private showGinaConfig( ginaConfig: GinaConfiguration ): void {
+        if ( ginaConfig == null ) {
+            this.loadingGinaConfig = false;
+            this.dialogService.showWarningDialog( 'No GINA data found', 'Nag could not find GINA data on this computer. Install GINA and run it once, then try again.' );
+        } else {
+            this.ginaConfig = ginaConfig;
+
+            // Build the category to overlay map
+            ginaConfig.Categories?.Category?.forEach( category => {
+                this.categoryOverlayMap[ category.Name ] = { textOverlayName: category.TextOverlay, timerOverlayName: category.TimerOverlay };
+            } );
+            let transformsNode = new GinaTreeObject();
+            let data: GinaTreeObject[] = [];
+            transformsNode.name = 'Phonetic Transforms';
+            transformsNode.ginaName = 'INTERNAL:Transforms Group';
+            ginaConfig.Settings?.PhoneticTransforms?.Transform?.forEach( transform => {
+                transformsNode.children.push( {
+                    name: transform.ActualWord,
+                    children: [],
+                    trigger: null,
+                    phoneticTransform: transform,
+                    ginaName: `${transform.ActualWord}`,
+                    imported: this.ignoredGinaObjects.indexOf( transform.ActualWord ) > -1 || this.importedPhoneticTransforms.indexOf( transform.ActualWord ) > -1,
+                    folders: [ 'Phonetic Transforms' ],
+                    selected: false,
+                    id: nagId(),
+                } );
+            } );
+
+            if ( transformsNode.children.length > 0 ) {
+                transformsNode.imported = !_.some( transformsNode.children, n => n.imported === false );
+                data.push( transformsNode );
+            }
+
+            data = data.concat( this.getGinaTriggerGroupNodes( ginaConfig.TriggerGroups?.TriggerGroup ?? [], 'GINA:', [] ) );
+            
+            this.trimGroups( data );
+            this.dataSource.data = data;
+            
+            this.treeControl.dataNodes?.forEach( n => {
+                if ( this.expandedNodes.indexOf( n.ginaName ) > -1 ) {
+                    this.treeControl.expand( n );
                 }
             } );
+            this.loadingGinaConfig = false;
+
+        }
 
     }
 
@@ -318,8 +338,10 @@ export class GinaImportWindowComponent implements OnInit {
 
         if ( 'ActualWord' in item ) {
             this.selectedPhoneticTransform = item;
+            this.selectedTrigger = null;
         } else {
             this.selectedTrigger = item;
+            this.selectedPhoneticTransform = null;
         }
     }
 

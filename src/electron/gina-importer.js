@@ -64,7 +64,9 @@ class GinaImporter {
         
         ipcMain.on( 'gina:get:configuration', ( event, triggerId ) => {
             getGinaConfig( jsonData => {
-                if ( jsonData ) {
+                if ( jsonData?.readFailed ) {
+                    event.sender.send( 'gina:get:configuration', jsonData );
+                } else if ( jsonData ) {
                     event.sender.send( 'gina:get:configuration', jsonData.Configuration );
                 } else {
                     event.sender.send( 'gina:get:configuration', null );
@@ -155,7 +157,7 @@ function getGinaConfig( onLoaded ) {
             .then( result => onLoaded( result ) )
             .catch( error => {
                 log.error( 'Could not parse the GINA configuration.', error );
-                onLoaded( null );
+                onLoaded( { readFailed: true } );
             } );
     } );
 }
