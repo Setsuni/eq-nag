@@ -246,7 +246,7 @@ export class TriggerHealthComponent implements OnInit, OnDestroy {
         const ran = report.rows.filter( r => !r.skipped );
         const top = ran.filter( r => r.sharePercent >= 5 ).slice( 0, 3 );
         top.forEach( row => {
-            const facts = `Checked ${row.checked.toLocaleString()} times, average ${this.formatMs( row.avgMsPerCheck )} each, worst ${this.formatMs( row.maxMs )}.`;
+            const facts = `Checked about ${row.checked.toLocaleString()} times, average ${this.formatMs( row.avgMsPerCheck )} each, worst ${this.formatMs( row.maxMs )}.`;
             const hints = row.hints.map( h => h.text ).join( ' ' );
             this.plainWords.push( {
                 title: `${row.name} took ${this.formatShare( row.sharePercent )} of all trigger time`,
