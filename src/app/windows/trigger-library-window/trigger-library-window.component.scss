@@ -62,14 +62,43 @@ ul {
 
     li {
         list-style: none;
-        padding: 1px 5px;
+        padding: 8px 16px 8px 40px;
         cursor: pointer;
+
+        &:hover {
+            background-color: #ffffff11;
+        }
     }
 }
 
 h3 {
-    font-weight: 300;
-    font-size: 32px;
+    font: 500 16px/24px Roboto, "Helvetica Neue", sans-serif;
+    margin: 0 0 8px;
+}
+
+.package-description {
+    max-width: 420px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    color: rgba(255, 255, 255, .7);
+}
+
+.open-icon {
+    opacity: .6;
+}
+
+:host footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    box-sizing: border-box;
+    padding: 20px 24px;
+
+    button {
+        margin: 0;
+    }
 }
 
 button.back-to-list-btn {
@@ -83,6 +112,10 @@ button.back-to-list-btn {
 }
 
 :host::ng-deep table {
+    tr.package-row {
+        height: 52px;
+    }
+
     th {
         user-select: none;
 
