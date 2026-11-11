@@ -1,4 +1,4 @@
-import { Component, ElementRef, HostListener, Inject, NgZone, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, Inject, NgZone, OnInit, ViewChild } from '@angular/core';
 import { MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatSnackBar } from '@angular/material/snack-bar';
 import { ActionTypes, CharacterModel, DpsMeterSettings, OverlayWindowModel, Rectangle, SettingsKeys, TriggerAction } from 'src/app/core.model';
@@ -9,8 +9,6 @@ const alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz
 const nanoid = customAlphabet( alphabet, 16 );
 
 const recentDays = 60;
-const previewMaxWidth = 820;
-const previewMaxHeight = 300;
 const sampleSeconds = 8;
 
 export interface SetupCharacterOption {
@@ -25,26 +23,6 @@ export interface SetupCharacterOption {
     checked: boolean;
     modified: number | null;
     lastPlayed: string;
-}
-
-export interface SetupPreviewDisplay {
-    id: number;
-    name: string;
-    left: number;
-    top: number;
-    width: number;
-    height: number;
-    bounds: Electron.Rectangle;
-}
-
-export interface SetupPreviewBox {
-    overlay: OverlayWindowModel;
-    display: SetupPreviewDisplay;
-    kind: 'timer' | 'text';
-    left: number;
-    top: number;
-    width: number;
-    height: number;
 }
 
 @Component( {
@@ -70,10 +48,7 @@ export class SetupWizardComponent implements OnInit {
     public scanFolder: string = null;
     public characterOptions: SetupCharacterOption[] = [];
 
-    public previewBoxes: SetupPreviewBox[] = [];
-    public previewDisplays: SetupPreviewDisplay[] = [];
-    public previewHeight: number = 0;
-    public previewWidth: number = 0;
+    public previewOverlays: OverlayWindowModel[] = [];
     public groupedTimers: boolean = false;
     public canChooseGrouping: boolean = false;
 
@@ -96,10 +71,6 @@ export class SetupWizardComponent implements OnInit {
     }
 
     private _displaySize: { width: number, height: number } = { width: 1920, height: 1080 };
-    private _displayId: number = null;
-    private _displayOrigin: { x: number, y: number } = { x: 0, y: 0 };
-    private _previewOrigin: { x: number, y: number } = { x: 0, y: 0 };
-    private _scale: number = 1;
 
     private _fctOutId: string;
     private _fctInId: string;
@@ -108,7 +79,6 @@ export class SetupWizardComponent implements OnInit {
     private _alertId: string;
     private _createdDetrimental: boolean = false;
     private _movedIds: Set<string> = new Set<string>();
-    private _drag: { box: SetupPreviewBox, startX: number, startY: number, originLeft: number, originTop: number } = null;
 
     @ViewChild( 'fileSelector' ) private fileSelector: ElementRef<HTMLInputElement>;
 
@@ -126,8 +96,6 @@ export class SetupWizardComponent implements OnInit {
 
         this.ipcService.getPrimaryDisplay().subscribe( display => {
             this._displaySize = { width: display.size.width, height: display.size.height };
-            this._displayId = display.id;
-            this._displayOrigin = { x: display.bounds?.x ?? 0, y: display.bounds?.y ?? 0 };
         } );
 
         this.ipcService.getDetrimentalOverlayId().subscribe( id => this._detrimentalId = id );
@@ -291,35 +259,8 @@ export class SetupWizardComponent implements OnInit {
         } );
     }
 
-    startDrag( event: MouseEvent, box: SetupPreviewBox ): void {
-        event.preventDefault();
-        this._drag = { box: box, startX: event.clientX, startY: event.clientY, originLeft: box.left, originTop: box.top };
-    }
-
-    nudge( event: Event, box: SetupPreviewBox, dx: number, dy: number ): void {
-        event.preventDefault();
-        box.left += dx * 4;
-        box.top += dy * 4;
-        this._movedIds.add( box.overlay.overlayId );
-        this.settleBox( box );
-    }
-
-    @HostListener( 'document:mousemove', [ '$event' ] )
-    onMouseMove( event: MouseEvent ): void {
-        if ( this._drag ) {
-            const box = this._drag.box;
-            box.left = this.clamp( this._drag.originLeft + event.clientX - this._drag.startX, 0, this.previewWidth - box.width );
-            box.top = this.clamp( this._drag.originTop + event.clientY - this._drag.startY, 0, this.previewHeight - box.height );
-            this._movedIds.add( box.overlay.overlayId );
-        }
-    }
-
-    @HostListener( 'document:mouseup' )
-    onMouseUp(): void {
-        if ( this._drag ) {
-            this.settleBox( this._drag.box );
-        }
-        this._drag = null;
+    onOverlayMoved( move: { overlayId: string, displayId: number, x: number, y: number } ): void {
+        this._movedIds.add( move.overlayId );
     }
 
     /**
@@ -464,84 +405,22 @@ export class SetupWizardComponent implements OnInit {
         return `last played ${new Date( modified ).getFullYear()}`;
     }
 
-    private clamp( value: number, min: number, max: number ): number {
-        return Math.round( Math.max( min, Math.min( max, value ) ) );
-    }
-
     /**
-     * Loads the default overlays and lays them out on a scaled map of all displays.
+     * Loads the default overlays shown on the map of all monitors.
      *
-     * @param done Called once the boxes are ready.
+     * @param done Called once the overlays are ready.
      */
     private loadPreview( done: () => void ): void {
         this._movedIds.clear();
 
-        this.ipcService.getAllDisplays().subscribe( displays => {
-            const hasDisplays = displays?.length > 0;
-            const list: Electron.Rectangle[] = hasDisplays
-                ? displays.map( d => d.bounds )
-                : [ { x: this._displayOrigin.x, y: this._displayOrigin.y, width: this._displaySize.width, height: this._displaySize.height } ];
-            const ids: number[] = hasDisplays ? displays.map( d => d.id ) : [ this._displayId ];
+        this.ipcService.getOverlayWindows().subscribe( overlays => {
+            const overlayIds = [ this._detrimentalId, this._benficialId, this._alertId ];
 
-            const minX = Math.min( ...list.map( r => r.x ) );
-            const minY = Math.min( ...list.map( r => r.y ) );
-            const totalWidth = Math.max( ...list.map( r => r.x + r.width ) ) - minX;
-            const totalHeight = Math.max( ...list.map( r => r.y + r.height ) ) - minY;
+            this.previewOverlays = overlayIds.map( id => overlays?.find( o => o.overlayId === id ) )
+                .filter( overlay => overlay != null );
 
-            this._scale = Math.min( previewMaxWidth / totalWidth, previewMaxHeight / totalHeight );
-            this._previewOrigin = { x: minX, y: minY };
-            this.previewWidth = Math.round( totalWidth * this._scale );
-            this.previewHeight = Math.round( totalHeight * this._scale );
-            this.previewDisplays = list.map( ( r, i ) => <SetupPreviewDisplay>{
-                id: ids[ i ],
-                name: ids.length > 1 ? `Display ${i + 1}${ids[ i ] === this._displayId ? ' (main)' : ''}` : 'Main display',
-                left: Math.round( ( r.x - minX ) * this._scale ),
-                top: Math.round( ( r.y - minY ) * this._scale ),
-                width: Math.round( r.width * this._scale ),
-                height: Math.round( r.height * this._scale ),
-                bounds: r,
-            } );
-
-            this.ipcService.getOverlayWindows().subscribe( overlays => {
-                const overlayIds = [ this._detrimentalId, this._benficialId, this._alertId ];
-
-                this.previewBoxes = overlayIds.map( id => overlays?.find( o => o.overlayId === id ) )
-                    .filter( overlay => overlay != null )
-                    .map( overlay => <SetupPreviewBox>{
-                        overlay: overlay,
-                        display: null,
-                        kind: overlay.overlayType === 'Alert' ? 'text' : 'timer',
-                        left: this.clamp( ( overlay.x - minX ) * this._scale, 0, this.previewWidth ),
-                        top: this.clamp( ( overlay.y - minY ) * this._scale, 0, this.previewHeight ),
-                        width: Math.max( 40, Math.round( overlay.windowWidth * this._scale ) ),
-                        height: Math.max( 24, Math.round( overlay.windowHeight * this._scale ) ),
-                    } );
-
-                this.previewBoxes.forEach( box => this.settleBox( box ) );
-
-                done();
-            } );
+            done();
         } );
-    }
-
-    /**
-     * Puts the box fully inside the display its center is on, or the closest one.
-     *
-     * @param box The box to settle.
-     */
-    private settleBox( box: SetupPreviewBox ): void {
-        const centerX = box.left + box.width / 2;
-        const centerY = box.top + box.height / 2;
-        const distance = ( d: SetupPreviewDisplay ) => {
-            const dx = Math.max( d.left - centerX, 0, centerX - ( d.left + d.width ) );
-            const dy = Math.max( d.top - centerY, 0, centerY - ( d.top + d.height ) );
-            return dx * dx + dy * dy;
-        };
-        const display = this.previewDisplays.reduce( ( best, d ) => distance( d ) < distance( best ) ? d : best, this.previewDisplays[ 0 ] );
-
-        box.display = display;
-        box.left = this.clamp( box.left, display.left, Math.max( display.left, display.left + display.width - box.width ) );
-        box.top = this.clamp( box.top, display.top, Math.max( display.top, display.top + display.height - box.height ) );
     }
 
     /**
@@ -550,17 +429,8 @@ export class SetupWizardComponent implements OnInit {
     private persistPreview(): Observable<any> {
         const updates: Observable<any>[] = [];
 
-        this.previewBoxes.forEach( box => {
-            const overlay = box.overlay;
-            let changed = false;
-
-            if ( this._movedIds.has( overlay.overlayId ) ) {
-                overlay.x = Math.round( box.left / this._scale ) + this._previewOrigin.x;
-                overlay.y = Math.round( box.top / this._scale ) + this._previewOrigin.y;
-                overlay.displayId = box.display.id;
-                overlay.displayBounds = box.display.bounds;
-                changed = true;
-            }
+        this.previewOverlays.forEach( overlay => {
+            let changed = this._movedIds.has( overlay.overlayId );
 
             if ( this.canChooseGrouping && overlay.overlayId === this._detrimentalId && overlay.groupByTarget !== this.groupedTimers ) {
                 overlay.groupByTarget = this.groupedTimers;

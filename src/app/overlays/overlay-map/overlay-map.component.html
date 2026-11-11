@@ -14,6 +14,8 @@
             [style.width.%]="width( box )"
             [style.height.%]="height( box )"
             [title]="box.overlay.name"
+            tabindex="0" role="button" [attr.aria-label]="'Move ' + box.overlay.name + ' with the arrow keys'"
+            (keydown)="onKeyDown( $event, box )"
             (pointerdown)="onPointerDown( $event, box )"
             (pointermove)="onPointerMove( $event )"
             (pointerup)="onPointerUp( $event, box )"
@@ -25,6 +27,5 @@
         <span><i class="swatch type-timer"></i> Timer</span>
         <span><i class="swatch type-text"></i> Text</span>
         <span><i class="swatch type-fct"></i> Floating combat text</span>
-        <span class="hint">Drag a box to move it.</span>
     </div>
 </div>

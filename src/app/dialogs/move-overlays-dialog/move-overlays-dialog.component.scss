@@ -7,7 +7,7 @@
 .modal section.arrange-section {
     box-sizing: border-box;
     padding: 18px 24px 20px 24px;
-    font-size: 15px;
+    font-size: 14px;
 
     p {
         margin: 0 0 12px 0;
@@ -35,9 +35,7 @@
     box-sizing: border-box;
     padding: 12px 24px;
 
-    button {
-        margin: 0 4px;
-    }
+    gap: 8px;
 
     .done-button {
         min-width: 110px;

@@ -38,19 +38,7 @@
         <h3 tabindex="-1">Where should alerts appear?</h3>
         <p class="hint">Drag the boxes onto the monitor you want. The game is behind them.</p>
 
-        <div class="monitor" [style.width.px]="previewWidth" [style.height.px]="previewHeight">
-            <div class="display" *ngFor="let d of previewDisplays" [style.left.px]="d.left" [style.top.px]="d.top" [style.width.px]="d.width" [style.height.px]="d.height"><span class="display-name">{{d.name}}</span></div>
-            <div class="overlay-box" *ngFor="let box of previewBoxes" [class.text]="box.kind === 'text'"
-                [style.left.px]="box.left" [style.top.px]="box.top" [style.width.px]="box.width" [style.height.px]="box.height"
-                tabindex="0" role="button" [attr.aria-label]="'Move ' + box.overlay.name + ' with the arrow keys'"
-                (mousedown)="startDrag($event, box)"
-                (keydown.arrowleft)="nudge($event, box, -1, 0)" (keydown.arrowright)="nudge($event, box, 1, 0)"
-                (keydown.arrowup)="nudge($event, box, 0, -1)" (keydown.arrowdown)="nudge($event, box, 0, 1)">
-                <span class="overlay-name">{{box.overlay.name}}</span>
-                <span class="sample-timer" *ngIf="box.kind === 'timer'">Sample timer</span>
-                <span class="sample-text" *ngIf="box.kind === 'text'">Sample text</span>
-            </div>
-        </div>
+        <app-overlay-map class="overlay-map" [overlays]="previewOverlays" (overlayMoved)="onOverlayMoved( $event )"></app-overlay-map>
 
         <div class="row">
             <mat-checkbox *ngIf="canChooseGrouping" [(ngModel)]="groupedTimers" name="groupedTimers" color="accent">Group timers by target</mat-checkbox>
