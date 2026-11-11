@@ -2,6 +2,28 @@ table {
     width: 100%;
 }
 
+fieldset {
+    margin-bottom: 16px;
+    padding-top: 48px !important;
+    background-color: transparent !important;
+
+    legend {
+        top: 0;
+        padding: 0 0 8px !important;
+        background-color: transparent !important;
+
+        span.title {
+            font-size: 15px !important;
+            font-weight: 500 !important;
+        }
+
+        small {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+        }
+    }
+}
+
 .classes-toggle {
     display: flex;
     align-items: center;

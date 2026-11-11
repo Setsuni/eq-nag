@@ -1236,7 +1236,7 @@ class TriggerDatabaseStore extends Store {
      * @param {string[]} folderIds If provided, only returns triggers that exist in a folder in this list.
      */
     searchTriggers( term, folderIds ) {
-        let fuse = new Fuse( this.#data.triggers, fuseOptions_tags );
+        let fuse = new Fuse( app.isDev() ? this.#data.triggers : this.#data.triggers.filter( t => !t.predefined ), fuseOptions_tags );
 
         let results = fuse.search( term );
 

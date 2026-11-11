@@ -1,4 +1,4 @@
-const { ipcMain } = require( 'electron' );
+const { app, ipcMain } = require( 'electron' );
 const eqZones = require( './models/everquest-zones' );
 const { checkTriggerHealth, applyPatches, formatReportText } = require( './trigger-health' );
 
@@ -36,6 +36,7 @@ class TriggerHealthService {
     check() {
         this.#lastReport = checkTriggerHealth( {
             triggers: this.#triggerDatabase.getAll(),
+            includePredefined: app.isDev(),
             folders: this.#triggerDatabase.getFolders(),
             zones: eqZones,
             zoneKnowledge: this.#zoneKnowledge.getKnowledge(),

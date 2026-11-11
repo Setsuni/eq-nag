@@ -467,6 +467,17 @@ export class TriggersComponent implements OnInit {
 
 
     /**
+     * Selects the folder, even when it is already selected.
+     * 
+     * @param folderId The id of the folder to select.
+     */
+    public selectFolder( folderId: string ): void {
+        this.selectedFolderId = folderId;
+        this.filterTriggers();
+        this.searchTerm = null;
+    }
+
+    /**
      * Toggles the selection state of the folder for the specified folder.
      * 
      * @param folderId The id of the folder to toggle.

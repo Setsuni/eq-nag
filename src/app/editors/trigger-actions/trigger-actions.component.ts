@@ -132,23 +132,36 @@ export class TriggerActionsComponent implements OnInit {
     }
 
     /**
-     * Fills in the overlay and restart choice a new action of its type needs, from
-     * the player's default overlays.  Values already set are left alone.
+     * Gives an action that just got its type an overlay of the right kind and, for
+     * timers, a restart choice.  An overlay of the right kind is kept; otherwise it
+     * is replaced by the player's default for the type.
      */
     private applyDefaults( action: TriggerAction ): void {
         const pick = ( id: string | null, options: OverlayWindowModel[] ) => options.find( o => o.overlayId === id )?.overlayId ?? options[ 0 ]?.overlayId ?? null;
+        const isTimerType = action.actionType === ActionTypes.Timer || action.actionType === ActionTypes.Countdown || action.actionType === ActionTypes.BeneficialTimer;
         switch ( action.actionType ) {
             case ActionTypes.DisplayText:
-                action.overlayId = action.overlayId ?? pick( this.defaultOverlayIds.alert, this.alertOverlays );
+            case ActionTypes.Counter:
+                if ( !this.alertOverlays.some( o => o.overlayId === action.overlayId ) ) {
+                    action.overlayId = pick( this.defaultOverlayIds.alert, this.alertOverlays );
+                }
                 break;
             case ActionTypes.Timer:
             case ActionTypes.Countdown:
             case ActionTypes.BeneficialTimer:
-                action.overlayId = action.overlayId ?? pick( action.actionType === ActionTypes.BeneficialTimer ? this.defaultOverlayIds.beneficial : this.defaultOverlayIds.detrimental, this.timerOverlays );
-                action.restartBehavior = action.restartBehavior ?? TimerRestartBehaviors.RestartTimer;
+            case ActionTypes.DotTimer:
+            case ActionTypes.Stopwatch:
+                if ( !this.timerOverlays.some( o => o.overlayId === action.overlayId ) ) {
+                    action.overlayId = pick( action.actionType === ActionTypes.BeneficialTimer ? this.defaultOverlayIds.beneficial : this.defaultOverlayIds.detrimental, this.timerOverlays );
+                }
                 break;
             default:
                 break;
+        }
+        if ( isTimerType ) {
+            action.restartBehavior = action.restartBehavior ?? TimerRestartBehaviors.RestartTimer;
+        } else if ( action.actionType !== ActionTypes.Stopwatch ) {
+            action.restartBehavior = null;
         }
     }
 
