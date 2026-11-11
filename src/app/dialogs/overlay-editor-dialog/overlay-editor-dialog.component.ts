@@ -126,9 +126,9 @@ export class OverlayEditorDialogComponent implements OnInit {
     }
 
     public readonly sampleTimers = [
-        { name: 'Dot 01', percent: 85, time: '0:41' },
-        { name: 'Dot 02', percent: 55, time: '0:16' },
-        { name: 'Dot 03', percent: 25, time: '0:13' },
+        { name: 'Sample timer 1', percent: 85, time: '0:41' },
+        { name: 'Sample timer 2', percent: 55, time: '0:16' },
+        { name: 'Sample timer 3', percent: 25, time: '0:13' },
     ];
 
     public get previewVerticalAlign(): string {

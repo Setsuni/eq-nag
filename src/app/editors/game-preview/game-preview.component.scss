@@ -25,20 +25,28 @@
             left: 0;
             z-index: 1;
     
-            > span {
-                text-shadow: var(--text-shadow);
+            display: flex;
+            margin: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+            background-color: rgba(0, 0, 0, 0.6);
+
+            > button {
+                font: 400 12px/20px Roboto, "Helvetica Neue", sans-serif;
+                padding: 0 10px;
+                border: 0;
+                color: rgba(255, 255, 255, 0.85);
+                background: transparent;
                 cursor: pointer;
-                margin: 5px;
-                font-size: 12px;
-                opacity: 0.667;
-    
-                &:hover {
-                    color: #c269f0;
+
+                &.selected {
+                    color: #69f0ae;
+                    background-color: rgba(105, 240, 174, 0.16);
                 }
-    
-                &:active {
-                    color: #b13cec;
-                    // opacity: 0.50;
+
+                &:hover:not(.selected) {
+                    background-color: rgba(255, 255, 255, 0.12);
                 }
             }
         }

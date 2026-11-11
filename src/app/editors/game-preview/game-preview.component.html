@@ -1,8 +1,8 @@
 <div class="game-preview-container-container">
     <div class="game-preview-container" [ngClass]="{'light': background === 'light', 'dark': background === 'dark'}">
         <div class="preview-background-options">
-            <span (click)="background = 'light'">Light</span>
-            <span (click)="background = 'dark'">Dark</span>
+            <button type="button" [class.selected]="background === 'light'" [attr.aria-pressed]="background === 'light'" (click)="background = 'light'">Light</button>
+            <button type="button" [class.selected]="background === 'dark'" [attr.aria-pressed]="background === 'dark'" (click)="background = 'dark'">Dark</button>
         </div>
         <ng-content></ng-content>
     </div>

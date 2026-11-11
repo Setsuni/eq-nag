@@ -96,7 +96,7 @@
                     </div>
 
                     <div class="colour-grid">
-                        <span></span><span class="col-head">Colour</span><span class="col-head">Opacity</span><span></span>
+                        <span></span><span class="col-head">Color</span><span class="col-head">Opacity</span><span></span>
 
                         <span class="row-label">Text</span>
                         <app-color-picker [(ngModel)]="model.fontColor" (change)="broadcastModel()"></app-color-picker>
@@ -115,7 +115,7 @@
                     </div>
                 </ng-template>
                 <ng-template [ngIf]="model.overlayType === 'FCT'">
-                    <p>To change the colors for FCT combat, use the [Floating Combat Text] tab in the main window.</p>
+                    <p>To change the colors for floating combat text, use the Floating combat text tab in the main window.</p>
                 </ng-template>
 
             </fieldset>
@@ -183,7 +183,7 @@
                     <mat-checkbox [(ngModel)]="model.showTextBorder" name="cbxShowTextBorder" (change)="broadcastModel()">Text outline</mat-checkbox>
                 </div>
                 <div class="colour-grid" *ngIf="model.showTextBorder">
-                    <span class="row-label">Colour</span>
+                    <span class="row-label">Color</span>
                     <app-color-picker [(ngModel)]="textBorderColor" (change)="broadcastModel()"></app-color-picker>
                     <span></span><span></span>
                     <span class="row-label">Strength</span>
@@ -196,7 +196,7 @@
                     <mat-checkbox [(ngModel)]="model.showTextGlow" name="cbxShowTextGlow" (change)="broadcastModel()">Text glow</mat-checkbox>
                 </div>
                 <div class="colour-grid" *ngIf="model.showTextGlow">
-                    <span class="row-label">Colour</span>
+                    <span class="row-label">Color</span>
                     <app-color-picker [(ngModel)]="textGlowColor" (change)="broadcastModel()"></app-color-picker>
                     <span></span><span></span>
                     <span class="row-label">Strength</span>
@@ -217,14 +217,14 @@
                 <mat-form-field floatLabel="always">
                     <mat-label>Timer sort type</mat-label>
                     <mat-select [(ngModel)]="model.timerSortType" name="ddlTimerSortType">
-                        <mat-option [value]="timerSortTypes.None">First in on top.</mat-option>
-                        <mat-option [value]="timerSortTypes.Ascending">Shortest time remaining on top.</mat-option>
-                        <mat-option [value]="timerSortTypes.Descending">Longest time remaining on top.</mat-option>
+                        <mat-option [value]="timerSortTypes.None">First in on top</mat-option>
+                        <mat-option [value]="timerSortTypes.Ascending">Shortest time remaining on top</mat-option>
+                        <mat-option [value]="timerSortTypes.Descending">Longest time remaining on top</mat-option>
                     </mat-select>
                 </mat-form-field>
 
                 <div class="colour-grid">
-                    <span class="row-label">Timer colour</span>
+                    <span class="row-label">Timer color</span>
                     <app-color-picker [(ngModel)]="model.timerColor" (change)="broadcastModel()"></app-color-picker>
                     <span></span><span></span>
                 </div>
@@ -238,7 +238,7 @@
                 </div>
 
                 <div>
-                    <mat-checkbox [(ngModel)]="model.reverse" name="reverse" (change)="broadcastModel()">Reverse timer flow, starting from the bottom and adding more above.</mat-checkbox>
+                    <mat-checkbox [(ngModel)]="model.reverse" name="reverse" (change)="broadcastModel()">Reverse timer flow, starting from the bottom and adding more above</mat-checkbox>
                 </div>
 
                 <div>
@@ -257,7 +257,7 @@
                         <span class="slider-value">{{model.groupHeaderWeight}}</span>
                     </div>
                     <div class="colour-grid">
-                        <span class="row-label">Header colour</span>
+                        <span class="row-label">Header color</span>
                         <app-color-picker [(ngModel)]="model.groupHeaderColor" (change)="broadcastModel()"></app-color-picker>
                         <span></span><span></span>
                     </div>
@@ -274,7 +274,7 @@
 
     <footer class="editor-footer">
         <button mat-button aria-label="Show a sample on this overlay" *ngIf="canSendTest" (click)="sendDisplayTextTest()"><mat-icon>play_arrow</mat-icon> Send test</button>
-        <button mat-button color="accent" aria-label="Send overlay to the middle of the selected monitor" (click)="sendToOrigin()" matTooltip="Send overlay to the middle of the selected monitor." matTooltipPosition="above"><mat-icon>filter_center_focus</mat-icon> Centre on monitor</button>
+        <button mat-button color="accent" aria-label="Center this overlay on a monitor" (click)="sendToOrigin()" matTooltip="Send overlay to the middle of the selected monitor." matTooltipPosition="above"><mat-icon>filter_center_focus</mat-icon> Center on monitor</button>
         <span class="spacer"></span>
         <span class="unsaved" *ngIf="hasUnsavedChanges">Unsaved changes</span>
         <button mat-stroked-button (click)="requestClose()">Cancel</button>

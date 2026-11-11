@@ -148,24 +148,19 @@ export class OverlayMapComponent implements OnInit {
             return;
         }
 
-        const absX = start.boxX + offset.x;
-        const absY = start.boxY + offset.y;
-        const centerX = absX + box.width / 2;
-        const centerY = absY + box.height / 2;
-        const target = this.displays.find( d => centerX >= d.bounds.x && centerX < d.bounds.x + d.bounds.width && centerY >= d.bounds.y && centerY < d.bounds.y + d.bounds.height ) ?? box.display;
+        this.moveBox( box, start.boxX + offset.x, start.boxY + offset.y );
+    }
 
-        const x = Math.min( Math.max( 0, absX - target.bounds.x ), Math.max( 0, target.size.width - box.width ) );
-        const y = Math.min( Math.max( 0, absY - target.bounds.y ), Math.max( 0, target.size.height - box.height ) );
-
-        // Show the box where it landed until the next update arrives.
-        box.display = target;
-        box.x = x;
-        box.y = y;
-        box.overlay.displayId = target.id;
-        box.overlay.displayBounds = target.bounds;
-        box.overlay.x = Math.round( x );
-        box.overlay.y = Math.round( y );
-        this.overlayMoved.emit( { overlayId: box.overlay.overlayId, displayId: target.id, x: x, y: y } );
+    public onKeyDown( event: KeyboardEvent, box: MapBox ): void {
+        const step = event.shiftKey ? 40 : 8;
+        const moves: { [ key: string ]: number[] } = { ArrowLeft: [ -step, 0 ], ArrowRight: [ step, 0 ], ArrowUp: [ 0, -step ], ArrowDown: [ 0, step ] };
+        const move = moves[ event.key ];
+        if ( move == null ) {
+            return;
+        }
+        event.preventDefault();
+        this.overlaySelected.emit( box.overlay.overlayId );
+        this.moveBox( box, box.display.bounds.x + box.x + move[ 0 ], box.display.bounds.y + box.y + move[ 1 ] );
     }
 
     public onPointerCancel(): void {
@@ -186,6 +181,32 @@ export class OverlayMapComponent implements OnInit {
             && other.bounds.x + other.bounds.width > display.bounds.x
             && other.bounds.y + other.bounds.height > display.bounds.y - reach
             && other.bounds.y < display.bounds.y );
+    }
+
+    /**
+     * Drops a box at a position on the combined screen space, on the monitor under its center.
+     *
+     * @param box The box to move.
+     * @param absX Left edge on the combined screen space.
+     * @param absY Top edge on the combined screen space.
+     */
+    private moveBox( box: MapBox, absX: number, absY: number ): void {
+        const centerX = absX + box.width / 2;
+        const centerY = absY + box.height / 2;
+        const target = this.displays.find( d => centerX >= d.bounds.x && centerX < d.bounds.x + d.bounds.width && centerY >= d.bounds.y && centerY < d.bounds.y + d.bounds.height ) ?? box.display;
+
+        const x = Math.min( Math.max( 0, absX - target.bounds.x ), Math.max( 0, target.size.width - box.width ) );
+        const y = Math.min( Math.max( 0, absY - target.bounds.y ), Math.max( 0, target.size.height - box.height ) );
+
+        // Show the box where it landed until the next update arrives.
+        box.display = target;
+        box.x = x;
+        box.y = y;
+        box.overlay.displayId = target.id;
+        box.overlay.displayBounds = target.bounds;
+        box.overlay.x = Math.round( x );
+        box.overlay.y = Math.round( y );
+        this.overlayMoved.emit( { overlayId: box.overlay.overlayId, displayId: target.id, x: x, y: y } );
     }
 
     private dragOffsetFor( box: MapBox ): { x: number, y: number } {
