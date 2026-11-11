@@ -112,8 +112,9 @@ button.back-to-list-btn {
 }
 
 :host::ng-deep table {
-    tr.package-row {
-        height: 52px;
+    tr.package-row td {
+        padding-top: 10px;
+        padding-bottom: 10px;
     }
 
     th {
