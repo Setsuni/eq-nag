@@ -481,7 +481,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
             
         } else {
 
-            this.dialogService.showSelectTriggerFolderDialog( null, 'Select Trigger Folder', 'Select the folder that will contain the generated trigger.' ).subscribe( folderId => {
+            this.dialogService.showSelectTriggerFolderDialog( null, 'Choose a folder', 'Select the folder that will contain the generated trigger.' ).subscribe( folderId => {
                 if ( folderId ) {
                     
                     // Initialize a new trigger model.
