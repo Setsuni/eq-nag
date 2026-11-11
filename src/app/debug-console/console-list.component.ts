@@ -24,7 +24,7 @@ export class ConsoleListComponent implements OnInit, OnChanges, OnDestroy {
     @Input() public developer: boolean = false;
     /** True keeps only the counts and renders no lines, for the collapsed console button. */
     @Input() public countOnly: boolean = false;
-    @Output() public onListUpdated: EventEmitter<{ scrollBottom: boolean }> = new EventEmitter<{ scrollBottom: boolean }>();
+    @Output() public onListUpdated: EventEmitter<{ scrollBottom: boolean, problemCount: number }> = new EventEmitter<{ scrollBottom: boolean, problemCount: number }>();
 
     private histories: { successful: TriggerParseHistoryModel[], exceptions: TriggerParseHistoryModel[] } = { successful: [], exceptions: [] };
     private triggerHistories: { successful: TriggerParseHistoryModel[], failed: TriggerParseHistoryModel[] } = { successful: [], failed: [] };
@@ -431,7 +431,7 @@ export class ConsoleListComponent implements OnInit, OnChanges, OnDestroy {
         }
 
         this.changeDetector.detectChanges();
-        this.onListUpdated.emit( { scrollBottom: scrollBottom } );
+        this.onListUpdated.emit( { scrollBottom: scrollBottom, problemCount: this.problemCount } );
     }
 
 

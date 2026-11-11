@@ -77,7 +77,7 @@
             </div>
             <div class="content-left maintenance">
                 <p class="maintenance-question">When should Nag archive a log?</p>
-                <mat-radio-group [(ngModel)]="logMaintenanceRules.maintenancePlan" [disabled]="!logMaintenanceRules.enableLogFileMaintenance">
+                <mat-radio-group [(ngModel)]="logMaintenanceRules.maintenancePlan" (change)="saveLogMaintenance()" [disabled]="!logMaintenanceRules.enableLogFileMaintenance">
                     <mat-radio-button [value]="logMaintenancePlanTypes.BySize">When a log file reaches a certain size</mat-radio-button>
                     <mat-radio-button [value]="logMaintenancePlanTypes.BySchedule">On a schedule</mat-radio-button>
                 </mat-radio-group>
