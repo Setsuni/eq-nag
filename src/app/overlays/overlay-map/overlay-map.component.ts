@@ -91,6 +91,15 @@ export class OverlayMapComponent implements OnInit {
     }
 
     /**
+     * Whether any overlay on the map has this type class.
+     *
+     * @param typeClass The css class returned by typeClass.
+     */
+    public hasType( typeClass: string ): boolean {
+        return this.boxes.some( box => this.typeClass( box.overlay.overlayType ) === typeClass );
+    }
+
+    /**
      * Position and size of a box, as a percentage of the map.
      *
      * @param box The box to measure.

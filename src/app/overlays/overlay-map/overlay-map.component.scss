@@ -70,13 +70,16 @@
     }
 
     .box-label {
-        font-size: 12px;
+        font-size: 11px;
         line-height: 1.2;
-        padding: 0 4px;
+        padding: 0 2px;
         text-align: center;
         overflow: hidden;
         text-overflow: ellipsis;
-        white-space: nowrap;
+        overflow-wrap: anywhere;
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
         min-width: 0;
         color: #ffffff;
         text-shadow: 0 0 3px #000000, 0 0 3px #000000;

@@ -37,10 +37,10 @@
                 [style.font-weight]="fontWeight"
                 [style.text-shadow]="textShadow"
                 [style.font-size]="model.fontSize + 'px'">
-                <div class="timer-group-header" *ngIf="model.groupByTarget" [style.color]="model.groupHeaderColor" [style.font-weight]="model.groupHeaderWeight" [style.font-size.px]="previewGroupHeaderSize">Mob 01</div>
+                <div class="timer-group-header" *ngIf="model.groupByTarget" [style.color]="model.groupHeaderColor" [style.font-weight]="model.groupHeaderWeight" [style.font-size.px]="previewGroupHeaderSize">Soandso</div>
                 <div class="timer-bar" *ngFor="let sample of sampleTimers" [style.background]="previewTimerBackground">
                     <div class="timer-fill" [style.width.%]="sample.percent" [style.background]="model.timerColor"></div>
-                    <span class="timer-name">{{sample.name}}<ng-container *ngIf="!model.hideTargetLabel && !model.groupByTarget"> --== Mob 01 ==--</ng-container></span>
+                    <span class="timer-name">{{sample.name}}<ng-container *ngIf="!model.hideTargetLabel && !model.groupByTarget"> &mdash; Soandso</ng-container></span>
                     <span class="timer-time" *ngIf="model.showTimeRemaining">{{sample.time}}</span>
                 </div>
             </div>
