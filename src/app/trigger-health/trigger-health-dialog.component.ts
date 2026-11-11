@@ -47,7 +47,7 @@ export interface TriggerHealthDialogResult {
         .stat.never .number { color: #f06969; }
         .stat.may .number { color: #f0c669; }
         .stat.fix .number { color: #69f0ae; }
-        .note { margin: 0; padding: 8px 12px; font-size: 13px; background: rgba(0, 0, 0, 0.18); border-radius: 4px; color: rgba(255, 255, 255, 0.7); }
+        .note { margin: 0; padding: 8px 12px; font-size: 13px; line-height: 20px; background: rgba(0, 0, 0, 0.18); border-radius: 4px; color: rgba(255, 255, 255, 0.7); }
         mat-dialog-actions { display: flex; align-items: center; gap: 8px; }
         mat-dialog-actions .spacer { flex: 1 1 auto; }
     ` ],

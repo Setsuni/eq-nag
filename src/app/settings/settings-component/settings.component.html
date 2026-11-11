@@ -178,7 +178,7 @@
                 <div class="formless-hint full-width">
                     <div class="formless-input"><mat-checkbox [(ngModel)]="enableCheckWindowPosition" (change)="updateSetting( this.settingsKeys.enableCheckWindowPosition, this.enableCheckWindowPosition, 500 )">Enable relative window positions</mat-checkbox></div>
                     <mat-hint>
-                        If enabled, will maintain the relative position of an overlay.
+                        Keeps each overlay in the same relative position when your screen setup changes.
                         <sup class="help-sup"
                             matTooltip="Click here for more help."
                             matTooltipPosition="above"
@@ -312,7 +312,7 @@
                 <div class="group">
                     <div class="formless-hint full-width">
                         <div class="formless-input"><mat-checkbox [(ngModel)]="enableQuickShareImports" (change)="onQuickShareImportsChange()">Import Quick Share triggers</mat-checkbox></div>
-                        <mat-hint>If enabled, will listen for and respond to Quick Share triggers in the log file.</mat-hint>
+                        <mat-hint>Nag listens for Quick Share triggers in your log file and responds to them.</mat-hint>
                     </div>
                 </div>
             </div>
@@ -336,11 +336,11 @@
                     </div>
 
                     <ng-template [ngIf]="author?.authorId != null" [ngIfElse]="noAuthorFile">
-                        <button mat-button (click)="updateAuthor()">Save changes</button>
-                        <button mat-button *ngIf="!trustedAuthor" (click)="requestVerification()">Request verification</button>
+                        <button mat-stroked-button (click)="updateAuthor()">Save changes</button>
+                        <button mat-stroked-button *ngIf="!trustedAuthor" (click)="requestVerification()">Request verification</button>
                     </ng-template>
                     <ng-template #noAuthorFile>
-                        <button mat-button color="accent" (click)="createAuthor()">Save</button>
+                        <button mat-stroked-button (click)="createAuthor()">Save</button>
                     </ng-template>
                 </div>
             </div>
@@ -351,7 +351,7 @@
                 <h3 class="group-title">Who can send you triggers</h3>
                 <div class="group">
                     <mat-radio-group class="inline" [(ngModel)]="quickShareAuthorListType" name="rdoQuickShareAuthorListType" (change)="onQuickShareImportsChange()">
-                        <mat-radio-button [value]="quickShareAuthorListTypes.Disabled">Disabled</mat-radio-button>
+                        <mat-radio-button [value]="quickShareAuthorListTypes.Disabled">Everyone</mat-radio-button>
                         <mat-radio-button [value]="quickShareAuthorListTypes.Whitelist">Only these players</mat-radio-button>
                         <mat-radio-button [value]="quickShareAuthorListTypes.Blacklist">Everyone except these players</mat-radio-button>
                     </mat-radio-group>
@@ -366,12 +366,12 @@
                 <div class="group">
                     <div class="formless-hint full-width" style="width: 100%;">
                         <div class="formless-input"><mat-checkbox [(ngModel)]="sharedTriggerPermissions.disableSharedGlowEffects" (change)="updateSetting( this.settingsKeys.sharedTriggerPermissions, this.sharedTriggerPermissions, 500 )">Disable screen glow</mat-checkbox></div>
-                        <mat-hint>If enabled, any triggers that were created by another author will not execute glow actions.</mat-hint>
+                        <mat-hint>Triggers created by another author do not run glow actions.</mat-hint>
                     </div>
                     <div *ngIf="sharedTriggerPermissions.disableSharedGlowEffects">
                         <div class="formless-hint full-width" style="margin-top: 5px; width: 100%;">
                             <div class="formless-input"><mat-checkbox [(ngModel)]="sharedTriggerPermissions.disableAllGlowEffects" (change)="updateSetting( this.settingsKeys.sharedTriggerPermissions, this.sharedTriggerPermissions, 500 )">Disable all screen glow actions</mat-checkbox></div>
-                            <mat-hint>If enabled, any triggers created by others or yourself will not execute glow actions.</mat-hint>
+                            <mat-hint>No trigger runs glow actions, whoever created it.</mat-hint>
                         </div>
                     </div>
                 </div>
@@ -515,11 +515,11 @@
                 <div class="group">
                     <div class="formless-hint full-width">
                         <div class="formless-input"><mat-checkbox [(ngModel)]="minimizeToTrayOnLoad" (change)="onMinimizeToTrayOnLoadChange()">Open minimized to tray</mat-checkbox></div>
-                        <mat-hint>If enabled, when the application runs it will be minimized to the application tray by default.</mat-hint>
+                        <mat-hint>Nag starts minimized to the system tray.</mat-hint>
                     </div>
                     <div class="formless-hint full-width">
                         <div class="formless-input"><mat-checkbox [(ngModel)]="glowOnStartup" (change)="onGlowOnStartupChanged()">Glow on startup</mat-checkbox></div>
-                        <mat-hint>If enabled, will glow the primary display when Nag starts up.</mat-hint>
+                        <mat-hint>The main display glows when Nag starts.</mat-hint>
                     </div>
                 </div>
             </div>
@@ -528,7 +528,7 @@
                 <div class="group">
                     <div class="formless-hint full-width">
                         <div class="formless-input"><mat-checkbox [(ngModel)]="allowPrerelease" (change)="updateSetting( this.settingsKeys.allowPrerelease, this.allowPrerelease, 500 )">Get pre-release updates</mat-checkbox></div>
-                        <mat-hint>If enabled, will automatically update to the latest pre-release.</mat-hint>
+                        <mat-hint>Nag updates to the latest pre-release automatically.</mat-hint>
                     </div>
                 </div>
             </div>
