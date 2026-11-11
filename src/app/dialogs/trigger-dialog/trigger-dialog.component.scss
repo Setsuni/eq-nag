@@ -175,7 +175,12 @@ legend.full-width {
     }
 
     .disclosure-body {
-        padding: 0 0 16px 4px;
+        padding: 0 0 16px;
+
+        ::ng-deep fieldset {
+            margin-left: 0;
+            margin-right: 0;
+        }
     }
 
     .disclosure-hint {
@@ -210,6 +215,10 @@ legend.full-width {
         color: rgba(255, 255, 255, 0.7);
         font-size: 12px;
     }
+}
+
+.modal header mat-toolbar {
+    padding: 0 16px 0 24px;
 }
 
 .comments-field {
