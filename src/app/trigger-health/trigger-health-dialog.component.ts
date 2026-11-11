@@ -42,7 +42,7 @@ export interface TriggerHealthDialogResult {
         .lead { font-size: 18px; margin: 0 0 4px; }
         .stats { display: flex; gap: 12px; margin: 16px 0; }
         .stat { flex: 1; padding: 10px 12px; border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 4px; display: flex; flex-direction: column; }
-        .stat .number { font-size: 28px; font-weight: 300; }
+        .stat .number { font-size: 28px; font-weight: 500; }
         .stat .label { font-size: 12px; opacity: 0.85; }
         .stat.never .number { color: #f06969; }
         .stat.may .number { color: #f0c669; }

@@ -59,8 +59,8 @@ fieldset {
             margin:0 5px;
         }
         span.title {
-            font-size: 24px;
-            font-weight: 100;
+            font-size: 20px;
+            font-weight: 500;
         }
 
         span.material-symbols-outlined {
@@ -96,7 +96,7 @@ fieldset {
     }
 
     small {
-        font-weight: 300;
+        font-weight: 400;
         display: block;
     }
 
@@ -271,7 +271,7 @@ table {
             flex-flow: column nowrap;
 
             h3 {
-                font-weight: 300;
+                font-weight: 500;
                 color: #f1f1f1;
                 text-shadow: 1px 1px 10px #000, 1px 1px 10px #000;
                 padding-left: 1em;
@@ -523,7 +523,7 @@ fieldset.trigger-property-group {
             }
             > span {
                 padding: 5px;
-                font-weight: 100;
+                font-weight: 400;
                 font-size: 14px;
                 display: flex;
                 flex: 1;
@@ -611,7 +611,7 @@ mat-icon {
     text-align: center;
     padding: 36px 16px;
     h2 {
-        font-weight: 300;
+        font-weight: 500;
         margin: 0 0 6px;
     }
     p {
@@ -641,7 +641,7 @@ mat-icon {
 mat-card {
     mat-card-header {
         mat-card-title {
-            font-weight: 100;
+            font-weight: 500;
             font-size: 24px;
         }
         background-color: #0000004a;
@@ -667,7 +667,7 @@ div.formless-hint {
     margin-bottom: 5px;
 
     h3 {
-        font-weight: 300;
+        font-weight: 500;
         margin: 4px 0 7px;
         font-size: 19px;
     }

@@ -120,7 +120,7 @@
                         <div class="full-width content-top content-left" style="padding-top: 5px;" *ngFor="let subAction of action.endedSubActions; let i = index">
                             <div class="sub-action-options-container" *ngIf="!subAction.actionId">
                                 <div class="hr"></div>
-                                <h2 style="margin: 18px 0;font-weight: 100;">Choose an Action to execute</h2>
+                                <h2 style="margin: 18px 0;font-weight: 500;">Choose an action to execute</h2>
                                 <app-trigger-action-option *ngFor="let action of actionOptions; let i = index" [action]="action" (click)="assignSubAction(subAction, action)"></app-trigger-action-option>
                                 <div class="hr"></div>
                             </div>

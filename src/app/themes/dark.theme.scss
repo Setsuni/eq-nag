@@ -722,11 +722,11 @@ $bg-extreme-dark: #191919;
             background-color: #00000040;
         }
         h3 {
-            font-weight: 300;
-            font-size: 18px;
+            font-weight: 500;
+            font-size: 14px;
         }
         h2 {
-            font-weight: 100;
+            font-weight: 500;
             font-size: 16px;
             padding: 10px 16px;
             margin: 0;
@@ -1102,10 +1102,10 @@ h3 {
     &.header-glow {
         margin-top: -15px;
         font-size: 21px;
-        font-weight: 300;
+        font-weight: 500;
     }
     &.sub-header {
-        font-weight: 100;
+        font-weight: 500;
         opacity: 0.9;
         margin-top: -16px;
         padding-bottom: 6px;
@@ -1122,7 +1122,7 @@ h3 {
             width: calc(100% - 11px);
         }
         &.warning {
-            font-weight: 300;
+            font-weight: 400;
             color: $color-titlebar-red;
         }
 
