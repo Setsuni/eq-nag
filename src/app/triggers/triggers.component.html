@@ -34,26 +34,26 @@
         <div class="import-hint">Or drop a .nag file anywhere in this window.</div>
     </mat-menu>
     <mat-menu #autoGenMenu="matMenu" class="trigger-main-menu sub-menu">
-        <h3 class="color-blue">Trigger Generators</h3>
+        <h3 class="color-blue">Trigger generators</h3>
         <h2>EQ Spell Resources</h2>
         <button mat-menu-item (click)="showNewDotTimerEqsrDialog()">
             <!-- <mat-icon>system_update_alt</mat-icon> -->
-            <span>DoT Timer</span>
+            <span>DoT timer</span>
         </button>
         <button mat-menu-item (click)="showNewBuffTimerEqsrDialog()">
             <!-- <mat-icon>system_update_alt</mat-icon> -->
-            <span>Buff Timer</span>
+            <span>Buff timer</span>
         </button>
     </mat-menu>
     <mat-menu #hotkeyMenu="matMenu" class="trigger-main-menu sub-menu">
-        <h3 class="color-blue">Create Hotkeys</h3>
+        <h3 class="color-blue">Create hotkeys</h3>
         <button mat-menu-item (click)="copyDeathRecapHotkey()" [disabled]="deathRecapPreferences?.engageMode !== 'hotkey'">
             <!-- <mat-icon>system_update_alt</mat-icon> -->
-            <span>Death Recap</span>
+            <span>Death recap</span>
         </button>
         <button mat-menu-item (click)="copyClearAllHotkey()">
             <!-- <mat-icon>system_update_alt</mat-icon> -->
-            <span>Clear All</span>
+            <span>Clear all</span>
         </button>
     </mat-menu>
     <mat-menu #menu="matMenu" class="trigger-main-menu" xPosition="before">
@@ -73,7 +73,7 @@
         </button>
         <button mat-menu-item (click)="openDeathRecap()">
             <!-- <mat-icon>system_update_alt</mat-icon> -->
-            <span>Death Recap</span>
+            <span>Death recap</span>
         </button>
         <!-- <button mat-menu-item disabled>
             <mat-icon>voicemail</mat-icon>
@@ -89,7 +89,7 @@
 
     <mat-progress-bar mode="indeterminate" *ngIf="processing"></mat-progress-bar>
 
-    <div class="ft-row" style="position: fixed; top: 200px; left: 10px; right: 0; bottom: calc( 10px + var(--nag-console-height, 24px) );">
+    <div class="ft-row">
         <div class="ft-item" style="margin: 3px; width: 32%; flex: 0 0 auto; min-width: 160px;" #folderPane>
 
             <div class="ft-content">
@@ -170,7 +170,7 @@
                         </span>
                     </ng-template>
                 </div>
-                <cdk-virtual-scroll-viewport tvsItemSize itemSize="52" class="wrapper mat-elevation-z2" style="height: 100%" #triggerScroller [style.display]="filteredTriggers?.length === 0 ? 'none' : null">
+                <cdk-virtual-scroll-viewport tvsItemSize itemSize="52" class="wrapper mat-elevation-z2 show-scrollbar" style="height: 100%" #triggerScroller [style.display]="filteredTriggers?.length === 0 ? 'none' : null">
                     <table mat-table #triggersTable="matTable" style="width: 100%; min-width: 600px;" 
                         [dataSource]="dataSourceTest"
                         class="capture-phrases">
@@ -187,7 +187,7 @@
                             <td mat-cell *matCellDef="let element; let i = index" class="col-name">
                                 <div class="trig-line">
                                     <button type="button" class="trig-link" [class.off]="!element.enabled" (click)="showEditTriggerDialog(element.triggerId)" matTooltip="Click to edit" matTooltipShowDelay="600" [attr.aria-label]="'Edit ' + element.name">{{element.name}}</button>
-                                    <button type="button" class="trig-path" *ngIf="searchTerm && element.folderId; else family" (click)="toggleSelectedFolder(element.folderId)" matTooltip="Show this folder" matTooltipShowDelay="600">{{getSearchResultPath(element)}}</button>
+                                    <button type="button" class="trig-path" *ngIf="searchTerm && element.folderId; else family" (click)="selectFolder(element.folderId)" matTooltip="Show this folder" matTooltipShowDelay="600">{{getSearchResultPath(element)}}</button>
                                     <ng-template #family><span class="text-depress trig-family">{{getTriggerFamily(element)}}</span></ng-template>
                                 </div>
                                 <div class="trig-sum" *ngIf="getTriggerSummary(element) as sum">

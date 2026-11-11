@@ -1,6 +1,51 @@
 table {
     width: 100%;
 }
+
+fieldset {
+    margin-bottom: 16px;
+    padding-top: 48px !important;
+    background-color: transparent !important;
+
+    legend {
+        top: 0;
+        padding: 0 0 8px !important;
+        background-color: transparent !important;
+
+        span.title {
+            font-size: 15px !important;
+            font-weight: 500 !important;
+        }
+
+        small {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+        }
+    }
+}
+
+.classes-toggle {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    width: 100%;
+    padding: 10px 0;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 14px;
+    text-align: left;
+    cursor: pointer;
+}
+
+.classes-note {
+    margin-left: 8px;
+    padding: 0 8px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.12);
+    font-size: 11px;
+}
 .table-container {
     display: flex;
     flex-flow: row wrap;

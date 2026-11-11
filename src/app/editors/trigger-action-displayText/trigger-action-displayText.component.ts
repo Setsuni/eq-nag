@@ -24,6 +24,12 @@ export class TriggerActionDisplayTextComponent implements OnInit {
     public selectedOverlay: OverlayWindowModel = null;
     public fontWeightIndex: number = 0;
     public showColoredBackground: boolean = false;
+    public lookOpen: boolean = false;
+
+    public get lookInUse(): boolean {
+        const action = this.action;
+        return action.textUseCustomColor === true || action.textUseCustomSize === true || action.textUseCustomBorder === true || action.textUseCustomGlow === true || action.textUseCustomFont === true;
+    }
 
     public get fontSize(): string {
         if ( this.action.textUseCustomSize && this.action.textSize ) {
@@ -75,9 +81,14 @@ export class TriggerActionDisplayTextComponent implements OnInit {
         }
     }
     
+    /** The weights of the font in use, or of Roboto when the font is unknown. */
+    private get fontWeights(): number[] {
+        return availableFonts[ this.fontFamily ] ?? availableFonts[ 'Roboto' ];
+    }
+
     public get maxFontWeightIndex(): number {
         if ( this.fontFamily != null ) {
-            return availableFonts[ this.fontFamily ].length - 1;
+            return this.fontWeights.length - 1;
         } else {
             return 1;
         }
@@ -139,7 +150,7 @@ export class TriggerActionDisplayTextComponent implements OnInit {
      * family's availabe properties.
      */
     public onChangeFontFamily(): void {
-        let fi: number = availableFonts[ this.fontFamily ].indexOf( this.action.textWeight );
+        let fi: number = this.fontWeights.indexOf( this.action.textWeight );
         this.fontWeightIndex = -1;
 
         if ( fi > -1 ) {
@@ -148,8 +159,8 @@ export class TriggerActionDisplayTextComponent implements OnInit {
         } else {
 
             for ( let i = 100; i < 500; i += 100 ) {
-                let lfi: number = availableFonts[ this.fontFamily ].indexOf( this.action.textWeight - i );
-                let ufi: number = availableFonts[ this.fontFamily ].indexOf( this.action.textWeight + i );
+                let lfi: number = this.fontWeights.indexOf( this.action.textWeight - i );
+                let ufi: number = this.fontWeights.indexOf( this.action.textWeight + i );
                 if ( lfi > -1 ) {
                     this.fontWeightIndex = lfi;
                     break;
@@ -178,7 +189,7 @@ export class TriggerActionDisplayTextComponent implements OnInit {
      * weight index.
      */
     onFontWeightChange(): void {
-        this.action.textWeight = availableFonts[ this.fontFamily ][ this.fontWeightIndex ];
+        this.action.textWeight = this.fontWeights[ this.fontWeightIndex ];
     }
 
 

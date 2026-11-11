@@ -43,6 +43,21 @@ export class TriggerClassesComponent implements OnInit {
     }
     @Output() public classLevelsChange: EventEmitter<CharacterClassLevel[]> = new EventEmitter<CharacterClassLevel[]>();
 
+    private _open: boolean | null = null;
+
+    /** The class grid shows when the player opened it, or when the trigger already limits classes. */
+    public get open(): boolean {
+        return this._open ?? this.selectedCount > 0;
+    }
+
+    public get selectedCount(): number {
+        return this.tableData.filter( f => f.selected ).length;
+    }
+
+    public toggleOpen(): void {
+        this._open = !this.open;
+    }
+
     public classesTableColumns: string[] = [ 'selected', 'class', 'level' ];
 
     @ViewChild( 'classesTable' ) private classesTable: MatTable<CharacterClassLevel>;
@@ -64,6 +79,7 @@ export class TriggerClassesComponent implements OnInit {
      * Emits the change event for the class levels.
      */
     public emitChange() {
+        this._open = this.open;
         this.tableData.forEach( f => f.level = f.selected ? f.level : null ); // clear out levels for unselected classes
         this.classLevelsChange.emit( this.classLevels );
     }

@@ -1,7 +1,7 @@
 <div class="modal">
     <header>
         <mat-toolbar class="titlebar" color="default">
-            <span>Trigger</span>
+            <span>{{ triggerId ? 'Edit trigger' : 'New trigger' }}</span>
             <span class="sub-title">
                 <span class="first">{{fullNamePrefix}}</span>
                 <span class="second">{{fullNameSuffix}}</span>
@@ -120,7 +120,7 @@
 
                     <app-trigger-hotkeys [(hotkeys)]="model.hotkeys"></app-trigger-hotkeys>
 
-                    <mat-form-field floatLabel="always">
+                    <mat-form-field floatLabel="always" class="comments-field">
                         <mat-label>Comments</mat-label>
                         <textarea matInput name="txtComments" [(ngModel)]="model.comments" rows="3"></textarea>
                     </mat-form-field>
@@ -131,22 +131,20 @@
         </form>
     </section>
     <footer>
-        <button mat-flat-button color="primary" [disabled]="triggerForm.invalid || missingCastTime" (click)="saveAndClose()">Save</button>
-        <button mat-button [disabled]="triggerForm.invalid || missingCastTime" (click)="applyChanges()">Save and keep open</button>
-        <button mat-button (click)="requestClose()">Cancel</button>
-        <span class="footer-note" *ngIf="missingCastTime">"{{ missingCastTime }}" needs a cast time before this can be saved.</span>
-        <span class="footer-note" *ngIf="!missingCastTime && castTimeWarning">"{{ castTimeWarning }}" has no cast time, so it may not start. Add one (0 if the buff is instant).</span>
-        <button mat-button color="default" (click)="reimportFromAllakhazam()" *ngIf="showReimportFromAlla">Re-import from {{serviceName}}</button>
-    
-        <ng-container *ngIf="isDev">
-            <div style="padding-left: 26px;">
+        <div class="footer-left">
+            <span class="footer-note" *ngIf="missingCastTime">"{{ missingCastTime }}" needs a cast time before this can be saved.</span>
+            <span class="footer-note" *ngIf="!missingCastTime && castTimeWarning">"{{ castTimeWarning }}" has no cast time, so it may not start. Add one (0 if the buff is instant).</span>
+            <button mat-stroked-button (click)="reimportFromAllakhazam()" *ngIf="showReimportFromAlla">Re-import from {{serviceName}}</button>
+            <ng-container *ngIf="isDev">
                 <span>Copy JSON:</span>
                 <button mat-button color="accent" (click)="copyJson()">String</button>
                 <button mat-button color="accent" (click)="copyJson(false, true)">Formatted</button>
                 <button mat-button color="accent" (click)="copyJson(true, false)">String, No Nulls</button>
                 <button mat-button color="accent" (click)="copyJson(true, true)">Formatted, No Nulls</button>
-            </div>
-        </ng-container>
-        
-       </footer>
+            </ng-container>
+        </div>
+        <button mat-stroked-button (click)="requestClose()">Cancel</button>
+        <button mat-stroked-button [disabled]="triggerForm.invalid || missingCastTime" (click)="applyChanges()">Save and keep open</button>
+        <button mat-flat-button color="primary" [disabled]="triggerForm.invalid || missingCastTime" (click)="saveAndClose()">Save</button>
+    </footer>
 </div>

@@ -227,13 +227,13 @@ export class TriggersComponent implements OnInit {
      * If the user has not selected a folder, the user will be presented with 
      * the folder select dialog.  After a selection has been made, or if a 
      * folder has already been selected, then the observable is resolved and 
-     * completed.
+     * completed with the folder id.  The folder list's own selection is left alone.
      * 
      * @param title The title of the dialog.
      * @param description The message to display to the user if the dialog is shown.
      */
-    private requireFolderSelect( title?: string, description?: string ): Observable<void> {
-        let obs = new Observable<void>( sub => {
+    private requireFolderSelect( title?: string, description?: string ): Observable<string> {
+        let obs = new Observable<string>( sub => {
             
             if ( !this.selectedFolderId && !( this.triggerFolders?.length > 0 ) ) {
                 this.dialogService.showConfirmationDialog( 'Triggers live in folders. Create a folder first.', null, null, null, 'narrow', null, { 'Yes': 'Create a folder', 'No': 'Cancel' }, 'No folders yet' ).subscribe( confirmed => {
@@ -248,15 +248,11 @@ export class TriggersComponent implements OnInit {
                         sub.complete();
                         return;
                     }
-                    if ( this.selectedFolderId !== folderId ) {
-                        this.expandParents( folderId );
-                        this.toggleSelectedFolder( folderId );
-                    }
-                    sub.next();
+                    sub.next( folderId );
                     sub.complete();
                 } );
             } else {
-                sub.next();
+                sub.next( this.selectedFolderId );
                 sub.complete();
             }
 
@@ -277,8 +273,8 @@ export class TriggersComponent implements OnInit {
      * Displays the new trigger dialog.
      */
     public showNewTriggerDialog(): void {
-        this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
-            this.ipcService.showNewTriggerDialog( this.selectedFolderId );
+        this.requireFolderSelect( 'Choose a folder', 'What folder would you like to put this trigger in?' ).subscribe( folderId => {
+            this.ipcService.showNewTriggerDialog( folderId );
         } );
     }
 
@@ -295,8 +291,8 @@ export class TriggersComponent implements OnInit {
      * Displays the new dot timer wizard dialog.
      */
     public showNewDotTimerDialog(): void {
-        this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
-            this.dialogService.showNewDotTimerDialog( this.selectedFolderId, ExternalDataSources.Allakhazam );
+        this.requireFolderSelect( 'Choose a folder', 'What folder would you like to put this trigger in?' ).subscribe( folderId => {
+            this.dialogService.showNewDotTimerDialog( folderId, ExternalDataSources.Allakhazam );
         } );
     }
 
@@ -313,8 +309,8 @@ export class TriggersComponent implements OnInit {
      * Displays the eq dot timer import for eq spell resources.
      */
     public showNewDotTimerEqsrDialog(): void {
-        this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
-            this.dialogService.showNewDotTimerDialog( this.selectedFolderId, ExternalDataSources.EqSpellResources );
+        this.requireFolderSelect( 'Choose a folder', 'What folder would you like to put this trigger in?' ).subscribe( folderId => {
+            this.dialogService.showNewDotTimerDialog( folderId, ExternalDataSources.EqSpellResources );
             // this.ipcService.scrapeEqSpellResourceSpell( 'https://spells.eqresource.com/spells.php?id=1447' ).subscribe( spell => console.log( '!!!!! RETURNED', spell ) );
         } );
     }
@@ -332,8 +328,8 @@ export class TriggersComponent implements OnInit {
      * Displays the new dot timer wizard dialog.
      */
     public showNewBuffTimerEqsrDialog(): void {
-        this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
-            this.dialogService.showNewBuffTimerDialog( this.selectedFolderId, ExternalDataSources.EqSpellResources );
+        this.requireFolderSelect( 'Choose a folder', 'What folder would you like to put this trigger in?' ).subscribe( folderId => {
+            this.dialogService.showNewBuffTimerDialog( folderId, ExternalDataSources.EqSpellResources );
         } );
     }
 
@@ -350,8 +346,8 @@ export class TriggersComponent implements OnInit {
      * Displays the new dot timer wizard dialog.
      */
     public showNewRaidAbilityDialog(): void {
-        this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
-            this.dialogService.showNewRaidAbilityDialog( this.selectedFolderId );
+        this.requireFolderSelect( 'Choose a folder', 'What folder would you like to put this trigger in?' ).subscribe( folderId => {
+            this.dialogService.showNewRaidAbilityDialog( folderId );
         } );
     }
 
@@ -368,8 +364,8 @@ export class TriggersComponent implements OnInit {
      * Displays the new dot timer wizard dialog.
      */
     public showNewBuffTimerDialog(): void {
-        this.requireFolderSelect( 'Select a Folder', 'What folder would you like to put this trigger in?' ).subscribe( () => {
-            this.dialogService.showNewBuffTimerDialog( this.selectedFolderId, ExternalDataSources.Allakhazam );
+        this.requireFolderSelect( 'Choose a folder', 'What folder would you like to put this trigger in?' ).subscribe( folderId => {
+            this.dialogService.showNewBuffTimerDialog( folderId, ExternalDataSources.Allakhazam );
         } );
     }
 
@@ -469,6 +465,17 @@ export class TriggersComponent implements OnInit {
 
 
 
+
+    /**
+     * Selects the folder, even when it is already selected.
+     * 
+     * @param folderId The id of the folder to select.
+     */
+    public selectFolder( folderId: string ): void {
+        this.selectedFolderId = folderId;
+        this.filterTriggers();
+        this.searchTerm = null;
+    }
 
     /**
      * Toggles the selection state of the folder for the specified folder.
@@ -1170,10 +1177,9 @@ export class TriggersComponent implements OnInit {
      * query.
      */
     public searchTriggers(): void {
-        let folderIds = this.selectedFolderId == null ? null : this.getFolderLineageIds( this.selectedFolderId, this.triggerFolders );
         if ( this.searchTerm ) {
             this.ipcService
-                .searchTriggers( this.searchTerm, folderIds )
+                .searchTriggers( this.searchTerm, null )
                 .subscribe( results => {
                     this.triggerSearchResults = results;
                     this.filteredTriggers = results;
@@ -1810,7 +1816,7 @@ export class TriggersComponent implements OnInit {
             matIcon: 'sort',
             children: [
                 {
-                    label: 'Sort Alphabetically',
+                    label: 'Sort alphabetically',
                     action: () => this.sortAlphabetically( folderId ),
                     disabled: () => false,
                     hide: () => false,
@@ -1850,11 +1856,11 @@ export class TriggersComponent implements OnInit {
                     hide: () => false,
                 },
                 {
-                    label: 'Change parent',
+                    label: 'Move to folder…',
                     action: () => this.selectParentFolder( folderId ),
                     disabled: () => false,
                     hide: () => false,
-                    matIcon: 'sort',
+                    matIcon: 'drive_file_move',
                 },
             ]
         }, <ContextMenuModel>{
@@ -1874,7 +1880,7 @@ export class TriggersComponent implements OnInit {
             disabled: () => false,
             hide: () => false,
         }, {
-            label: 'Folder Conditions',
+            label: 'Folder conditions',
             action: () => this.editFolderConditions( folderId ),
             disabled: () => false,
             hide: () => false,
@@ -1885,21 +1891,21 @@ export class TriggersComponent implements OnInit {
             disabled: () => false,
             hide: () => false,
         }, <ContextMenuModel>{
-            label: 'Disable All Triggers',
+            label: 'Turn off all triggers',
             action: () => this.disableFolderTriggers( folderId ),
             disabled: () => false,
             hide: () => !this.hasSomeTriggersToDisable( folderId ),
             matIcon: 'unpublished',
             matIconCssClass: 'material-icons-outlined',
         }, <ContextMenuModel>{
-            label: 'Enable All Triggers',
+            label: 'Turn on all triggers',
             action: () => this.enableFolderTriggers( folderId ),
             disabled: () => false,
             hide: () => !this.hasSomeTriggersToEnable( folderId ),
             matIcon: 'check_circle',
             matIconCssClass: 'material-icons-outlined',
         }, <ContextMenuModel>{
-            label: 'Delete Folder',
+            label: 'Delete folder',
             action: () => this.deleteFolder( folderId, name ),
             disabled: () => false,
             hide: () => false,
@@ -2082,11 +2088,11 @@ export class TriggersComponent implements OnInit {
             hide: () => false,
             matIcon: 'edit',
         }, {
-            label: 'Change parent',
+            label: 'Move to folder…',
             action: () => this.selectTriggerFolder( trigger ),
             disabled: () => false,
             hide: () => false,
-            matIcon: 'sort',
+            matIcon: 'drive_file_move',
         }, {
             label: 'Duplicate',
             action: () => this.duplicateTrigger( trigger ),
@@ -2110,7 +2116,7 @@ export class TriggersComponent implements OnInit {
             disabled: () => false,
             hide: () => false,
         }, <ContextMenuModel>{
-            label: 'Delete Trigger',
+            label: 'Delete trigger',
             action: () => this.deleteTrigger( trigger.triggerId ),
             disabled: () => false,
             hide: () => false,

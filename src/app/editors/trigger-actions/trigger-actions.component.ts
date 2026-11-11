@@ -1,5 +1,5 @@
 import { Component, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild } from '@angular/core';
-import { ActionTypeIcons, ActionTypeLabels, ActionTypes, CapturePhrase, OverlayWindowModel, TriggerAction } from 'src/app/core.model';
+import { ActionTypeIcons, ActionTypeLabels, ActionTypes, CapturePhrase, OverlayWindowModel, TimerRestartBehaviors, TriggerAction } from 'src/app/core.model';
 import { DialogService } from 'src/app/dialogs/dialog.service';
 import { IpcService } from 'src/app/ipc.service';
 import { ActionPickerGroup, ActionPickerGroups, actionTypeDescription, isAdvancedActionType, summarizeAction } from '../action-picker';
@@ -62,11 +62,16 @@ export class TriggerActionsComponent implements OnInit {
     }
     public scrollIndex: number = -1;
 
+    private defaultOverlayIds: { alert: string | null, detrimental: string | null, beneficial: string | null } = { alert: null, detrimental: null, beneficial: null };
+
     constructor( private dialogService: DialogService, private ipcService: IpcService ) { }
 
     ngOnInit() {
         
         this.ipcService.getOverlayWindows().subscribe( overlays => this.overlays = overlays );
+        this.ipcService.getAlertOverlayId().subscribe( id => this.defaultOverlayIds.alert = id ?? null );
+        this.ipcService.getDetrimentalOverlayId().subscribe( id => this.defaultOverlayIds.detrimental = id ?? null );
+        this.ipcService.getBeneficialOverlayId().subscribe( id => this.defaultOverlayIds.beneficial = id ?? null );
 
     }
 
@@ -118,11 +123,46 @@ export class TriggerActionsComponent implements OnInit {
         action.phrases = this.capturePhrases?.map( f => f.phraseId ) ?? [];
         if ( actionType != null ) {
             action.actionType = actionType;
+            this.applyDefaults( action );
         }
         this.actions.push( action );
         this._open.add( action );
         this.actionsChange.emit( this.actions );
         window.setTimeout( () => this.content?.nativeElement.querySelector( '.action-card:last-of-type' )?.scrollIntoView( { block: 'nearest' } ) );
+    }
+
+    /**
+     * Gives an action that just got its type an overlay of the right kind and, for
+     * timers, a restart choice.  An overlay of the right kind is kept; otherwise it
+     * is replaced by the player's default for the type.
+     */
+    private applyDefaults( action: TriggerAction ): void {
+        const pick = ( id: string | null, options: OverlayWindowModel[] ) => options.find( o => o.overlayId === id )?.overlayId ?? options[ 0 ]?.overlayId ?? null;
+        const isTimerType = action.actionType === ActionTypes.Timer || action.actionType === ActionTypes.Countdown || action.actionType === ActionTypes.BeneficialTimer;
+        switch ( action.actionType ) {
+            case ActionTypes.DisplayText:
+            case ActionTypes.Counter:
+                if ( !this.alertOverlays.some( o => o.overlayId === action.overlayId ) ) {
+                    action.overlayId = pick( this.defaultOverlayIds.alert, this.alertOverlays );
+                }
+                break;
+            case ActionTypes.Timer:
+            case ActionTypes.Countdown:
+            case ActionTypes.BeneficialTimer:
+            case ActionTypes.DotTimer:
+            case ActionTypes.Stopwatch:
+                if ( !this.timerOverlays.some( o => o.overlayId === action.overlayId ) ) {
+                    action.overlayId = pick( action.actionType === ActionTypes.BeneficialTimer ? this.defaultOverlayIds.beneficial : this.defaultOverlayIds.detrimental, this.timerOverlays );
+                }
+                break;
+            default:
+                break;
+        }
+        if ( isTimerType ) {
+            action.restartBehavior = action.restartBehavior ?? TimerRestartBehaviors.RestartTimer;
+        } else if ( action.actionType !== ActionTypes.Stopwatch ) {
+            action.restartBehavior = null;
+        }
     }
 
     /** Whether the action's full editor is showing.  Actions without a type always are. */
@@ -147,7 +187,7 @@ export class TriggerActionsComponent implements OnInit {
     }
 
     public outlinedIcon( actionType: ActionTypes ): boolean {
-        return actionType === ActionTypes.Timer || actionType === ActionTypes.ClearAll || actionType === ActionTypes.Stopwatch;
+        return true;
     }
 
     /**
@@ -281,6 +321,7 @@ export class TriggerActionsComponent implements OnInit {
             return;
         }
         action.actionType = selectedType;
+        this.applyDefaults( action );
         this._open.add( action );
         this.actionsChange.emit( this.actions ); // Let the parent component react immediately.
     }

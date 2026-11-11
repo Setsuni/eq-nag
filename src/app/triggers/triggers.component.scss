@@ -5,6 +5,7 @@ div.tab-content {
     right: 0;
     bottom: var(--nag-console-height, 24px);
     top: 176px;
+    padding: 16px;
 
     > fieldset:not(:first-child) {
         margin-top: 50px;
@@ -39,8 +40,8 @@ fieldset p mat-form-field {
 }
     
 .text-depress {
-    color: #ffffff7d;
-    font-weight: 100;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 400;
 }
 
 mat-progress-bar {
@@ -51,8 +52,31 @@ mat-progress-bar {
     height: 10px;
 }
 
+cdk-virtual-scroll-viewport.show-scrollbar {
+    &::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+        background: #3a3a3a;
+    }
+
+    &::-webkit-scrollbar-thumb {
+        background-color: #5a5a5a;
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+        background-color: #7a7a7a;
+    }
+}
+
 .ft-row {
     flex-wrap: nowrap;
+    position: absolute;
+    top: 13px;
+    left: 13px;
+    right: 13px;
+    bottom: 13px;
 }
 
 .ft-divider {
@@ -125,7 +149,7 @@ mat-progress-bar {
     }
 
     &.on {
-        background-color: #ff4081;
+        background-color: #69f0ae;
 
         i {
             left: 18px;
@@ -133,7 +157,7 @@ mat-progress-bar {
     }
 
     &.mixed {
-        background-color: rgba(255, 64, 129, 0.45);
+        background-color: rgba(105, 240, 174, 0.45);
 
         i {
             left: 10px;

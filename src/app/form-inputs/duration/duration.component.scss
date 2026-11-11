@@ -1,13 +1,17 @@
-
 .duration-wrapper {
+    display: flex;
+    gap: 8px;
 
     input[type=number] {
-        width: 25px;
+        width: 32px;
+        padding: 0;
+        border: 0;
+        background: transparent;
+        color: inherit;
         font-family: Roboto;
+        font-size: 14px;
         -webkit-appearance: none;
-        margin: 5px;
         text-align: right;
-        margin-right: 10px;
         outline: none !important;
     }
 
@@ -18,33 +22,48 @@
     }
 
     .time-element {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        box-sizing: border-box;
+        height: 36px;
+        padding: 0 8px;
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 4px;
+        background: rgba(0, 0, 0, 0.18);
+
+        &:focus-within {
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+
         > span {
-            box-sizing: border-box;
-            padding: 5px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .spinners {
             position: absolute;
             top: 0;
-            bottom: 0;
             right: 0;
+            bottom: 0;
+            display: none;
+            align-items: center;
+            padding: 0 2px;
+            border-radius: 0 4px 4px 0;
+            background: #2b2b2b;
         }
-        button.spinner {
-            &.spinner-top {
-                top: -20px;
-            }
-            &.spinner-btm {
-                bottom: -20px;
-            }
-            position: absolute;
-            left: 10px;
-            width: 20px;
-            height: 20px;
-            line-height: 20px;
-        }
-        box-sizing: border-box;
-        position: relative;
-        padding-right: 30px;
-        margin-right: 5px;
-    }
 
-    display: flex;
-    padding: 14px 0;
+        &:hover .spinners,
+        &:focus-within .spinners {
+            display: flex;
+        }
+
+        button.spinner {
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            padding: 0;
+        }
+    }
 }

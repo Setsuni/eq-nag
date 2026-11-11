@@ -123,9 +123,9 @@ export function ActionTypeIcons( actionType: ActionTypes ): string {
         actionType === ActionTypes.Speak ? 'volume_up' :
         actionType === ActionTypes.Timer ? 'alarm' :
         actionType === ActionTypes.Countdown ? 'watch' :
-        actionType === ActionTypes.StoreVariable ? 'sd_storage' :
+        actionType === ActionTypes.StoreVariable ? 'bookmark_add' :
         actionType === ActionTypes.DotTimer ? 'watch_later' :
-        actionType === ActionTypes.ClearVariable ? 'sd_storage' :
+        actionType === ActionTypes.ClearVariable ? 'bookmark_remove' :
         actionType === ActionTypes.Counter ? 'exposure_plus_1' :
         actionType === ActionTypes.Clipboard ? 'content_copy' :
         actionType === ActionTypes.BeneficialTimer ? 'watch_later' :

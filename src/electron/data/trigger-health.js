@@ -273,11 +273,12 @@ function covers( operator, alternatives, target ) {
  *   zoneKnowledge?: { zones?: string[], pairs?: { from: string, to: string }[] },
  *   packages?: { packageId: string, name?: string, author?: string, authorDiscord?: string }[],
  *   characterClasses?: string[],
+ *   includePredefined?: boolean,
  * }} input The data to check.
  * @returns {{ summary: object, findings: object[] }}
  */
 function checkTriggerHealth( input ) {
-    const triggers = ( input.triggers ?? [] ).filter( t => t != null );
+    const triggers = ( input.triggers ?? [] ).filter( t => t != null && ( input.includePredefined === true || !t.predefined ) );
     const folders = input.folders ?? [];
     const zoneIndex = buildZoneIndex( input.zones ?? [], input.zoneKnowledge );
     const packageMap = new Map( ( input.packages ?? [] ).map( p => [ p.packageId, p ] ) );

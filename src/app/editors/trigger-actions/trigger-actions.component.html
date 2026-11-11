@@ -14,14 +14,15 @@
                 <span class="spacer"></span>
                 <button mat-button class="edit-toggle" (click)="toggleOpen( action )" [attr.aria-expanded]="isOpen( action )">{{ isOpen( action ) ? 'Done' : 'Edit' }}</button>
                 <div class="action-movers">
+                    <button mat-icon-button [matMenuTriggerFor]="actionPickerMenu" [matMenuTriggerData]="{ action: action }" matTooltip="Change the action type" aria-label="Change the action type"><mat-icon class="material-icons-outlined">swap_horiz</mat-icon></button>
                     <button mat-icon-button (click)="moveUp(i, $event)" [disabled]="i === 0 || actions.length <= 1" aria-label="Move this action up"><mat-icon>expand_less</mat-icon></button> <!-- up -->
                     <button mat-icon-button (click)="moveDown(i, $event)" [disabled]="i === actions.length - 1 || actions.length <= 1" aria-label="Move this action down"><mat-icon>expand_more</mat-icon></button> <!-- down -->
-                    <button mat-icon-button color="warn" (click)="deleteAction(i)" aria-label="Delete this action"><mat-icon>delete_outline</mat-icon></button>
+                    <button mat-icon-button class="delete-action" (click)="deleteAction(i)" aria-label="Delete this action"><mat-icon>delete_outline</mat-icon></button>
                 </div>
             </mat-card-header>
             <mat-card-content *ngIf="!scrolling && isOpen( action )">
                 
-                <div>
+                <div *ngIf="action.actionType == null">
                     <mat-form-field style="width: 100%;" floatLabel="always">
                         <mat-label>Action type</mat-label>
                         <input matInput [value]="actionTypeLabels(action.actionType)" readonly
@@ -151,7 +152,7 @@
 
     <div class="add-bar">
         <span class="add-label">Add:</span>
-        <button mat-stroked-button type="button" *ngFor="let quick of quickAddTypes" (click)="addNewAction( quick )"><mat-icon [ngClass]="{'material-icons-outlined': outlinedIcon( quick )}">{{actionTypeIcons( quick )}}</mat-icon>{{ actionTypeLabels( quick ) }}</button>
+        <button mat-stroked-button type="button" class="quick-add" *ngFor="let quick of quickAddTypes" (click)="addNewAction( quick )"><mat-icon [ngClass]="{'material-icons-outlined': outlinedIcon( quick )}">{{actionTypeIcons( quick )}}</mat-icon>{{ actionTypeLabels( quick ) }}</button>
         <button mat-button type="button" color="accent" [matMenuTriggerFor]="actionPickerMenu" [matMenuTriggerData]="{ action: null }">More<mat-icon iconPositionEnd>arrow_drop_down</mat-icon></button>
     </div>
 

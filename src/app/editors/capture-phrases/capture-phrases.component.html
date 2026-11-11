@@ -9,16 +9,16 @@
                 <mat-button-toggle value="text">Plain text</mat-button-toggle>
                 <mat-button-toggle value="pattern">Pattern</mat-button-toggle>
             </mat-button-toggle-group>
-            <mat-checkbox *ngIf="element.useRegEx" [ngModel]="element.ignoreCase" (ngModelChange)="toggleIgnoreCase( element )" name="cbxIgnoreCase_{{i}}" matTooltip="Treat capital and small letters as the same">Ignore case</mat-checkbox>
+            <mat-checkbox *ngIf="element.useRegEx" [ngModel]="element.ignoreCase" (ngModelChange)="toggleIgnoreCase( element )" name="cbxIgnoreCase_{{i}}" class="ignore-case" matTooltip="Treat capital and small letters as the same">Ignore case</mat-checkbox>
             <span class="spacer"></span>
             <ng-container *ngIf="capturePhrases.length > 1">
                 <button mat-icon-button type="button" aria-label="Move this phrase up" (click)="movePhraseUp( i )" [disabled]="i === 0"><mat-icon>keyboard_arrow_up</mat-icon></button>
                 <button mat-icon-button type="button" aria-label="Move this phrase down" (click)="movePhraseDown( i )" [disabled]="i === capturePhrases.length - 1"><mat-icon>keyboard_arrow_down</mat-icon></button>
             </ng-container>
-            <button mat-icon-button type="button" color="warn" aria-label="Delete this phrase" (click)="deleteCapturePhrase( i )"><mat-icon>clear</mat-icon></button>
+            <button mat-icon-button type="button" class="phrase-delete" *ngIf="capturePhrases.length > 1" aria-label="Delete this phrase" (click)="deleteCapturePhrase( i )"><mat-icon>clear</mat-icon></button>
         </div>
         <mat-form-field class="consolas" floatLabel="always">
-            <mat-label>{{ capturePhrases.length > 1 ? 'Phrase ' + ( i + 1 ) : 'Phrase' }}</mat-label>
+            <mat-label>Phrase</mat-label>
             <textarea matInput
                 name="txtaPhrase_{{i}}"
                 rows="1"
@@ -35,24 +35,19 @@
                 cdkAutosizeMinRows="1"
                 cdkAutosizeMaxRows="4"></textarea>
             <div class="regex-highlight-inline" *ngIf="overlayOpenIndex === i" [innerHTML]="highlightedPhrases[i]"></div>
-            <mat-hint style="display: flex; justify-content: space-between; align-items: center;">
-                <span>{{ element.useRegEx ? 'A pattern (regular expression). Snippets like {S1} work here.' : 'Matches anywhere in the line. Capital letters don\'t matter.' }}</span>
-                <span *ngIf="element.useRegEx"
-                    class="toggle-icon"
-                    (click)="toggleOverlay( i )"
-                    role="button"
-                    tabindex="0"
-                    aria-label="Toggle regex highlight overlay"
-                    [attr.aria-pressed]="overlayOpenIndex === i">
-                    Regex Visualizer
-                    <mat-icon>{{ overlayOpenIndex === i ? 'expand_less' : 'expand_more' }}</mat-icon>
-                </span>
-            </mat-hint>
+            <mat-hint>{{ element.useRegEx ? 'A pattern (regular expression). Snippets like {S1} work here.' : 'Matches anywhere in the line. Capital letters don\'t matter.' }}</mat-hint>
         </mat-form-field>
+        <button type="button" class="pattern-link" *ngIf="element.useRegEx"
+            (click)="toggleOverlay( i )"
+            aria-label="Toggle regex highlight overlay"
+            [attr.aria-pressed]="overlayOpenIndex === i">
+            {{ overlayOpenIndex === i ? 'Hide pattern diagram' : 'Show pattern diagram' }}
+            <mat-icon>{{ overlayOpenIndex === i ? 'expand_less' : 'expand_more' }}</mat-icon>
+        </button>
     </div>
 
     <div class="phrase-tools">
-        <button mat-button type="button" color="accent" (click)="addNewCapturePhrase()"><mat-icon>add</mat-icon>Add another phrase</button>
+        <button mat-button type="button" color="accent" class="add-phrase" (click)="addNewCapturePhrase()"><mat-icon>add</mat-icon>Add another phrase</button>
     </div>
     <div class="phrase-tools insert-row">
         <span class="insert-label">Insert:</span>
@@ -140,7 +135,7 @@
                             tabindex="0"
                             aria-label="Toggle regex highlight overlay"
                             [attr.aria-pressed]="overlayOpenIndex === i">
-                            Regex Visualizer
+                            {{ overlayOpenIndex === i ? 'Hide pattern diagram' : 'Show pattern diagram' }}
                             <mat-icon>{{ overlayOpenIndex === i ? 'expand_less' : 'expand_more' }}</mat-icon>
                         </span>
                     </mat-hint>

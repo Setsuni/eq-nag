@@ -138,7 +138,8 @@ legend.full-width {
         width: 24px;
         height: 24px;
         border-radius: 50%;
-        background: #3f7fbf;
+        background: #7b1fa2;
+        color: #fff;
         font-size: 13px;
     }
 }
@@ -174,7 +175,12 @@ legend.full-width {
     }
 
     .disclosure-body {
-        padding: 0 0 16px 4px;
+        padding: 0 0 16px;
+
+        ::ng-deep fieldset {
+            margin-left: 0;
+            margin-right: 0;
+        }
     }
 
     .disclosure-hint {
@@ -199,6 +205,43 @@ legend.full-width {
     }
 }
 
+.editor-page ::ng-deep fieldset {
+    margin-bottom: 16px;
+    padding-top: 48px !important;
+    background-color: transparent !important;
+
+    legend {
+        top: 0;
+        padding: 0 0 8px !important;
+        background-color: transparent !important;
+
+        > button {
+            top: -4px;
+            right: 0;
+        }
+    }
+}
+
+.editor-page ::ng-deep fieldset legend {
+    span.title {
+        font-size: 15px !important;
+        font-weight: 500 !important;
+    }
+
+    small {
+        color: rgba(255, 255, 255, 0.7);
+        font-size: 12px;
+    }
+}
+
+.modal header mat-toolbar {
+    padding: 0 16px 0 24px;
+}
+
+.comments-field {
+    width: 100%;
+}
+
 .zone-row {
     margin-bottom: 10px;
 
@@ -219,9 +262,30 @@ legend.full-width {
     }
 }
 
+.modal footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 12px 24px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+
+    button {
+        margin: 0;
+    }
+
+    .footer-left {
+        display: flex;
+        flex: 1 1 0;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0 8px;
+        min-width: 0;
+    }
+}
+
 .footer-note {
-    display: block;
-    margin: 10px 10px 0;
     font-size: 12px;
     color: #ffb74d;
 }
