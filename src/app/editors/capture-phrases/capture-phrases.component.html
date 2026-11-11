@@ -18,9 +18,9 @@
             <button mat-icon-button type="button" class="phrase-delete" *ngIf="capturePhrases.length > 1" aria-label="Delete this phrase" (click)="deleteCapturePhrase( i )"><mat-icon>clear</mat-icon></button>
         </div>
         <mat-form-field class="consolas" floatLabel="always">
+            <mat-label>Phrase</mat-label>
             <textarea matInput
                 name="txtaPhrase_{{i}}"
-                aria-label="Phrase"
                 rows="1"
                 [(ngModel)]="element.phrase"
                 (keydown.enter)="$event.preventDefault()"
