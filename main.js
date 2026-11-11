@@ -320,6 +320,8 @@ function createWindow() {
     if ( userPreferences.setup ) {
         // Set the last viewed version to the current version.
         userPreferences.lastViewedUpdateNotes = app.getVersion();
+        // New profiles have no legacy styles to migrate.
+        userPreferences.askForCombatGroupMigrations = false;
     }
     
 };

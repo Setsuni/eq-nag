@@ -81,6 +81,7 @@ export class IpcService {
     private _onOrphanedTriggerWarning: Observer<boolean>[] = [];
     private _onMissingPackageOverlay: Observer<MissingOverlayRequest>[] = [];
     private _onQuitFalure: Observer<QuitFailureData>[] = [];
+    private _onWindowCloseRequest: Observer<void>[] = [];
     private _onBackupProgress: Observer<Progress>[] = [];
     private _simProgress: Record<string, Observer<SimulationProgress>[]> = {};
     private _testObservers: Record<string, Observer<TriggerTestResult>> = {};
@@ -138,6 +139,14 @@ export class IpcService {
                     ngZone.run( () => {
                         this._onQuitFalure?.forEach( f => {
                             f.next( data );
+                        } );
+                    } );
+                } );
+
+                window.api.ipc.on( 'window:close-request', () => {
+                    ngZone.run( () => {
+                        this._onWindowCloseRequest?.forEach( f => {
+                            f.next();
                         } );
                     } );
                 } );
@@ -519,6 +528,15 @@ export class IpcService {
         } );
 
         return obs;
+    }
+
+    /**
+     * Fires when the user closes this window natively (Alt+F4, the taskbar) and the window asks to confirm first.
+     */
+    public onWindowCloseRequest(): Observable<void> {
+        return new Observable<void>( ( observer: Observer<void> ) => {
+            this._onWindowCloseRequest.push( observer );
+        } );
     }
 
     public onChatRoomDisconnected(): Observable<string> {
