@@ -32,7 +32,7 @@ export class TriggerDialogComponent implements OnInit {
     public tabIndex: number = 0;
     private _baseline: string = null;
     private _docsUrl: string = 'https://guildantix.github.io/eq-nag/triggers/';
-    private _docsPages: string[] = [ 'capture-phrases/', 'actions/', 'conditions/' ];
+    private _docsPages: string[] = [ 'capture-phrases', 'actions', 'conditions' ];
     public get helpUrl(): string {
         return this._docsUrl + this._docsPages[ this.tabIndex ];
     }
