@@ -25,6 +25,15 @@ mat-form-field {
     }
 }
 
+.delete-action:hover {
+    opacity: 1;
+    color: #f44336;
+}
+
+.add-bar .quick-add mat-icon {
+    margin-right: 6px;
+}
+
 .edit-toggle {
     align-self: center;
 }
@@ -103,7 +112,7 @@ mat-form-field {
     flex: 1 1 auto;
 }
 
-::ng-deep .action-picker-menu {
+::ng-deep .mat-menu-panel.action-picker-menu {
     min-width: 340px;
     max-width: 420px;
 
@@ -116,17 +125,20 @@ mat-form-field {
     }
 
     .mat-menu-item {
+        display: flex;
+        align-items: center;
         height: auto;
         min-height: 48px;
         padding-top: 6px;
         padding-bottom: 6px;
+        white-space: normal;
         line-height: 1.3;
     }
 
     .picker-text {
-        display: inline-flex;
+        display: flex;
         flex-direction: column;
-        vertical-align: middle;
+        min-width: 0;
         white-space: normal;
     }
 

@@ -147,7 +147,7 @@ export class TriggerActionsComponent implements OnInit {
     }
 
     public outlinedIcon( actionType: ActionTypes ): boolean {
-        return actionType === ActionTypes.Timer || actionType === ActionTypes.ClearAll || actionType === ActionTypes.Stopwatch;
+        return true;
     }
 
     /**
