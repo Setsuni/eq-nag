@@ -1,3 +1,15 @@
+footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    box-sizing: border-box;
+    padding: 20px 24px;
+
+    button {
+        margin: 0;
+    }
+}
+
 mat-option {
     span {
         text-transform: capitalize;
