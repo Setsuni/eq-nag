@@ -105,7 +105,7 @@
         <div class="perf-title">All triggers <span class="perf-sub">&middot; sorted by share &middot; page {{perfPage + 1}} of {{pageCount}}</span></div>
         <table class="perf-table">
             <tr>
-                <th>Trigger</th><th class="num">Share</th><th class="num">Avg / check</th><th class="num">Worst</th><th class="num">Checked</th><th class="num">Fired</th>
+                <th>Trigger</th><th class="num">Share</th><th class="num">Avg / check</th><th class="num">Worst</th><th class="num">Checked (est.)</th><th class="num">Fired</th>
             </tr>
             <tr *ngFor="let row of pageRows; trackBy: trackPerfRow" [class.dim]="row.skipped" [attr.title]="row.skipped ? skippedReason : null">
                 <td>
@@ -123,6 +123,6 @@
             <button mat-button (click)="perfPage = perfPage - 1" [disabled]="perfPage === 0"><mat-icon>chevron_left</mat-icon> Previous</button>
             <button mat-button (click)="perfPage = perfPage + 1" [disabled]="perfPage >= pageCount - 1">Next <mat-icon>chevron_right</mat-icon></button>
         </div>
-        <p class="perf-note">"Checked" counts the lines a trigger's phrase was actually tried on. Greyed triggers show 0: their zone or variable condition was false, or their fixed words never appeared in a line.</p>
+        <p class="perf-note">"Checked" estimates how many lines a trigger's phrase was tried on (Nag times a few triggers per line and scales up); "Fired" is an exact count. Greyed triggers show 0: their zone or variable condition was false, or their fixed words never appeared in a line.</p>
     </ng-container>
 </div>

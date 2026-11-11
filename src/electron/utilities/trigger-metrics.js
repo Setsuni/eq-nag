@@ -134,9 +134,11 @@ class TriggerMetrics {
         triggers.forEach( trigger => {
             const s = this.statsFor( trigger.triggerId );
             const base = this.#base[ trigger.triggerId ] ?? [ 0, 0 ];
+            const fired = s.fired - base[ 1 ];
             result.triggers[ trigger.triggerId ] = {
-                checked: Math.round( s.checked - base[ 0 ] ),
-                fired: s.fired - base[ 1 ],
+                // Checked is a scaled estimate; fired is exact, and every fire was also a check.
+                checked: Math.max( Math.round( s.checked - base[ 0 ] ), fired ),
+                fired,
                 samples: s.samples,
                 totalMs: s.totalMs,
                 maxMs: s.maxMs,
