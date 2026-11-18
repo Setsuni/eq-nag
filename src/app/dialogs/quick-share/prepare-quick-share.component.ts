@@ -428,7 +428,7 @@ export class PrepareQuickShareDialogComponent implements OnInit {
      * @param folders The folders in the quickshare.
      * @param triggers The triggers in the quickshare.
      * @param quickShareId The server quickshare id, if the share was also uploaded.
-     * @param iconWarning Text appended to the confirmation when some timer icons will not reach the receiver.
+     * @param iconWarning Text appended to the confirmation when some timer icons are dropped.
      */
     private saveShareFile(
         author: AuthorModel,
@@ -585,8 +585,8 @@ export class PrepareQuickShareDialogComponent implements OnInit {
                 } );
 
                 // The receiver drops timer icons that are not embedded images up to 256 KB.
-                let iconTriggers = findUnshareableIconTriggers( quickShareTriggers );
-                let iconWarning = iconTriggers.length > 0 ? `  The timer icon of ${iconTriggers.slice( 0, 5 ).map( f => `"${f}"` ).join( ', ' )}${iconTriggers.length > 5 ? ' and more' : ''} is not an embedded image up to 256 KB, so the receiver will not get it.` : '';
+                const iconTriggers = findUnshareableIconTriggers( quickShareTriggers );
+                const iconWarning = iconTriggers.length > 0 ? `  The timer icon of ${iconTriggers.slice( 0, 5 ).map( f => `"${f}"` ).join( ', ' )}${iconTriggers.length > 5 ? ' and more' : ''} is not an embedded image up to 256 KB, so the receiver will not get it.` : '';
 
                 // Submits the final quickshare to the server to generate a
                 // quickShareId, when sharing to the server.
@@ -601,11 +601,17 @@ export class PrepareQuickShareDialogComponent implements OnInit {
                         this._uploadedQuickShareId = quickShareId;
                         let code = `{NAG:quick-share/${quickShareId}}`;
                         this.ipcService.sendTextToClipboard( code );
-                        this.snackBar.open( `Quickshare copied to clipboard${iconWarning}`, 'Dismiss', { duration: iconWarning ? 15000 : 5000 } );
+                        this.snackBar.open(
+                            `Quickshare copied to clipboard${iconWarning}`,
+                            'Dismiss',
+                            { duration: iconWarning ? 15000 : 5000 }
+                        );
                     }
 
                     if ( this.saveAsFile ) {
-                        this.saveShareFile( author, quickShare, quickShareFiles, quickShareFolders, quickShareTriggers, quickShareId, iconWarning );
+                        this.saveShareFile(
+                            author, quickShare, quickShareFiles, quickShareFolders, quickShareTriggers, quickShareId, iconWarning
+                        );
                     } else {
                         this.dialogRef.close( quickShareId );
                     }
