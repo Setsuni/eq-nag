@@ -1,4 +1,5 @@
 import { ChangeDetectorRef, Component, Input, NgZone, OnDestroy, OnInit } from '@angular/core';
+import { Subscription } from 'rxjs';
 import { DialogService } from 'src/app/dialogs/dialog.service';
 import { IpcService } from 'src/app/ipc.service';
 import { MatTable } from '@angular/material/table';
@@ -88,6 +89,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
     public deathRecapPreferences: DeathRecapPreferences = new DeathRecapPreferences();
     public pushRecapPreferences: PushRecapPreferences = new PushRecapPreferences();
     public pushRecapHotkeyCommand: string = pushRecapHotkeyCommand;
+    private pushRecapSubscription: Subscription = new Subscription();
     public minimizeToTrayOnLoad: boolean = false;
     public glowOnStartup: boolean = true;
     public quickShareAuthorListTypes: typeof QuickShareAuthorListTypes = QuickShareAuthorListTypes;
@@ -183,7 +185,29 @@ export class SettingsComponent implements OnInit, OnDestroy {
         } );
         window.api.ipc.send( 'rolls:get', null );
 
+        // Subscribed once here, not in loadSettings, which runs on every visit to the tab.
+        this.pushRecapSubscription.add( this.ipcService.onPushRecapPreferencesChanged().subscribe( recapPrefs => this.pushRecapPreferences.hiddenProcTexts = recapPrefs?.hiddenProcTexts ?? [] ) );
+
         this.loadSettings();
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Stops the Status card refresh and the Push Recap subscription when the page is destroyed.
+     */
+    ngOnDestroy(): void {
+        if ( this.statusTimerId !== null && this.statusTimerId !== undefined ) {
+            clearInterval( this.statusTimerId );
+        }
+        this.pushRecapSubscription.unsubscribe();
     }
 
 
@@ -359,10 +383,7 @@ export class SettingsComponent implements OnInit, OnDestroy {
         this.ipcService.getEnableQuickShareImports().subscribe( enabled => this.enableQuickShareImports = enabled );
         this.ipcService.getMinimizeToTrayOnLoad().subscribe( enabled => this.minimizeToTrayOnLoad = enabled );
         this.ipcService.getDeathRecapPreferences().subscribe( recapPrefs => this.deathRecapPreferences = recapPrefs ?? new DeathRecapPreferences() );
-        this.ipcService.getPushRecapPreferences().subscribe( recapPrefs => {
-            // Fills in defaults for fields an older saved file doesn't have yet.
-            this.pushRecapPreferences = Object.assign( new PushRecapPreferences(), recapPrefs );
-        } );
+        this.ipcService.getPushRecapPreferences().subscribe( recapPrefs => this.pushRecapPreferences = Object.assign( new PushRecapPreferences(), recapPrefs ) );
         this.ipcService.getEnableGlowOnStartup().subscribe( f => this.glowOnStartup = f );
         this.ipcService.getQuickShareAuthorsListType().subscribe( f => this.quickShareAuthorListType = f );
         this.ipcService.getQuickShareAuthorsList().subscribe( f => {
@@ -730,6 +751,22 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
 
     /**
+     * Shows a hidden push recap message again.
+     *
+     * @param {string} text The landing message.
+     */
+    onRestorePushRecapText( text: string ): void {
+        this.ipcService.setPushProcHidden( text, false );
+    }
+
+    /**
+     * Shows all hidden push recap messages again.
+     */
+    onRestoreAllPushRecapTexts(): void {
+        this.ipcService.clearHiddenPushProcTexts();
+    }
+
+    /**
      * Saves changes to the push recap quiet gap.
      */
     onPushRecapGapChange(): void {
@@ -907,22 +944,6 @@ export class SettingsComponent implements OnInit, OnDestroy {
 
 
 
-    ngOnDestroy(): void {
-        // Stop the Status card refresh when the page is destroyed.
-        if ( this.statusTimerId !== null && this.statusTimerId !== undefined ) {
-            clearInterval( this.statusTimerId );
-        }
-    }
-
-
-
-
-
-
-
-
-
-
     /**
      * The characters whose log is being read now.
      */
@@ -978,7 +999,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
             return advancedKeys.some( key => roll[ key ] !== defaults[ key ] );
         }
         if ( id === 'push' ) {
-            return this.pushRecapPreferences.quietGapSeconds !== 30;
+            const hiddenTexts = this.pushRecapPreferences.hiddenProcTexts;
+            const hasHiddenTexts = hiddenTexts !== null && hiddenTexts !== undefined && hiddenTexts.length > 0;
+            return this.pushRecapPreferences.quietGapSeconds !== 30 || hasHiddenTexts;
         }
         return false;
     }

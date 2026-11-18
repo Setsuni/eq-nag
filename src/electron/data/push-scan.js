@@ -3,6 +3,7 @@ const fsp = fs.promises;
 const path = require( 'path' );
 const crypto = require( 'crypto' );
 const { Worker } = require( 'worker_threads' );
+const { buildListRow } = require( '../utilities/push-recap-summary' );
 
 const cacheFileName = 'push-scan-cache.json';
 const badCacheFileName = 'push-scan-cache.json.bad';
@@ -242,9 +243,7 @@ class PushScanService {
      * @returns {any[]} The recaps.
      */
     getRows() {
-        return this.#results.map( ( { players, npcAbilities, unattributed, ...row } ) => {
-            return { ...row, unattributed: { events: unattributed.events, pushValue: unattributed.pushValue } };
-        } );
+        return this.#results.map( buildListRow );
     }
 
 
