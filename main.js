@@ -70,7 +70,7 @@ import GameResources from "./src/electron/data/game-resources.js";
 import FilesDatabaseStore from "./src/electron/data/files-database.js";
 import GinaImporter from "./src/electron/gina-importer.js";
 import RollTracker from "./src/electron/roll-tracker.js";
-import ShareFile from "./src/electron/utilities/share-file.js";
+import ShareFile from './src/electron/utilities/share-file.js';
 
 import {
   IpcMessage,
@@ -474,6 +474,15 @@ const bootstrapApp = () => {
     
 }
 
+
+
+
+
+
+
+
+
+
 /** A share file path, from the command line, that has not been sent to the main window yet. */
 let pendingSharePath = ShareFile.findShareFileArg( process.argv );
 /** True once the main window's Angular app is ready to receive a share file path. */
@@ -515,7 +524,7 @@ if ( !allowMultipleInstances && !instanceLock ) {
 
             }
 
-            let sharePath = ShareFile.findShareFileArg( argv );
+            const sharePath = ShareFile.findShareFileArg( argv );
             if ( sharePath ) {
                 pendingSharePath = sharePath;
                 sendPendingSharePath();
@@ -863,8 +872,8 @@ ipcMain.handle( 'fileshare:save',
      */
     async ( event, payload, suggestedName ) => {
         try {
-            let baseName = String( suggestedName ?? '' ).replace( /\.nag$/i, '' ).replace( /[<>:"/\\|?*\x00-\x1f]/g, '_' ).trim();
-            let result = await dialog.showSaveDialog( BrowserWindow.fromWebContents( event.sender ), {
+            const baseName = String( suggestedName ?? '' ).replace( /\.nag$/i, '' ).replace( /[<>:"/\\|?*\x00-\x1f]/g, '_' ).trim();
+            const result = await dialog.showSaveDialog( BrowserWindow.fromWebContents( event.sender ), {
                 title: 'Save trigger share',
                 defaultPath: `${baseName || 'Nag triggers'}.nag`,
                 filters: [ { name: 'Nag trigger files', extensions: [ 'nag' ] } ],
@@ -874,8 +883,8 @@ ipcMain.handle( 'fileshare:save',
                 return { ok: false, code: 'cancelled' };
             }
 
-            let filePath = path.extname( result.filePath ).toLowerCase() === '.nag' ? result.filePath : `${result.filePath}.nag`;
-            let writeResult = ShareFile.writeShareFile( filePath, payload, app.getVersion() );
+            const filePath = path.extname( result.filePath ).toLowerCase() === '.nag' ? result.filePath : `${result.filePath}.nag`;
+            const writeResult = ShareFile.writeShareFile( filePath, payload, app.getVersion() );
 
             if ( !writeResult.ok ) {
                 return { ok: false, code: writeResult.code };
@@ -896,7 +905,7 @@ ipcMain.handle( 'fileshare:open',
      */
     async ( event ) => {
         try {
-            let result = await dialog.showOpenDialog( BrowserWindow.fromWebContents( event.sender ), {
+            const result = await dialog.showOpenDialog( BrowserWindow.fromWebContents( event.sender ), {
                 title: 'Import trigger share',
                 properties: [ 'openFile' ],
                 filters: [ { name: 'Nag trigger files', extensions: [ 'nag', 'zip', 'json' ] } ],
@@ -914,7 +923,8 @@ ipcMain.handle( 'fileshare:open',
     } );
 
 /**
- * Logs a share file read that failed because the zip library is unsupported, and returns the result unchanged.
+ * Logs a share file read that failed because the zip library is unsupported, and returns
+ * the result unchanged.
  *
  * @returns {object} Returns the same result.
  *

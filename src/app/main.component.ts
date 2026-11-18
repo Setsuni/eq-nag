@@ -85,6 +85,15 @@ export class MainComponent implements OnInit {
     ) {
     }
 
+
+
+
+
+
+
+
+
+
     /**
      * Returns true if the drag event carries files.
      *
@@ -183,7 +192,7 @@ export class MainComponent implements OnInit {
             this._dragDepth = 0;
             this.dropActive = false;
 
-            let paths = Array.from( event.dataTransfer.files )
+            const paths = Array.from( event.dataTransfer.files )
                 .map( file => window.api.getPathForFile( file ) )
                 .filter( filePath => !!filePath );
 
@@ -254,7 +263,8 @@ export class MainComponent implements OnInit {
         
         this.checkForTriggerUpdates();
 
-        // Subscribed before the ready signal, since the main process sends a pending path as soon as it sees it.
+        // Subscribed before the ready signal, since the main process sends a pending path as
+        // soon as it sees it.
         this.ipcService.shareFilePathReceived().subscribe( filePath => this.shareFileService.importFromPath( filePath ) );
 
         this.ipcService.mainWindowAngularReady();

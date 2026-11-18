@@ -1492,7 +1492,19 @@ export class QuickShareVersion {
 
 }
 
-/** The payload stored in a .nag file's share.json. It is exactly the data the receive quick share dialog opens with. */
+
+
+
+
+
+
+
+
+
+/**
+ * The payload stored in a .nag file's share.json. It is exactly the data the receive quick
+ * share dialog opens with.
+ */
 export class ShareFilePayload {
 
     public quickShares: QuickShareMetaModel[] = [];
@@ -1500,6 +1512,19 @@ export class ShareFilePayload {
 
 }
 
+
+
+
+
+
+
+
+
+
+/**
+ * The manifest.json of a .nag file, which says which app and version wrote it and what it
+ * holds.
+ */
 export class ShareFileManifest {
 
     public app: string;
@@ -1508,6 +1533,16 @@ export class ShareFileManifest {
 
 }
 
+
+
+
+
+
+
+
+
+
+/** A non-fatal problem found while reading a share file, shown to the user before the import. */
 export class ShareFileWarning {
 
     /** The warning code: 'newerVersion'. */
@@ -1517,6 +1552,15 @@ export class ShareFileWarning {
     public unknownKeys: string[] = [];
 
 }
+
+
+
+
+
+
+
+
+
 
 /** The result of opening or reading a share file. */
 export class ShareFileReadResult {
@@ -1532,6 +1576,15 @@ export class ShareFileReadResult {
     public details?: string;
 
 }
+
+
+
+
+
+
+
+
+
 
 /** The result of saving a share file. */
 export class ShareFileSaveResult {
