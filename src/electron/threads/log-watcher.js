@@ -4485,7 +4485,7 @@ function loadLastDeathRecap() {
  */
 function loadPushRecap() {
 
-    let message = new IpcMessage( { logFilePath: charModel.logFile, characterName: characterName, serverName: charModel.server } );
+    const message = new IpcMessage( { logFilePath: charModel.logFile, characterName: characterName, serverName: charModel.server } );
     ipcRenderer.send( 'window:push-recap', message );
 
 }
