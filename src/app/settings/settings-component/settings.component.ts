@@ -186,7 +186,9 @@ export class SettingsComponent implements OnInit, OnDestroy {
         window.api.ipc.send( 'rolls:get', null );
 
         // Subscribed once here, not in loadSettings, which runs on every visit to the tab.
-        this.pushRecapSubscription.add( this.ipcService.onPushRecapPreferencesChanged().subscribe( recapPrefs => this.pushRecapPreferences.hiddenProcTexts = recapPrefs?.hiddenProcTexts ?? [] ) );
+        this.pushRecapSubscription.add( this.ipcService.onPushRecapPreferencesChanged().subscribe( recapPrefs => {
+            this.pushRecapPreferences.hiddenProcTexts = recapPrefs?.hiddenProcTexts ?? [];
+        } ) );
 
         this.loadSettings();
     }
@@ -383,7 +385,10 @@ export class SettingsComponent implements OnInit, OnDestroy {
         this.ipcService.getEnableQuickShareImports().subscribe( enabled => this.enableQuickShareImports = enabled );
         this.ipcService.getMinimizeToTrayOnLoad().subscribe( enabled => this.minimizeToTrayOnLoad = enabled );
         this.ipcService.getDeathRecapPreferences().subscribe( recapPrefs => this.deathRecapPreferences = recapPrefs ?? new DeathRecapPreferences() );
-        this.ipcService.getPushRecapPreferences().subscribe( recapPrefs => this.pushRecapPreferences = Object.assign( new PushRecapPreferences(), recapPrefs ) );
+        this.ipcService.getPushRecapPreferences().subscribe( recapPrefs => {
+            // Fills in defaults for fields an older saved file does not have yet.
+            this.pushRecapPreferences = Object.assign( new PushRecapPreferences(), recapPrefs );
+        } );
         this.ipcService.getEnableGlowOnStartup().subscribe( f => this.glowOnStartup = f );
         this.ipcService.getQuickShareAuthorsListType().subscribe( f => this.quickShareAuthorListType = f );
         this.ipcService.getQuickShareAuthorsList().subscribe( f => {
@@ -759,12 +764,30 @@ export class SettingsComponent implements OnInit, OnDestroy {
         this.ipcService.setPushProcHidden( text, false );
     }
 
+
+
+
+
+
+
+
+
+
     /**
      * Shows all hidden push recap messages again.
      */
     onRestoreAllPushRecapTexts(): void {
         this.ipcService.clearHiddenPushProcTexts();
     }
+
+
+
+
+
+
+
+
+
 
     /**
      * Saves changes to the push recap quiet gap.

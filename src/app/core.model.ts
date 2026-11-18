@@ -1550,7 +1550,8 @@ export class PushRecapPreferences {
     quietGapSeconds: number = 30;
     showTab: boolean = false;
     saveRecaps: boolean = true;
-    /** Landing messages (the text after the mob name) that the proc tables, the timeline and the Procs column leave out. */
+    /** Landing messages (the text after the mob name) that the proc tables, the timeline and the
+     * Procs column leave out. */
     hiddenProcTexts: string[] = [];
 }
 
@@ -2071,7 +2072,10 @@ export interface PushRecapSpellCount {
 }
 
 export interface PushRecapProc {
-    /** The landing message, after the name of the mob. Missing on recaps saved by older versions. In the list, only text and count are set. */
+    /**
+     * The landing message, after the name of the mob. Missing on recaps saved by older versions.
+     * In the list, only text and count are set.
+     */
     text?: string;
     name: string;
     /** The spells the landing message can belong to. Missing on recaps saved by older versions. */
