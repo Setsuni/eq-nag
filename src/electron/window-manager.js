@@ -62,6 +62,12 @@ class WindowManager {
     /** @type {BrowserWindow} */
     #deathRecap;
 
+    /** @type {BrowserWindow} */
+    #pushRecap = null;
+
+    /** @type {{ recap: any, saved: boolean } | null} */
+    #pushRecapSnapshot = null;
+
     /** @type {WebContents} */
     #arrangeCaller;
 
@@ -360,6 +366,59 @@ class WindowManager {
              */
             ( event, arg ) => {
                 this.loadLastDeathRecap( arg.value.logFilePath, arg.id, arg.value.characterName, arg.value.serverName );
+            }
+        );
+
+        ipcMain.on( 'window:push-recap',
+            /**
+             * Loads the push recap for the last boss kill, or for the given fight.
+             *
+             * @param {any} event Event args.
+             * @param {IpcMessage<{logFilePath: string, characterName: string, serverName: string,
+             *     recap?: any, saved?: boolean}>} arg The log file, character and fight to show.
+             */
+            ( event, arg ) => {
+                const value = arg?.value ?? {};
+                // The recap comes from the renderer, so check its shape.
+                // A snapshot is self-contained and needs no log file.
+                const hasSnapshot = ( value.recap !== null && value.recap !== undefined )
+                    && typeof value.recap === 'object' && typeof value.recap.mob === 'string';
+                const hasLogFilePath = typeof value.logFilePath === 'string' && value.logFilePath.length > 0;
+                if ( !hasSnapshot && !hasLogFilePath ) {
+                    return;
+                }
+
+                this.loadPushRecap( hasLogFilePath ? value.logFilePath : '', value.characterName, value.serverName, value.recap, value.saved === true );
+            }
+        );
+
+        ipcMain.handle( 'push-recap:snapshot', () => this.#pushRecapSnapshot );
+
+        ipcMain.handle( 'push-recaps:hidden:get', () => this.#userPrefDb.hiddenProcTexts );
+
+        ipcMain.on( 'push-recaps:hidden:set',
+            /**
+             * Hides or shows a push recap message, and tells the windows that show it.
+             *
+             * @param {any} event Event args.
+             * @param {{ text?: string, hidden?: boolean, clear?: boolean }} arg The change.
+             */
+            ( event, arg ) => {
+                if ( arg?.clear === true ) {
+                    arg = { clear: true };
+                } else if ( typeof arg?.text !== 'string' || typeof arg?.hidden !== 'boolean' ) {
+                    return;
+                }
+                const hidden = this.#userPrefDb.changeHiddenProcTexts( arg );
+                // The Push tab and Settings live in the main window.
+                // The overlay window shows no push recap settings.
+                const mainWindow = this.#mainWindow.reference;
+                if ( mainWindow !== null && mainWindow !== undefined && !mainWindow.isDestroyed() ) {
+                    mainWindow.webContents.send( 'settings:changed:pushRecap', this.#userPrefDb.pushRecap );
+                }
+                if ( this.#pushRecap !== null && this.#pushRecap !== undefined && !this.#pushRecap.isDestroyed() ) {
+                    this.#pushRecap.webContents.send( 'push-recap:hidden-changed', hidden );
+                }
             }
         );
 
@@ -1297,6 +1356,81 @@ class WindowManager {
 
         this.#deathRecap = deathRecap;
         this.configureRendererMouseBlockingOnMoveResize( this.#deathRecap );
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Loads the push recap window, reusing it when it is already open.
+     *
+     * @param {string} logFilePath The full path to the log file.
+     * @param {string} characterName The name of the character.
+     * @param {string} serverName The name of the server.
+     * @param {any} [recap] The saved summary of the fight to show, instead of the last kill.
+     * @param {boolean} [saved] True when the given fight is already in the saved recaps.
+     */
+    loadPushRecap( logFilePath, characterName, serverName, recap, saved ) {
+
+        let pushRecap = this.#pushRecap;
+        const recapPrefs = this.#userPrefDb.pushRecap;
+        const snapshot = ( recap !== null && recap !== undefined ) && typeof recap === 'object' && typeof recap.mob === 'string';
+        this.#pushRecapSnapshot = snapshot ? { recap: recap, saved: saved === true } : null;
+        const query = `snapshot=${snapshot}&logFilePath=${encodeURIComponent( logFilePath )}&characterName=${encodeURIComponent( characterName )}&eqFolder=${encodeURIComponent( this.#userPrefDb.everquestInstallFolder ?? '' )}&userData=${encodeURIComponent( app.getPath( 'userData' ) )}&quietGap=${encodeURIComponent( recapPrefs?.quietGapSeconds ?? 30 )}&saveRecaps=${recapPrefs?.saveRecaps !== false}`;
+
+        if ( pushRecap !== null && pushRecap !== undefined && !pushRecap.isDestroyed() ) {
+            if ( pushRecap.isMinimized() ) {
+                pushRecap.restore();
+            }
+            pushRecap.loadURL( `file://${__dirname}/windows/push-recap.html?${query}` );
+            pushRecap.focus();
+            return;
+        }
+
+        pushRecap = new BrowserWindow( {
+            transparent: true,
+            frame: false,
+            resizable: true,
+            movable: true,
+            webPreferences: {
+                nodeIntegration: false,
+                contextIsolation: true,
+                devTools: app.isDev(),
+                sandbox: false,
+                preload: path.join( __dirname, '/preloaders/push-recap.js' ),
+            },
+            skipTaskbar: false,
+            maximizable: true,
+            minimizable: true,
+        } );
+
+        const size = { width: 1000, height: 720 };
+        const workAreaSize = screen.getPrimaryDisplay().workAreaSize;
+
+        pushRecap.setBounds( {
+            width: size.width,
+            height: size.height,
+            x: Math.round( ( workAreaSize.width - size.width ) / 2 ),
+            y: Math.round( ( workAreaSize.height - size.height ) / 2 ),
+        } );
+
+        pushRecap.loadURL( `file://${__dirname}/windows/push-recap.html?${query}` );
+
+        pushRecap.on( 'closed', () => {
+            if ( this.#pushRecap === pushRecap ) {
+                this.#pushRecap = null;
+                this.#pushRecapSnapshot = null;
+            }
+        } );
+
+        this.#pushRecap = pushRecap;
+        this.configureRendererMouseBlockingOnMoveResize( pushRecap );
     }
 
 

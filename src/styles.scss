@@ -149,3 +149,20 @@ div.flex-row {
         }
     }
 }
+
+/* Floating labels, Settings and Push tabs only */
+app-settings,
+combat-statistics,
+app-push-tracker {
+    .mat-form-field-appearance-legacy.mat-form-field-can-float.mat-form-field-should-float {
+        .mat-form-field-label-wrapper {
+            overflow: visible;
+        }
+        .mat-form-field-label {
+            font-size: 13px;
+            width: 100%;
+            margin-left: -8px;
+            transform: translateY( -1.85em ) !important;
+        }
+    }
+}

@@ -2620,6 +2620,11 @@ function executeTriggerAction( trigger, action, timestamp, res, deltaTime, simul
         
         loadLastDeathRecap();
         
+    } else if ( action.actionType === ActionTypes.DisplayPushRecap ) {
+        /* --== Push Recap ==-- */
+
+        loadPushRecap();
+
     } else if ( action.actionType === ActionTypes.ScreenGlow ) {
         /* --== Death Recap ==-- */
         
@@ -4989,6 +4994,25 @@ function loadLastDeathRecap() {
     let message = new IpcMessage( { logFilePath: charModel.logFile, characterName: characterName, serverName: charModel.server } );
     ipcRenderer.send( 'window:last-death-recap', message );
     
+}
+
+
+
+
+
+
+
+
+
+
+/**
+ * Loads the push recap for the current character's last boss kill.
+ */
+function loadPushRecap() {
+
+    const message = new IpcMessage( { logFilePath: charModel.logFile, characterName: characterName, serverName: charModel.server } );
+    ipcRenderer.send( 'window:push-recap', message );
+
 }
 
 
