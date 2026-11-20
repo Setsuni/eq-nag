@@ -1,6 +1,6 @@
 import { Component, OnInit, HostListener } from '@angular/core';
 import { IpcService } from 'src/app/ipc.service';
-import { OverlayWindowModel, ActionTypes, TriggerAction, TimerSortTypes, TimerRestartBehaviors, StylePropertiesModel } from 'src/app/core.model';
+import { OverlayWindowModel, ActionTypes, TriggerAction, TimerSortTypes, TimerRestartBehaviors, StylePropertiesModel, availableFonts } from 'src/app/core.model';
 import { ActivatedRoute } from '@angular/router';
 import { ThemePalette } from '@angular/material/core';
 import { AbstractControl, FormControl } from '@angular/forms';
@@ -13,15 +13,6 @@ const nanoid = customAlphabet( alphabet, 16 );
 // import { Color } from '@angular-material-components/color-picker';
 // import { NgForm } from '@angular/forms';
 
-const availableFonts = {
-    'Roboto': [ 100, 300, 400, 500, 700, 900 ],
-    'Red Rose': [ 300, 400, 700 ],
-    'Oswald': [ 200, 300, 400, 500, 600, 700 ],
-    'Roboto Mono': [ 100, 200, 300, 400, 500, 600, 700 ],
-    'Open Sans Condensed': [ 300, 700 ],
-    'Ranchers': [ 400 ],
-    'Press Start 2P': [ 400 ],
-};
 // <!-- Roboto(i): 100, 300, 400, 500, 700, 900 -->
 // <!-- Red Rose: 300, 400, 700 -->
 // <!-- Oswald: 200, 300, 400, 500, 600, 700 -->
@@ -57,16 +48,20 @@ export class OverlayEditorDialogComponent implements OnInit {
     public showColoredBackground: boolean = false;
     
     public get maxFontWeightIndex(): number {
-        if ( this.model?.fontFamily != null ) {
-            return availableFonts[ this.model.fontFamily ].length - 1;
+        const weights = availableFonts[ this.model?.fontFamily ];
+
+        if ( weights !== undefined ) {
+            return weights.length - 1;
         } else {
             return 1;
         }
     }
 
     public get fontWeight(): string {
-        if ( this.fontWeightIndex >= 0 ) {
-            return `${availableFonts[ this.model.fontFamily ][ this.fontWeightIndex ]}`;
+        const weights = availableFonts[ this.model.fontFamily ];
+
+        if ( this.fontWeightIndex >= 0 && weights !== undefined ) {
+            return `${weights[ this.fontWeightIndex ]}`;
         } else {
             return null;
         }
@@ -145,7 +140,7 @@ export class OverlayEditorDialogComponent implements OnInit {
                     this.model.fontSize = this.model.fontSize > 0 ? this.model.fontSize : 14;
                     this.model.lineHeight = this.model.lineHeight > 0 ? this.model.lineHeight : 90;
                     this.model.fontWeight = this.model.fontWeight > 100 ? this.model.fontWeight : 400;
-                    this.fontWeightIndex = availableFonts[ this.model.fontFamily ].indexOf( this.model.fontWeight );
+                    this.fontWeightIndex = availableFonts[ this.model.fontFamily ]?.indexOf( this.model.fontWeight ) ?? -1;
                     this.fontTransparency = Math.round( this.model.fontTransparency * 100 );
                     this.backgroundTransparency = Math.round( this.model.backgroundTransparency * 100 );
                     this.borderTransparency = Math.round( this.model.borderTransparency * 100 );
@@ -153,7 +148,7 @@ export class OverlayEditorDialogComponent implements OnInit {
                     this.textGlowColor = ColorUtility.FromHex( this.model.textGlowColor ).toHexString( 1 );
                     this.textBorderIntensity = ColorUtility.FromHex( this.model.textBorderColor ).a * 100;
                     this.textGlowIntensity = ColorUtility.FromHex( this.model.textGlowColor ).a * 100;
-                    this.dotGroupHeaderWeightIndex = availableFonts[ this.model.fontFamily ].indexOf( this.model.groupHeaderWeight );
+                    this.dotGroupHeaderWeightIndex = availableFonts[ this.model.fontFamily ]?.indexOf( this.model.groupHeaderWeight ) ?? -1;
                 } );
 
                 this.ipcService.overlayBoundsChanged().subscribe( e => {
@@ -185,7 +180,16 @@ export class OverlayEditorDialogComponent implements OnInit {
      * Sets the font family and broadcasts the model.
      */
     public onChangeFontFamily(): void {
-        let fi: number = availableFonts[ this.model.fontFamily ].indexOf( this.model.fontWeight );
+        const weights = availableFonts[ this.model.fontFamily ];
+
+        // Without weights for this family, keep the stored weight and show no selection.
+        if ( weights === undefined ) {
+            this.fontWeightIndex = -1;
+            this.dotGroupHeaderWeightIndex = -1;
+            return;
+        }
+
+        const fi: number = weights.indexOf( this.model.fontWeight );
         this.fontWeightIndex = -1;
         this.dotGroupHeaderWeightIndex = -1;
 
@@ -195,8 +199,8 @@ export class OverlayEditorDialogComponent implements OnInit {
         } else {
 
             for ( let i = 100; i < 500; i += 100 ) {
-                let lfi: number = availableFonts[ this.model.fontFamily ].indexOf( this.model.fontWeight - i );
-                let ufi: number = availableFonts[ this.model.fontFamily ].indexOf( this.model.fontWeight + i );
+                const lfi: number = weights.indexOf( this.model.fontWeight - i );
+                const ufi: number = weights.indexOf( this.model.fontWeight + i );
                 if ( lfi > -1 ) {
                     this.fontWeightIndex = lfi;
                     this.dotGroupHeaderWeightIndex = lfi;
@@ -331,8 +335,13 @@ export class OverlayEditorDialogComponent implements OnInit {
      * Broadcasts the model to the overlay.
      */
     public broadcastModel(): void {
-        this.model.fontWeight = availableFonts[ this.model.fontFamily ][ this.fontWeightIndex ];
-        this.model.groupHeaderWeight = availableFonts[ this.model.fontFamily ][ this.dotGroupHeaderWeightIndex ];
+        const weights = availableFonts[ this.model.fontFamily ];
+
+        if ( weights !== undefined ) {
+            this.model.fontWeight = weights[ this.fontWeightIndex ];
+            this.model.groupHeaderWeight = weights[ this.dotGroupHeaderWeightIndex ];
+        }
+
         this.model.textBorderColor = ColorUtility.FromHex( this.textBorderColor ).toHexString( this.model.textBorderIntensity );
         this.model.textGlowColor = ColorUtility.FromHex( this.textGlowColor ).toHexString( this.model.textGlowIntensity );
         this.ipcService.broadcastOverlayModel( this.model );
