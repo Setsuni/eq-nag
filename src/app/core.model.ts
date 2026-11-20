@@ -1630,6 +1630,111 @@ export class QuickShareVersion {
 
 }
 
+
+
+
+
+
+
+
+
+
+/**
+ * The payload stored in a .nag file's share.json. It is exactly the data the receive quick
+ * share dialog opens with.
+ */
+export class ShareFilePayload {
+
+    public quickShares: QuickShareMetaModel[] = [];
+    public files: QuickShareFileModel[] = [];
+
+}
+
+
+
+
+
+
+
+
+
+
+/**
+ * The manifest.json of a .nag file, which says which app and version wrote it and what it
+ * holds.
+ */
+export class ShareFileManifest {
+
+    public app: string;
+    public version: string;
+    public type: string;
+
+}
+
+
+
+
+
+
+
+
+
+
+/** A non-fatal problem found while reading a share file, shown to the user before the import. */
+export class ShareFileWarning {
+
+    /** The warning code: 'newerVersion'. */
+    public code: string;
+    public fileVersion: string;
+    /** Action keys this version does not know, up to 10. */
+    public unknownKeys: string[] = [];
+
+}
+
+
+
+
+
+
+
+
+
+
+/** The result of opening or reading a share file. */
+export class ShareFileReadResult {
+
+    public ok: boolean;
+    public payload?: ShareFilePayload;
+    /** Null when the file was a raw json share. */
+    public manifest?: ShareFileManifest | null;
+    public warnings?: ShareFileWarning[];
+    /** One of: wrongType, tooLarge, unpackTooLarge, notNagFile, damaged, cancelled. */
+    public code?: string;
+    public fileName: string;
+    public details?: string;
+
+}
+
+
+
+
+
+
+
+
+
+
+/** The result of saving a share file. */
+export class ShareFileSaveResult {
+
+    public ok: boolean;
+    public filePath?: string;
+    /** One of: cancelled, tooLarge, writeFailed. */
+    public code?: string;
+    public details?: string;
+
+}
+
 export class OverlayBoundsChangedEventArgs {
 
     public overlayId: string;
