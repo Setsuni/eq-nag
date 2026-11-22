@@ -984,23 +984,41 @@ class UserPreferencesStore extends Store {
             this.storeDataFile( this.#data );
         } );
 
+        // The folder is validated here, where the file system is reachable; the renderer saves it.
+        ipcMain.handle( 'settings:choose:everquest-folder', async () => {
+            const result = await dialog.showOpenDialog( BrowserWindow.getFocusedWindow(), {
+                title: 'Select your EverQuest folder',
+                properties: [ 'openDirectory' ]
+            } );
+            if ( result.canceled || result.filePaths.length === 0 ) {
+                return { canceled: true, folder: null, valid: false };
+            }
+            const folder = result.filePaths[ 0 ];
+            const valid = fs.existsSync( path.join( folder, 'eqgame.exe' ) ) || fs.existsSync( path.join( folder, 'spells_us.txt' ) );
+            return { canceled: false, folder: folder, valid: valid };
+        } );
+
         ipcMain.on( 'settings:get:everquest-folder', ( event, arg ) => {
             if ( this.#data.everquestInstallFolder != null && fs.existsSync( this.#data.everquestInstallFolder ) ) {
                 event.sender.send( 'settings:get:everquest-folder', this.#data.everquestInstallFolder );
             } else {
                 get_win_drives( drives => {
-                    this.#data.everquestInstallFolder = null;
+                    let foundFolder = null;
 
                     drives.forEach( drive => {
                         possibleEqFolders.forEach( eqFolder => {
                             if ( fs.existsSync( drive + eqFolder + '\\LaunchPad.exe' ) ) {
-                                this.#data.everquestInstallFolder = drive + eqFolder;
+                                foundFolder = drive + eqFolder;
                             }
                         } );
                     } );
 
-                    this.storeDataFile( this.#data );
-                    event.sender.send( 'settings:get:everquest-folder', this.#data.everquestInstallFolder );
+                    // A picked folder survives an offline drive; only a found install replaces it.
+                    if ( foundFolder !== null ) {
+                        this.#data.everquestInstallFolder = foundFolder;
+                        this.storeDataFile( this.#data );
+                    }
+                    event.sender.send( 'settings:get:everquest-folder', foundFolder );
                 } );
             }
         } );
