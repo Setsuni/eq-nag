@@ -6,7 +6,7 @@ const { summarize, analyzeKill, buildLandingIndex, parseTimestamp, isRelevantLin
 const { buildSavedSummary } = require( '../utilities/push-recap-summary' );
 
 const chunkSize = 1024 * 1024;
-const maxResults = 300;
+const maxResults = 1000;
 const progressIntervalMs = 250;
 const headBytes = 256;
 const compactAfter = 20000;
