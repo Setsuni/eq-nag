@@ -44,6 +44,10 @@ export class ServerEventModel {
 @Injectable( { providedIn: 'root' })
 export class IpcService {
 
+    /** Replies share one channel, so requests take turns; two in flight could swap replies. */
+    private _triggerGetQueue: Promise<void> = Promise.resolve();
+    /** Late replies owed to timed-out requests; they are dropped, not given to a later request. */
+    private _staleTriggerGetReplies: number = 0;
     private _successfulParses: TriggerParseHistoryModel[] = [];
     private _failedParses: TriggerParseHistoryModel[] = [];
     private _consoleMessages: ConsoleMessageModel[] = [];
@@ -1435,36 +1439,93 @@ export class IpcService {
         return obs;
     }
 
-    public getTriggers(): Observable<TriggerModel[]> {
-        let obs: Observable<TriggerModel[]> = new Observable<TriggerModel[]>( ( observer: Observer<TriggerModel[]> ) => {
-            
-            window.api.ipc.once( 'trigger:get', ( e, triggers: TriggerModel[] ) => {
-                this.ngZone.run( () => {
-                    observer.next( triggers );
-                    observer.complete();
-                } );
-            } );
-            window.api.ipc.send( 'trigger:get', null );
+
+
+
+
+
+
+
+
+
+    /**
+     * Sends a trigger:get request once every earlier trigger:get request has been answered.
+     * 
+     * @param triggerId The id of the trigger to get, or null to get all triggers.
+     */
+    private requestTriggerGet<T>( triggerId: string | null ): Observable<T> {
+        return new Observable<T>( ( observer: Observer<T> ) => {
+
+            this._triggerGetQueue = this._triggerGetQueue.then( () => new Promise<void>( requestDone => {
+                let finished = false;
+
+                // If main never replies the queue must not stall, so give up on this request.
+                const timeoutId = setTimeout( () => {
+                    finished = true;
+                    this._staleTriggerGetReplies++;
+                    this.ngZone.run( () => observer.error( new Error( 'The trigger request timed out.' ) ) );
+                    requestDone();
+                }, 10000 );
+
+                const onReply = ( e, reply: T ): void => {
+                    if ( finished ) {
+                        return;
+                    }
+                    if ( this._staleTriggerGetReplies > 0 ) {
+
+                        // This is the late reply of a request that timed out.
+                        this._staleTriggerGetReplies--;
+                        window.api.ipc.once( 'trigger:get', onReply );
+                        return;
+                    }
+                    finished = true;
+                    clearTimeout( timeoutId );
+                    this.ngZone.run( () => {
+                        observer.next( reply );
+                        observer.complete();
+                    } );
+                    requestDone();
+                };
+
+                window.api.ipc.once( 'trigger:get', onReply );
+                window.api.ipc.send( 'trigger:get', triggerId );
+            } ) );
 
         } );
-
-        return obs;
     }
 
+
+
+
+
+
+
+
+
+
+    /**
+     * Gets all triggers.
+     */
+    public getTriggers(): Observable<TriggerModel[]> {
+        return this.requestTriggerGet<TriggerModel[]>( null );
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * Gets one trigger. The reply is empty when the trigger no longer exists.
+     *
+     * @param triggerId The id of the trigger to get.
+     */
     public getTrigger( triggerId: string ): Observable<TriggerModel> {
-        let obs: Observable<TriggerModel> = new Observable<TriggerModel>( ( observer: Observer<TriggerModel> ) => {
-            
-            window.api.ipc.once( 'trigger:get', ( e, trigger: TriggerModel ) => {
-                this.ngZone.run( () => {
-                    observer.next( trigger );
-                    observer.complete();
-                } );
-            } );
-            window.api.ipc.send( 'trigger:get', triggerId );
-
-        } );
-
-        return obs;
+        return this.requestTriggerGet<TriggerModel>( triggerId );
     }
 
     public searchTriggers( term: string, restrictByFolderIds?: string[] ): Observable<TriggerModel[]> {
